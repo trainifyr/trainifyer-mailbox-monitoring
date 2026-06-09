@@ -2,7 +2,7 @@
 // Phases 1-7. In Phase 8 (WI-803), it will be deleted and replaced with a
 // real auth provider backed by Supabase.
 
-import { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 
 const MockIdentityContext = createContext(null);
 

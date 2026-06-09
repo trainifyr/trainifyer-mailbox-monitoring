@@ -50,3 +50,9 @@ Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
 ### Batch Settings (WI-301)
 - `GET /api/batches/:id/settings` — Get settings for a batch
 - `PATCH /api/batches/:id/settings` — Update settings for a batch (Admin only)
+
+### Mailbox (WI-401)
+- `GET /api/mail/inbox` — List received messages (paginated)
+- `GET /api/mail/sent` — List sent messages (paginated)
+- `POST /api/mail/send` — Send a message (permission-checked)
+- `PATCH /api/mail/:id/read` — Mark a message as read

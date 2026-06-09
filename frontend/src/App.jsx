@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { MockIdentityProvider } from './context/MockIdentityContext';
 import AppRoutes from './routes/AppRoutes';

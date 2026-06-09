@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMockIdentity } from '../../context/MockIdentityContext';
 import apiClient from '../../api/client';
 import { Plus, UserPlus } from 'lucide-react';

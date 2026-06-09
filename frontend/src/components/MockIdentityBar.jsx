@@ -1,5 +1,6 @@
 // TODO(PHASE-8: REMOVE) - Floating developer helper. Will be deleted in WI-803.
 
+import React from 'react';
 import { useMockIdentity } from '../context/MockIdentityContext';
 import { UserCog, GraduationCap, LogOut } from 'lucide-react';
 import './MockIdentityBar.css';

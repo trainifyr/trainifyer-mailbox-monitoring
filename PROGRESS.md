@@ -16,13 +16,13 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 1: Skeleton Setup** | 4 | 0 | 0 | 0 | 4 | 0 | 100% |
 | **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 4: Mailbox System** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 4: Mailbox System** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
 | **Phase 5: Meetings & Consent** | 3 | 3 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 6: Attendance Logging** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **15** | **0** | **0** | **8** | **0** | **34.8%** |
+| **Total** | **23** | **14** | **0** | **0** | **9** | **0** | **39.1%** |
 
 ---
 
@@ -51,8 +51,8 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: Inline settings panel with toggle switches and notifications. Admin only controls.
 
 ### Phase 4: Internal Mailbox System (Slice 3)
-- [ ] [WI-401](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/9): Internal Mailbox APIs & Permissions Check  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Send/receive mail with mock settings.
+- [x] [WI-401](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/9): Internal Mailbox APIs & Permissions Check  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: 4 Mailbox endpoints with batch settings permission checks.
 - [ ] [WI-402](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/10): Mailbox Client UI  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Outlook layout messaging workspace.
 

@@ -4,6 +4,22 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-401: Internal Mailbox APIs & Permissions Check
+* **Work Item ID**: WI-401
+* **Summary**: Implemented the core backend for the internal mailbox system. Added 4 endpoints: `GET /api/mail/inbox`, `GET /api/mail/sent`, `POST /api/mail/send`, and `PATCH /api/mail/:id/read`. Enforced strict batch-level permission checks (mailbox_enabled and student_to_student_messaging) for Students. Admin users bypass all permission checks.
+* **Files Affected**:
+  - [NEW] `backend/src/routes/mail.js` (core mailbox logic)
+  - [MODIFIED] `backend/index.js` (route registration)
+  - [MODIFIED] `backend/README.md` (endpoint documentation)
+* **Verification Done**:
+  - [x] Verified Student-to-Admin send (201)
+  - [x] Verified 403 Forbidden when mailbox_enabled = false
+  - [x] Verified 403 Forbidden for Student-to-Student when sts = false
+  - [x] Verified Admin bypass logic
+  - [x] Verified paginated inbox/sent with sender/receiver details
+  - [x] Verified idempotent mark-as-read logic
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-09] - WI-302: Settings Panel UI
 * **Work Item ID**: WI-302
 * **Summary**: Added an interactive settings panel to the expanded batch detail view on the Batches admin page. Displays 6 feature toggles (mailbox_enabled, student_to_student_messaging, meeting_join_enabled, require_camera, require_microphone) as toggle switches and require_screen_share as a dropdown. Each change triggers PATCH /api/batches/:id/settings. Green notification toast confirms saves. Admin role gating hides interactive controls for non-Admin users.
