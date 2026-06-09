@@ -4,6 +4,28 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-103: React App Routing & Mock Identity Bar
+* **Work Item ID**: WI-103
+* **Summary**: Scaffolded React + Vite frontend with React Router, axios, and lucide-react. Added a Mock Identity Context, a floating Mock Identity Selector bar, and a Vite dev-server proxy to the backend. Verified end-to-end: clicking Admin/Student on the bar sets context and is forwarded to the backend via x-mock-role/x-mock-user-id headers.
+* **Files Affected**:
+  - [NEW] `frontend/package.json`
+  - [NEW] `frontend/vite.config.js`
+  - [NEW] `frontend/index.html`
+  - [NEW] `frontend/.env`, `frontend/.env.example`, `frontend/.gitignore`, `frontend/README.md`
+  - [NEW] `frontend/src/main.jsx`, `frontend/src/App.jsx`, `frontend/src/index.css`
+  - [NEW] `frontend/src/api/client.js`
+  - [NEW] `frontend/src/context/MockIdentityContext.jsx`
+  - [NEW] `frontend/src/components/MockIdentityBar.jsx`, `frontend/src/components/MockIdentityBar.css`, `frontend/src/components/Layout.jsx`
+  - [NEW] `frontend/src/pages/HomePage.jsx`, `frontend/src/pages/admin/AdminDashboard.jsx`, `frontend/src/pages/student/StudentDashboard.jsx`
+  - [NEW] `frontend/src/routes/AppRoutes.jsx`
+* **Verification Done**:
+  - [x] Vite dev server boots on port 5173
+  - [x] Mock Identity Bar visible and toggleable
+  - [x] Frontend pings backend /api/health with mock identity
+  - [x] `npm run build` succeeds with no critical warnings
+  - [x] All mock artifacts marked with `// TODO(PHASE-8: REMOVE)` or `// TODO(PHASE-8: REPLACE WITH REAL AUTH)`
+* **Impact on Existing Functionality**: None. Adds frontend skeleton alongside the existing backend from WI-102.
+
 ## [2026-06-05] - WI-102: Express API Server Setup with Mock Session Middleware
 * **Work Item ID**: WI-102
 * **Summary**: Set up Express server with helmet, CORS, and a Mock Session middleware that reads role and userId from request headers or query parameters. Health check endpoint exposed at /api/health.
