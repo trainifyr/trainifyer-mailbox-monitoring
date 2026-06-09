@@ -46,3 +46,7 @@ Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
 - `PATCH /api/batches/:id` — Update batch name/status (Admin only)
 - `GET /api/batches/:id/students` — List students assigned to a batch
 - `POST /api/batches/:id/students` — Assign a student to a batch (Admin only)
+
+### Batch Settings (WI-301)
+- `GET /api/batches/:id/settings` — Get settings for a batch
+- `PATCH /api/batches/:id/settings` — Update settings for a batch (Admin only)

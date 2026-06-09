@@ -4,6 +4,23 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-301: Feature Settings Backend Logic
+* **Work Item ID**: WI-301
+* **Summary**: Created GET and PATCH /api/batches/:id/settings endpoints to read and update batch feature permissions (mailbox_enabled, student_to_student_messaging, meeting_join_enabled, require_camera, require_microphone, require_screen_share). All mutations require Admin mock role. Zod validation on all fields. PATCH auto-creates default settings if no row exists for the batch.
+* **Files Affected**:
+  - [NEW] `backend/src/routes/batchSettings.js`
+  - [MODIFIED] `backend/index.js` (registered /api/batches/:id/settings route group)
+  - [MODIFIED] `backend/README.md` (added Batch Settings section)
+* **Verification Done**:
+  - [x] GET /api/batches/:id/settings returns 200 with settings
+  - [x] GET returns 404 for non-existent batch
+  - [x] PATCH updates settings (Admin only)
+  - [x] PATCH returns 403 for non-Admin
+  - [x] PATCH returns 400 for invalid values (Zod)
+  - [x] Auto-creates defaults if row missing
+  - [x] Parameterized SQL queries
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-09] - WI-202: Student & Batch Configuration UI
 * **Work Item ID**: WI-202
 * **Summary**: Built the frontend admin management pages for students and batches. Created a student roster page with a creation form, and a batch management page with a list, creation form, and drill-down details for viewing assigned students and assigning fresh students to a cohort. Integrated with the backend API from WI-201 using the Axios mock-identity interceptor.

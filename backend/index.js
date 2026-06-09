@@ -57,6 +57,7 @@ app.get('/api/health/db', async (req, res) => {
 // -- Cohort CRUD routes (WI-201) --
 app.use('/api/users/students', require('./src/routes/students'));
 app.use('/api/batches',        require('./src/routes/batches'));
+app.use('/api/batches/:id/settings', require('./src/routes/batchSettings'));
 
 // 404 handler
 app.use((req, res) => {

@@ -15,14 +15,14 @@ This document tracks the execution status of all development work items. Each wo
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Phase 1: Skeleton Setup** | 4 | 0 | 0 | 0 | 4 | 0 | 100% |
 | **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 3: Cohort Settings** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 3: Cohort Settings** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
 | **Phase 4: Mailbox System** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 5: Meetings & Consent** | 3 | 3 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 6: Attendance Logging** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **17** | **0** | **0** | **6** | **0** | **26.1%** |
+| **Total** | **23** | **16** | **0** | **0** | **7** | **0** | **30.4%** |
 
 ---
 
@@ -45,8 +45,8 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: Admin pages for student/batch management. Tables, forms, and drill-down details.
 
 ### Phase 3: Cohort Configuration Controls (Slice 2)
-- [ ] [WI-301](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/7): Feature Settings Backend Logic  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Settings retrieval and update APIs.
+- [x] [WI-301](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/7): Feature Settings Backend Logic  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: GET/PATCH /api/batches/:id/settings with Zod validation. Admin only.
 - [ ] [WI-302](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/8): Settings Panel UI  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Toggle panel on Batch Detail page.
 
