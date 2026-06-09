@@ -4,6 +4,21 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-302: Settings Panel UI
+* **Work Item ID**: WI-302
+* **Summary**: Added an interactive settings panel to the expanded batch detail view on the Batches admin page. Displays 6 feature toggles (mailbox_enabled, student_to_student_messaging, meeting_join_enabled, require_camera, require_microphone) as toggle switches and require_screen_share as a dropdown. Each change triggers PATCH /api/batches/:id/settings. Green notification toast confirms saves. Admin role gating hides interactive controls for non-Admin users.
+* **Files Affected**:
+  - [MODIFIED] `frontend/src/pages/admin/BatchesPage.jsx` (added settings panel, notification, settings API calls)
+  - [MODIFIED] `frontend/src/pages/admin/BatchesPage.css` (added toggle switch, notification, settings grid styles)
+* **Verification Done**:
+  - [x] Admin can toggle all 5 boolean settings with immediate PATCH save
+  - [x] Admin can change screen share mode via dropdown
+  - [x] Green "Settings saved" notification appears after each change
+  - [x] Settings controls disabled/read-only for non-Admin roles
+  - [x] Existing student roster and assign form still work
+  - [x] `npm run build` succeeds
+* **Impact on Existing Functionality**: None. Enhances the batch detail view.
+
 ## [2026-06-09] - WI-301: Feature Settings Backend Logic
 * **Work Item ID**: WI-301
 * **Summary**: Created GET and PATCH /api/batches/:id/settings endpoints to read and update batch feature permissions (mailbox_enabled, student_to_student_messaging, meeting_join_enabled, require_camera, require_microphone, require_screen_share). All mutations require Admin mock role. Zod validation on all fields. PATCH auto-creates default settings if no row exists for the batch.

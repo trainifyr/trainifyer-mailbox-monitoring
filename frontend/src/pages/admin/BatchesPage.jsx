@@ -1,11 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useMockIdentity } from '../../context/MockIdentityContext';
 import apiClient from '../../api/client';
-import { Plus, ChevronDown, ChevronRight, Users } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Users, Settings, Check } from 'lucide-react';
 import './BatchesPage.css';
 
 const INITIAL_BATCH_FORM = { name: '' };
 const INITIAL_ASSIGN_FORM = { studentId: '' };
+
+// Label map for display in the settings panel
+const SETTINGS_LABELS = {
+  mailbox_enabled: 'Mailbox Access',
+  student_to_student_messaging: 'Student-to-Student Messaging',
+  meeting_join_enabled: 'Meeting Join',
+  require_camera: 'Require Camera',
+  require_microphone: 'Require Microphone',
+  require_screen_share: 'Screen Share Mode'
+};
+
+// Description map for tooltips / sub-text
+const SETTINGS_DESCRIPTIONS = {
+  mailbox_enabled: 'Allow students to access the internal mailbox',
+  student_to_student_messaging: 'Allow students to message each other',
+  meeting_join_enabled: 'Allow students to join batch meetings',
+  require_camera: 'Require camera to be ON during meetings',
+  require_microphone: 'Require microphone to be ON during meetings',
+  require_screen_share: 'Screen sharing requirement for meetings'
+};
 
 export default function BatchesPage() {
   const { isAdmin } = useMockIdentity();
@@ -25,6 +45,12 @@ export default function BatchesPage() {
   const [assignSubmitting, setAssignSubmitting] = useState(false);
   const [assignError, setAssignError] = useState(null);
 
+  // Settings state
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(null); // field name being saved
+  const [notification, setNotification] = useState(null);
+
   const fetchBatches = useCallback(async () => {
     try {
       setLoading(true);
@@ -42,6 +68,13 @@ export default function BatchesPage() {
     fetchBatches();
   }, [fetchBatches]);
 
+  // Clear notification after 2 seconds
+  useEffect(() => {
+    if (!notification) return;
+    const timer = setTimeout(() => setNotification(null), 2000);
+    return () => clearTimeout(timer);
+  }, [notification]);
+
   const fetchBatchStudents = useCallback(async (batchId) => {
     try {
       setStudentsLoading(true);
@@ -55,13 +88,28 @@ export default function BatchesPage() {
     }
   }, []);
 
+  const fetchSettings = useCallback(async (batchId) => {
+    try {
+      setSettingsLoading(true);
+      const res = await apiClient.get(`/batches/${batchId}/settings`);
+      setSettings(res.data.data);
+    } catch (e) {
+      console.error('Failed to fetch settings:', e);
+      setSettings(null);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
   const handleToggleExpand = (batchId) => {
     if (expandedBatchId === batchId) {
       setExpandedBatchId(null);
       setBatchStudents([]);
+      setSettings(null);
     } else {
       setExpandedBatchId(batchId);
       fetchBatchStudents(batchId);
+      fetchSettings(batchId);
       setAssignForm(INITIAL_ASSIGN_FORM);
       setAssignError(null);
     }
@@ -96,10 +144,6 @@ export default function BatchesPage() {
     try {
       await apiClient.patch(`/batches/${batch.id}`, { status: newStatus });
       await fetchBatches();
-      if (expandedBatchId === batch.id) {
-        setBatchStudents([]);
-        await fetchBatchStudents(batch.id);
-      }
     } catch (e) {
       console.error('Failed to update batch status:', e);
     }
@@ -131,8 +175,125 @@ export default function BatchesPage() {
     }
   };
 
+  // --- Settings handlers ---
+
+  const handleToggleSetting = async (field, currentValue) => {
+    const newValue = !currentValue;
+    try {
+      setSettingsSaving(field);
+      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, {
+        [field]: newValue
+      });
+      setSettings(res.data.data);
+      setNotification(`Settings saved`);
+    } catch (e) {
+      console.error('Failed to update setting:', e);
+    } finally {
+      setSettingsSaving(null);
+    }
+  };
+
+  const handleScreenShareChange = async (e) => {
+    const newValue = e.target.value;
+    try {
+      setSettingsSaving('require_screen_share');
+      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, {
+        require_screen_share: newValue
+      });
+      setSettings(res.data.data);
+      setNotification(`Settings saved`);
+    } catch (e) {
+      console.error('Failed to update screen share setting:', e);
+    } finally {
+      setSettingsSaving(null);
+    }
+  };
+
+  // --- Render helpers ---
+
+  const renderSettingsPanel = () => {
+    if (settingsLoading) {
+      return <p className="status-message">Loading settings...</p>;
+    }
+    if (!settings) {
+      return <p className="status-message">Settings not available.</p>;
+    }
+
+    const booleanFields = [
+      'mailbox_enabled',
+      'student_to_student_messaging',
+      'meeting_join_enabled',
+      'require_camera',
+      'require_microphone'
+    ];
+
+    return (
+      <div className="settings-panel">
+        <h4 className="section-title"><Settings size={16} /> Batch Settings</h4>
+        <div className="settings-grid">
+          {booleanFields.map((field) => (
+            <div key={field} className="setting-row">
+              <div className="setting-info">
+                <span className="setting-label">{SETTINGS_LABELS[field]}</span>
+                <span className="setting-desc">{SETTINGS_DESCRIPTIONS[field]}</span>
+              </div>
+              <div className="setting-control">
+                {isAdmin ? (
+                  <button
+                    className={`toggle-switch ${settings[field] ? 'active' : ''}`}
+                    onClick={() => handleToggleSetting(field, settings[field])}
+                    disabled={settingsSaving === field}
+                    aria-label={`Toggle ${SETTINGS_LABELS[field]}`}
+                  >
+                    <span className="toggle-knob" />
+                  </button>
+                ) : (
+                  <span className={`toggle-readonly ${settings[field] ? 'on' : 'off'}`}>
+                    {settings[field] ? 'ON' : 'OFF'}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Screen share mode is a dropdown, not a toggle */}
+          <div key="require_screen_share" className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">{SETTINGS_LABELS.require_screen_share}</span>
+              <span className="setting-desc">{SETTINGS_DESCRIPTIONS.require_screen_share}</span>
+            </div>
+            <div className="setting-control">
+              {isAdmin ? (
+                <select
+                  className="setting-select"
+                  value={settings.require_screen_share}
+                  onChange={handleScreenShareChange}
+                  disabled={settingsSaving === 'require_screen_share'}
+                >
+                  <option value="OPTIONAL">Optional</option>
+                  <option value="REQUIRED">Required</option>
+                  <option value="OFF">Off</option>
+                </select>
+              ) : (
+                <span className="toggle-readonly on">
+                  {settings.require_screen_share}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="batches-page">
+      {notification && (
+        <div className="notification">
+          <Check size={14} /> {notification}
+        </div>
+      )}
+
       <div className="page-header">
         <h2>Batches</h2>
         {isAdmin && (
@@ -189,8 +350,8 @@ export default function BatchesPage() {
                 </tr>
               ) : (
                 batches.map((b) => (
-                  <>
-                    <tr key={b.id} className="batch-row" onClick={() => handleToggleExpand(b.id)}>
+                  <React.Fragment key={b.id}>
+                    <tr className="batch-row" onClick={() => handleToggleExpand(b.id)}>
                       <td>
                         <button
                           className="expand-btn"
@@ -226,7 +387,13 @@ export default function BatchesPage() {
                       <tr key={`${b.id}-detail`}>
                         <td colSpan={isAdmin ? 6 : 5}>
                           <div className="batch-detail">
-                            <h4><Users size={16} /> Assigned Students</h4>
+                            {/* Settings panel — always shown */}
+                            {renderSettingsPanel()}
+
+                            {/* Assigned Students section */}
+                            <h4 className="section-title" style={{ marginTop: '1.5rem' }}>
+                              <Users size={16} /> Assigned Students
+                            </h4>
 
                             {isAdmin && (
                               <form className="assign-form" onSubmit={handleAssignStudent}>
@@ -274,7 +441,7 @@ export default function BatchesPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))
               )}
             </tbody>
