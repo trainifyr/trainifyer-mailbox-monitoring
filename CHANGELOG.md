@@ -4,6 +4,30 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-201: Cohort CRUD Backend APIs
+* **Work Item ID**: WI-201
+* **Summary**: Created 8 Express route handlers for cohort management: student list (with optional batch filter), student create (Admin only, generates UUID, no Supabase Auth), student update, batch list (with student count), batch create (transactional batch+batch_settings insert), batch update (name/status), batch student roster, and student-to-batch assignment (enforces single-batch-per-student with 409 Conflict). Added requireRole middleware and Zod input validation.
+* **Files Affected**:
+  - [NEW] `backend/src/lib/requireRole.js`
+  - [NEW] `backend/src/routes/students.js`
+  - [NEW] `backend/src/routes/batches.js`
+  - [MODIFIED] `backend/index.js` (registered /api/users/students and /api/batches route groups)
+  - [MODIFIED] `backend/package.json` (added zod dependency)
+  - [MODIFIED] `backend/README.md` (added Routes section)
+* **Verification Done**:
+  - [x] `POST /api/users/students` returns 201 for Admin, 403 for Student/anon
+  - [x] `GET /api/users/students` returns student list (no auth gate)
+  - [x] `GET /api/users/students?batchId=...` filters by batch
+  - [x] `PATCH /api/users/students/:id` updates student name/email
+  - [x] `POST /api/batches` creates batch + default batch_settings (transactional)
+  - [x] `PATCH /api/batches/:id` updates name and/or status
+  - [x] `GET /api/batches/:id/students` returns assigned roster
+  - [x] `POST /api/batches/:id/students` returns 201 for new assignment, 409 for duplicate
+  - [x] Invalid request bodies return 400 with Zod validation errors
+  - [x] All queries use parameterized $N inputs (no SQL injection)
+  - [x] No Supabase Auth users created; supabase_user_id remains NULL
+* **Impact on Existing Functionality**: None. Existing health check endpoints and Mock Session middleware from WI-102 are unchanged.
+
 ## [2026-06-09] - WI-104: Base Database Schema Provisioning
 * **Work Item ID**: WI-104
 * **Summary**: Provisioned the 9 base PostgreSQL tables on Supabase (users, batches, student_batches, batch_settings, mail_messages, meetings, meeting_participants, meeting_consents, attendance_logs) with enums, FKs, defaults, and updated_at triggers. Added the @supabase/supabase-js service-role client, a pg connection pool, an idempotent db:init migration script, a db:verify checker, and a GET /api/health/db endpoint. RLS is intentionally disabled and marked for Phase 8 (WI-804).

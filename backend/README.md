@@ -28,3 +28,21 @@ This service connects to a Supabase PostgreSQL database.
 - Health check (DB): `GET /api/health/db` — returns the list of public tables.
 
 Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
+
+## Routes
+
+### Health
+- `GET /api/health` — Basic health check with mock user context
+- `GET /api/health/db` — Database connectivity check (lists public tables)
+
+### Students (WI-201)
+- `GET /api/users/students` — List all students (optional `?batchId=` filter)
+- `POST /api/users/students` — Create a student (Admin only)
+- `PATCH /api/users/students/:id` — Update a student's name/email (Admin only)
+
+### Batches (WI-201)
+- `GET /api/batches` — List all batches with student count
+- `POST /api/batches` — Create a batch + default settings (Admin only)
+- `PATCH /api/batches/:id` — Update batch name/status (Admin only)
+- `GET /api/batches/:id/students` — List students assigned to a batch
+- `POST /api/batches/:id/students` — Assign a student to a batch (Admin only)

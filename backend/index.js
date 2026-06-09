@@ -54,6 +54,10 @@ app.get('/api/health/db', async (req, res) => {
   }
 });
 
+// -- Cohort CRUD routes (WI-201) --
+app.use('/api/users/students', require('./src/routes/students'));
+app.use('/api/batches',        require('./src/routes/batches'));
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });

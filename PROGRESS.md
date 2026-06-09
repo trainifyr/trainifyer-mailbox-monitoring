@@ -14,7 +14,7 @@ This document tracks the execution status of all development work items. Each wo
 | Phase | Total Items | Not Started | In Progress | Blocked | Done | Verified | Completion % |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Phase 1: Skeleton Setup** | 4 | 0 | 0 | 0 | 4 | 0 | 100% |
-| **Phase 2: Student & Batch CRUD** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 2: Student & Batch CRUD** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
 | **Phase 3: Cohort Settings** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 4: Mailbox System** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 5: Meetings & Consent** | 3 | 3 | 0 | 0 | 0 | 0 | 0% |
@@ -22,7 +22,7 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **19** | **0** | **0** | **4** | **0** | **17.4%** |
+| **Total** | **23** | **18** | **0** | **0** | **5** | **0** | **21.7%** |
 
 ---
 
@@ -39,8 +39,8 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: 9 Supabase tables, enums, FKs, triggers, RLS-off. db:init + db:verify scripts added.
 
 ### Phase 2: Student & Batch Management (Slice 1)
-- [ ] [WI-201](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/5): Cohort CRUD Backend APIs  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: CRUD routes for student profiles/batches.
+- [x] [WI-201](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/5): Cohort CRUD Backend APIs  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: 8 Express routes for students & batches, requireRole middleware, Zod validation, transactional batch+settings creation.
 - [ ] [WI-202](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/6): Student & Batch Configuration UI  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Admin cohort forms & rosters.
 
