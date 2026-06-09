@@ -4,6 +4,22 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-402: Mailbox Client UI
+* **Work Item ID**: WI-402
+* **Summary**: Implemented a professional three-panel Mailbox Client UI (Outlook-style). Features a sidebar for Inbox/Sent/Compose, a paginated message list with summary cards, and a detail view for reading messages. Included a robust Compose form with validation and role-based error handling. The UI integrates with the backend APIs created in WI-401 and handles network/permission errors gracefully.
+* **Files Affected**:
+  - [NEW] `frontend/src/pages/mailbox/MailboxPage.jsx` (Three-panel UI component)
+  - [NEW] `frontend/src/pages/mailbox/MailboxPage.css` (Premium mailbox styling)
+  - [MODIFIED] `frontend/src/routes/AppRoutes.jsx` (Registered /mailbox route)
+  - [MODIFIED] `frontend/src/pages/HomePage.jsx` (Added navigation links for Admin and Student)
+* **Verification Done**:
+  - [x] Verified three-panel layout rendering
+  - [x] Verified sidebar navigation between views
+  - [x] Verified Compose form fields and validation logic
+  - [x] Verified error handling for failed API requests (500/403)
+  - [x] Verified role-switching logic via Mock Identity Bar
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-09] - WI-401: Internal Mailbox APIs & Permissions Check
 * **Work Item ID**: WI-401
 * **Summary**: Implemented the core backend for the internal mailbox system. Added 4 endpoints: `GET /api/mail/inbox`, `GET /api/mail/sent`, `POST /api/mail/send`, and `PATCH /api/mail/:id/read`. Enforced strict batch-level permission checks (mailbox_enabled and student_to_student_messaging) for Students. Admin users bypass all permission checks.
