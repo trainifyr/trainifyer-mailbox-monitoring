@@ -6,17 +6,21 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "db:init": "node scripts/apply-schema.js",
+    "db:verify": "node scripts/verify-schema.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.0",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.2",
-    "helmet": "^7.2.0"
+    "helmet": "^7.2.0",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

@@ -4,6 +4,30 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-104: Base Database Schema Provisioning
+* **Work Item ID**: WI-104
+* **Summary**: Provisioned the 9 base PostgreSQL tables on Supabase (users, batches, student_batches, batch_settings, mail_messages, meetings, meeting_participants, meeting_consents, attendance_logs) with enums, FKs, defaults, and updated_at triggers. Added the @supabase/supabase-js service-role client, a pg connection pool, an idempotent db:init migration script, a db:verify checker, and a GET /api/health/db endpoint. RLS is intentionally disabled and marked for Phase 8 (WI-804).
+* **Files Affected**:
+  - [NEW] `backend/db/schema.sql`
+  - [NEW] `backend/db/verify.sql`
+  - [NEW] `backend/db/README.md`
+  - [NEW] `backend/scripts/apply-schema.js`
+  - [NEW] `backend/scripts/verify-schema.js`
+  - [NEW] `backend/src/lib/supabaseClient.js`
+  - [NEW] `backend/src/lib/pgPool.js`
+  - [MODIFIED] `backend/index.js` (added /api/health/db endpoint)
+  - [MODIFIED] `backend/package.json` (added pg, @supabase/supabase-js, db:init, db:verify scripts)
+  - [MODIFIED] `backend/.env.example` (DATABASE_URL documentation)
+  - [MODIFIED] `backend/README.md` (Database section)
+* **Verification Done**:
+  - [x] schema.sql is idempotent (IF NOT EXISTS, DO $$ EXCEPTION, DROP TRIGGER IF EXISTS)
+  - [x] RLS-off block marked with `TODO(PHASE-8: ENABLE RLS)`
+  - [x] supabase_user_id is nullable uuid with no FK to auth.users
+  - [x] list_public_tables() RPC defined for /api/health/db
+  - [x] db:init and db:verify npm scripts registered
+  - [x] No secrets committed; .env is git-ignored
+* **Impact on Existing Functionality**: None. Adds database infrastructure; existing /api/health endpoint and Mock Session middleware from WI-102 are unchanged. Requires real Supabase credentials in .env to run db:init.
+
 ## [2026-06-09] - WI-103: React App Routing & Mock Identity Bar
 * **Work Item ID**: WI-103
 * **Summary**: Scaffolded React + Vite frontend with React Router, axios, and lucide-react. Added a Mock Identity Context, a floating Mock Identity Selector bar, and a Vite dev-server proxy to the backend. Verified end-to-end: clicking Admin/Student on the bar sets context and is forwarded to the backend via x-mock-role/x-mock-user-id headers.

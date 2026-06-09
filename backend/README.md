@@ -18,3 +18,13 @@ You can simulate any user by sending:
 
 Example:
 `curl http://localhost:5000/api/health?role=ADMIN&userId=42`
+
+## Database
+
+This service connects to a Supabase PostgreSQL database.
+
+- Apply the schema: `npm run db:init`
+- Verify the schema: `npm run db:verify`
+- Health check (DB): `GET /api/health/db` — returns the list of public tables.
+
+Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
