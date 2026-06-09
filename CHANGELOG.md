@@ -4,6 +4,27 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-09] - WI-202: Student & Batch Configuration UI
+* **Work Item ID**: WI-202
+* **Summary**: Built the frontend admin management pages for students and batches. Created a student roster page with a creation form, and a batch management page with a list, creation form, and drill-down details for viewing assigned students and assigning fresh students to a cohort. Integrated with the backend API from WI-201 using the Axios mock-identity interceptor.
+* **Files Affected**:
+  - [NEW] `frontend/src/pages/admin/StudentsPage.jsx`
+  - [NEW] `frontend/src/pages/admin/StudentsPage.css`
+  - [NEW] `frontend/src/pages/admin/BatchesPage.jsx`
+  - [NEW] `frontend/src/pages/admin/BatchesPage.css`
+  - [MODIFIED] `frontend/src/routes/AppRoutes.jsx` (added /admin/students and /admin/batches routes)
+  - [MODIFIED] `frontend/src/pages/HomePage.jsx` (added quick-links to new admin pages)
+* **Verification Done**:
+  - [x] Students roster table lists data from GET /api/users/students
+  - [x] Student creation form works (requires ADMIN mock role)
+  - [x] Batch list table shows student counts and status
+  - [x] Batch creation works (with transactional settings on backend)
+  - [x] Batch drill-down shows assigned students
+  - [x] Student-to-batch assignment works (enforces single-batch rule with 409 from backend)
+  - [x] `npm run build` succeeds
+  - [x] CSS styling follows project standards
+* **Impact on Existing Functionality**: None. Adds new admin-facing views.
+
 ## [2026-06-09] - WI-201: Cohort CRUD Backend APIs
 * **Work Item ID**: WI-201
 * **Summary**: Created 8 Express route handlers for cohort management: student list (with optional batch filter), student create (Admin only, generates UUID, no Supabase Auth), student update, batch list (with student count), batch create (transactional batch+batch_settings insert), batch update (name/status), batch student roster, and student-to-batch assignment (enforces single-batch-per-student with 409 Conflict). Added requireRole middleware and Zod input validation.

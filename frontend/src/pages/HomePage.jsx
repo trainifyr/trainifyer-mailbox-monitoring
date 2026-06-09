@@ -17,11 +17,24 @@ export default function HomePage() {
     <div className="home-page">
       <h2>Welcome</h2>
       <p>Use the Mock Identity Bar at the bottom to switch roles.</p>
-      <nav style={{ margin: '1rem 0', display: 'flex', gap: '1rem' }}>
-        <Link to="/admin/dashboard">Admin Dashboard</Link>
-        <Link to="/student/dashboard">Student Dashboard</Link>
-      </nav>
-      <div style={{ marginTop: '2rem' }}>
+      
+      <div style={{ margin: '2rem 0' }}>
+        <h3>Admin Actions</h3>
+        <nav style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <Link to="/admin/dashboard">Dashboard</Link>
+          <Link to="/admin/students">Manage Students</Link>
+          <Link to="/admin/batches">Manage Batches</Link>
+        </nav>
+      </div>
+
+      <div style={{ margin: '2rem 0' }}>
+        <h3>Student Actions</h3>
+        <nav style={{ display: 'flex', gap: '1rem' }}>
+          <Link to="/student/dashboard">Student Dashboard</Link>
+        </nav>
+      </div>
+
+      <div style={{ marginTop: '3rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
         <button 
           onClick={ping}
           style={{ padding: '8px 16px', background: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}

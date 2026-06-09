@@ -1,0 +1,84 @@
+.batches-page {
+  text-align: left;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.batch-row {
+  cursor: pointer;
+}
+
+.batch-name {
+  font-weight: 500;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  border-radius: 4px;
+}
+
+.expand-btn:hover {
+  background: #f3f4f6;
+}
+
+.batch-detail {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 1.25rem;
+}
+
+.batch-detail h4 {
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.assign-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.assign-form label {
+  flex: 1;
+  min-width: 250px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.assign-form input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.assign-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.inner-table {
+  font-size: 13px;
+}
+
+.inner-table th {
+  font-size: 11px;
+}
