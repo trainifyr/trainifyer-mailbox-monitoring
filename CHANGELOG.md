@@ -4,6 +4,26 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-701: Attendance Metrics Query Engine
+* **Work Item ID**: WI-701
+* **Summary**: Created `GET /api/reports/attendance` endpoint with three output sections: summary (KPIs: total meetings, total sessions, total minutes, average %, status breakdown), series (time-bucketed daily/weekly/monthly data for charts), and details (individual attendance log rows). Role-scoped: Admin sees all, Student sees only their own data. Filterable by userId, batchId, date range, granularity, and status.
+* **Files Affected**:
+  - [NEW] `backend/src/routes/reports.js`
+  - [MODIFIED] `backend/index.js` (registered /api/reports route group)
+  - [MODIFIED] `backend/README.md` (added Reports endpoint documentation)
+* **Verification Done**:
+  - [x] Admin gets summary, series, and details with no filters
+  - [x] Admin can filter by userId, batchId, fromDate, toDate, status
+  - [x] Granularity param works (daily/weekly/monthly)
+  - [x] Student role forces userId to their own ID
+  - [x] Student cannot see other students' data
+  - [x] Anonymous requests return 403
+  - [x] Invalid granularity returns 400
+  - [x] Only completed sessions (left_at IS NOT NULL, status != ACTIVE) are included
+  - [x] Details limited to 500 rows
+  - [x] All queries use parameterized inputs
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-10] - WI-602: Frontend Join/Leave Triggers & Heartbeats
 * **Work Item ID**: WI-602
 * **Summary**: Wired the `MeetingRoomPage` to the attendance logging API. On Jitsi load, fires `POST /api/meetings/:id/join-log`. A 60-second heartbeat interval pings `POST /api/meetings/:id/heartbeat` to update last_heartbeat. On exit (Jitsi readyToClose, component unmount, beforeunload), fires `POST /api/meetings/:id/leave-log` once per session. Added green pulsing heartbeat indicator in the header bar. Backend: added `POST /api/meetings/:id/heartbeat` endpoint to `attendanceLogs.js`.

@@ -62,6 +62,7 @@ app.use('/api/mail',           require('./src/routes/mail'));
 app.use('/api/meetings',       require('./src/routes/meetings'));
 app.use('/api/meetings/:id/consent', require('./src/routes/meetingConsent'));
 app.use('/api/meetings/:id',         require('./src/routes/attendanceLogs'));
+app.use('/api/reports',              require('./src/routes/reports'));
 
 // 404 handler
 app.use((req, res) => {

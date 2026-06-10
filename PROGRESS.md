@@ -19,10 +19,10 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 5: Meetings & Consent** | 3 | 0 | 0 | 0 | 3 | 0 | 100% |
 | **Phase 6: Attendance Logging** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 7: Dashboards & Reports** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **9** | **0** | **0** | **14** | **0** | **60.9%** |
+| **Total** | **23** | **8** | **0** | **0** | **15** | **0** | **65.2%** |
 
 ---
 
@@ -71,8 +71,8 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Jitsi join/leave triggers, 60s heartbeat, browser exit handlers.
 
 ### Phase 7: Dashboards & Reports (Slice 6)
-- [ ] [WI-701](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/16): Attendance Metrics Query Engine  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-701-prompt.md. GET /api/reports/attendance with summary, series, details.
+- [x] [WI-701](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/16): Attendance Metrics Query Engine  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Aggregated reports (summary, series, details) with role-scoped filters.
 - [ ] [WI-702](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/17): Dashboards and Analytical Reports Interface  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-702-prompt.md. Admin Dashboard, Student Dashboard, Reports Page with filters/sort/CSV export.
 
