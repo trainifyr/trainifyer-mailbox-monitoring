@@ -4,6 +4,47 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-601: Session Lifecycle Logging API
+* **Work Item ID**: WI-601
+* **Summary**: Created attendance logging API with two endpoints: `POST /api/meetings/:id/join-log` (creates attendance_log row with joined_at, status ACTIVE) and `POST /api/meetings/:id/leave-log` (updates row with left_at, computes total_minutes, attendance_percentage, and status: PRESENT >=75%, PARTIAL 30-74%, ABSENT <30%). Idempotent join (active session returns 200). Identity resolution supports req.mockUserId and ?externalName= for anonymous users.
+* **Files Affected**:
+  - [NEW] `backend/src/routes/attendanceLogs.js`
+  - [MODIFIED] `backend/index.js` (registered /api/meetings/:id route group for attendance)
+  - [MODIFIED] `backend/README.md` (added Attendance Logs endpoints)
+* **Verification Done**:
+  - [x] POST /api/meetings/:id/join-log creates attendance row (201) with ACTIVE status
+  - [x] Duplicate join returns existing active row (200, idempotent)
+  - [x] POST /api/meetings/:id/leave-log computes total_minutes, attendance_percentage, status
+  - [x] Leave on meeting without scheduled duration sets percentage/status to NULL
+  - [x] Leave without active session returns 404
+  - [x] Join on cancelled/ended meeting returns 410
+  - [x] Join without identity returns 400
+  - [x] Anonymous join/leave via ?externalName= works
+  - [x] All queries use parameterized inputs
+* **Impact on Existing Functionality**: None.
+
+## [2026-06-10] - WI-503: Pre-Meeting Privacy Consent Flow
+* **Work Item ID**: WI-503
+* **Summary**: Implemented privacy consent gatekeeper. Backend: GET/POST /api/meetings/:id/consent endpoints to check and record consent in meeting_consents table. Frontend: PrivacyConsentOverlay component with Accept/Decline buttons, integrated into MeetingRoomPage to block Jitsi loading until consent is given. Idempotent consent (revisit skips overlay if already consented).
+* **Files Affected**:
+  - [NEW] `backend/src/routes/meetingConsent.js`
+  - [NEW] `frontend/src/components/PrivacyConsentOverlay.jsx`
+  - [NEW] `frontend/src/components/PrivacyConsentOverlay.css`
+  - [MODIFIED] `backend/index.js` (registered /api/meetings/:id/consent)
+  - [MODIFIED] `backend/README.md` (added Meeting Consent endpoints)
+  - [MODIFIED] `frontend/src/pages/meetings/MeetingRoomPage.jsx` (added consent flow)
+* **Verification Done**:
+  - [x] GET /api/meetings/:id/consent returns consented status
+  - [x] POST /api/meetings/:id/consent records consent (201) and is idempotent (200)
+  - [x] Anonymous consent with externalName works
+  - [x] Consent on cancelled/ended meeting returns 410
+  - [x] Privacy overlay blocks Jitsi until accepted
+  - [x] "Agree & Proceed" records consent then loads Jitsi
+  - [x] "Cancel" navigates back without loading Jitsi
+  - [x] Previously consented users skip the overlay
+  - [x] `npm run build` completes with no errors
+* **Impact on Existing Functionality**: The MeetingRoomPage from WI-502 now shows a consent overlay before loading Jitsi.
+
 ## [2026-06-10] - WI-502: Meeting Scheduler & Jitsi Room Integration UI
 * **Work Item ID**: WI-502
 * **Summary**: Built three frontend meeting pages: Admin meeting scheduler (list + create form with batch/public toggle), user-facing meeting list (card layout with role-scoped visibility), and Jitsi Meet iframe wrapper page. Added dynamic Jitsi External API script loader with config overrides (muted start, no watermark, no deep linking). Ended/cancelled meetings show unavailable state.

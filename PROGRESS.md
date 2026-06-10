@@ -17,12 +17,12 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 5: Meetings & Consent** | 3 | 1 | 0 | 0 | 2 | 0 | 66.7% |
-| **Phase 6: Attendance Logging** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 5: Meetings & Consent** | 3 | 0 | 0 | 0 | 3 | 0 | 100% |
+| **Phase 6: Attendance Logging** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **11** | **0** | **0** | **12** | **0** | **52.2%** |
+| **Total** | **23** | **10** | **0** | **0** | **13** | **0** | **56.5%** |
 
 ---
 
@@ -61,30 +61,30 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: 3 Meeting endpoints with role-based visibility.
 - [x] [WI-502](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/12): Meeting Scheduler & Jitsi Room Integration UI  
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: IFrame embedding and scheduling lists.
-- [ ] [WI-503](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/13): Pre-Meeting Privacy Consent flow  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Gatekeeper page consent logging.
+- [x] [WI-503](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/13): Pre-Meeting Privacy Consent flow  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Privacy consent gatekeeper: GET/POST /api/meetings/:id/consent, PrivacyConsentOverlay component, MeetingRoomPage integration.
 
 ### Phase 6: Attendance Logging Engine (Slice 5)
-- [ ] [WI-601](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/14): Session Lifecycle Logging API  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Join/Leave logs and calculations.
+- [x] [WI-601](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/14): Session Lifecycle Logging API  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Join/Leave logs and attendance calculations.
 - [ ] [WI-602](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/15): Frontend Join/Leave Triggers & Heartbeats  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Heartbeat hooks & browser exits.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-602-prompt.md. Jitsi join/leave triggers, 60s heartbeat, browser exit handlers.
 
 ### Phase 7: Dashboards & Reports (Slice 6)
 - [ ] [WI-701](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/16): Attendance Metrics Query Engine  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Aggregator stats backend.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-701-prompt.md. GET /api/reports/attendance with summary, series, details.
 - [ ] [WI-702](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/17): Dashboards and Analytical Reports Interface  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Graphs and filter tables interface.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-702-prompt.md. Admin Dashboard, Student Dashboard, Reports Page with filters/sort/CSV export.
 
 ### Phase 8: Authentication & Security Hardening (Blocker Phase)
 - [ ] [WI-801](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/18): Supabase Authentication Services Integration  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Secure frontend user login screen.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-801-prompt.md. AuthProvider, LoginPage, JWT interceptor, dual-mode auth.
 - [ ] [WI-802](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/19): Backend JWT Validation Middleware & Role Checks  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Replacing mock logic with JWT validations.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-802-prompt.md. JWT verification via jsonwebtoken, authMiddleware, updated requireRole.
 - [ ] [WI-803](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/20): Secure Frontend Route Guards  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Guarding routing profiles by JWT role.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-803-prompt.md. Route guards, remove mock system, Layout user menu, JWT-only client.
 - [ ] [WI-804](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/21): Supabase Row Level Security (RLS) Policies  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Database-level isolation policies.
+  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-804-prompt.md. RLS policies for all 9 tables, is_admin() helper, supabaseAnonClient.js.
 
 ### Phase 9: Release and Deployment
 - [ ] [WI-901](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/22): Multi-Role Integration & Staging Validation  

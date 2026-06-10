@@ -61,6 +61,7 @@ app.use('/api/batches/:id/settings', require('./src/routes/batchSettings'));
 app.use('/api/mail',           require('./src/routes/mail'));
 app.use('/api/meetings',       require('./src/routes/meetings'));
 app.use('/api/meetings/:id/consent', require('./src/routes/meetingConsent'));
+app.use('/api/meetings/:id',         require('./src/routes/attendanceLogs'));
 
 // 404 handler
 app.use((req, res) => {

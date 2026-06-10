@@ -65,3 +65,7 @@ Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
 ### Meeting Consent (WI-503)
 - `GET /api/meetings/:id/consent` — Check if the current user has consented
 - `POST /api/meetings/:id/consent` — Record privacy consent for a meeting
+
+### Attendance Logs (WI-601)
+- `POST /api/meetings/:id/join-log` — Record a user joining a meeting (creates attendance_log row)
+- `POST /api/meetings/:id/leave-log` — Record a user leaving a meeting (computes duration, percentage, status)
