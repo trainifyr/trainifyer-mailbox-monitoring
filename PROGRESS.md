@@ -17,12 +17,12 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 5: Meetings & Consent** | 3 | 2 | 0 | 0 | 1 | 0 | 33.3% |
+| **Phase 5: Meetings & Consent** | 3 | 1 | 0 | 0 | 2 | 0 | 66.7% |
 | **Phase 6: Attendance Logging** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **12** | **0** | **0** | **11** | **0** | **47.8%** |
+| **Total** | **23** | **11** | **0** | **0** | **12** | **0** | **52.2%** |
 
 ---
 
@@ -59,8 +59,8 @@ This document tracks the execution status of all development work items. Each wo
 ### Phase 5: Meetings & Privacy Consent (Slice 4)
 - [x] [WI-501](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/11): Meeting Scheduler APIs  
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: 3 Meeting endpoints with role-based visibility.
-- [ ] [WI-502](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/12): Meeting Scheduler & Jitsi Room Integration UI  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: IFrame embedding and scheduling lists.
+- [x] [WI-502](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/12): Meeting Scheduler & Jitsi Room Integration UI  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: IFrame embedding and scheduling lists.
 - [ ] [WI-503](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/13): Pre-Meeting Privacy Consent flow  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Gatekeeper page consent logging.
 

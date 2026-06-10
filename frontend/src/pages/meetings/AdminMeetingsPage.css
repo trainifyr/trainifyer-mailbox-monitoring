@@ -1,0 +1,88 @@
+.admin-meetings-page {
+  text-align: left;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.meeting-title {
+  font-weight: 500;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.type-badge.public {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.type-badge.batch {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-live {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.badge-scheduled {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.badge-ended {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.badge-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #374151;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.status-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.status-message.error {
+  color: #dc2626;
+}

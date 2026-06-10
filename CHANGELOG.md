@@ -4,6 +4,29 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-502: Meeting Scheduler & Jitsi Room Integration UI
+* **Work Item ID**: WI-502
+* **Summary**: Built three frontend meeting pages: Admin meeting scheduler (list + create form with batch/public toggle), user-facing meeting list (card layout with role-scoped visibility), and Jitsi Meet iframe wrapper page. Added dynamic Jitsi External API script loader with config overrides (muted start, no watermark, no deep linking). Ended/cancelled meetings show unavailable state.
+* **Files Affected**:
+  - [NEW] `frontend/src/lib/loadJitsiScript.js`
+  - [NEW] `frontend/src/pages/meetings/AdminMeetingsPage.jsx`
+  - [NEW] `frontend/src/pages/meetings/AdminMeetingsPage.css`
+  - [NEW] `frontend/src/pages/meetings/MeetingsListPage.jsx`
+  - [NEW] `frontend/src/pages/meetings/MeetingsListPage.css`
+  - [NEW] `frontend/src/pages/meetings/MeetingRoomPage.jsx`
+  - [NEW] `frontend/src/pages/meetings/MeetingRoomPage.css`
+  - [MODIFIED] `frontend/src/routes/AppRoutes.jsx` (added /admin/meetings, /meetings, /meeting/:id)
+  - [MODIFIED] `frontend/src/pages/HomePage.jsx` (added navigation links)
+* **Verification Done**:
+  - [x] Admin can create batch and public meetings via the form
+  - [x] Admin meeting list shows all meetings with correct badges and metadata
+  - [x] Student meeting list shows only batch meetings (their batch) + public meetings
+  - [x] Anonymous sees only public meetings
+  - [x] Jitsi iframe loads with correct room name and config overrides
+  - [x] Ended/cancelled meetings show unavailable state
+  - [x] `npm run build` completes with no errors
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-10] - WI-501: Meeting Scheduler APIs
 * **Work Item ID**: WI-501
 * **Summary**: Created 3 meeting API endpoints: `GET /api/meetings` (role-scoped listing — Admin sees all, Student sees batch+public, anonymous sees public), `POST /api/meetings` (Admin-only create with auto-generated Jitsi room name), and `POST /api/meetings/public/join` (register authenticated or anonymous participants). Batch access control is enforced at the list level using cohort assignments.

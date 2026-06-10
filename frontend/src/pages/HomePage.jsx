@@ -25,6 +25,7 @@ export default function HomePage() {
           <Link to="/admin/dashboard">Dashboard</Link>
           <Link to="/admin/students">Manage Students</Link>
           <Link to="/admin/batches">Manage Batches</Link>
+          <Link to="/admin/meetings">Manage Meetings</Link>
           <Link to="/mailbox">Internal Mailbox</Link>
         </nav>
       </div>
@@ -33,6 +34,7 @@ export default function HomePage() {
         <h3>Student Actions</h3>
         <nav style={{ display: 'flex', gap: '1rem' }}>
           <Link to="/student/dashboard">Student Dashboard</Link>
+          <Link to="/meetings">Sessions & Meetings</Link>
           <Link to="/mailbox">Internal Mailbox</Link>
         </nav>
       </div>
