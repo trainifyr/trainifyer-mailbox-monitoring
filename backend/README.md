@@ -69,3 +69,4 @@ Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
 ### Attendance Logs (WI-601)
 - `POST /api/meetings/:id/join-log` — Record a user joining a meeting (creates attendance_log row)
 - `POST /api/meetings/:id/leave-log` — Record a user leaving a meeting (computes duration, percentage, status)
+- `POST /api/meetings/:id/heartbeat` — Update the last_heartbeat timestamp on the active attendance log

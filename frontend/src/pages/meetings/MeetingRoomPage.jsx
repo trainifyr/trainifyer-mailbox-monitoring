@@ -4,8 +4,10 @@ import { useMockIdentity } from '../../context/MockIdentityContext';
 import apiClient from '../../api/client';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
-import { ArrowLeft, Loader } from 'lucide-react';
+import { ArrowLeft, Loader, Activity } from 'lucide-react';
 import './MeetingRoomPage.css';
+
+const HEARTBEAT_INTERVAL_MS = 60000; // 60 seconds
 
 export default function MeetingRoomPage() {
   const { id } = useParams();
@@ -13,15 +15,78 @@ export default function MeetingRoomPage() {
   const { isAuthenticated, userId } = useMockIdentity();
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
+  const sessionEndedRef = useRef(false); // Guard: fire leave-log exactly once
+  const attendanceLogIdRef = useRef(null); // Store the attendance log row ID
 
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Consent state
-  const [consentState, setConsentState] = useState('checking'); // 'checking' | 'needed' | 'accepted' | 'declined'
+  const [consentState, setConsentState] = useState('checking');
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [jitsiLoading, setJitsiLoading] = useState(true);
+
+  // Heartbeat indicator
+  const [heartbeatActive, setHeartbeatActive] = useState(false);
+
+  // --- Shared leave-log sender ---
+  const sendLeaveLog = useCallback(async () => {
+    // Guard: fire only once per session
+    if (sessionEndedRef.current) return;
+    sessionEndedRef.current = true;
+
+    // Stop heartbeat
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    setHeartbeatActive(false);
+
+    // Only send leave-log if we have a known attendance log
+    if (!attendanceLogIdRef.current) return;
+
+    try {
+      await apiClient.post(`/meetings/${id}/leave-log`);
+    } catch (e) {
+      console.error('Failed to record leave-log:', e);
+    }
+  }, [id]);
+
+  // --- Start heartbeat ---
+  const startHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) return;
+
+    const ping = async () => {
+      try {
+        await apiClient.post(`/meetings/${id}/heartbeat`);
+        setHeartbeatActive(true);
+      } catch (e) {
+        // If 404 (session already closed), stop heartbeat
+        if (e.response?.status === 404) {
+          clearInterval(heartbeatIntervalRef.current);
+          heartbeatIntervalRef.current = null;
+          setHeartbeatActive(false);
+        }
+      }
+    };
+
+    // Ping immediately, then every 60s
+    ping();
+    heartbeatIntervalRef.current = setInterval(ping, HEARTBEAT_INTERVAL_MS);
+  }, [id]);
+
+  // --- Record join-log ---
+  const sendJoinLog = useCallback(async () => {
+    try {
+      const res = await apiClient.post(`/meetings/${id}/join-log`);
+      attendanceLogIdRef.current = res.data.data.id;
+      startHeartbeat();
+    } catch (e) {
+      console.error('Failed to record join-log:', e);
+    }
+  }, [id, startHeartbeat]);
 
   // Fetch meeting data
   useEffect(() => {
@@ -121,8 +186,17 @@ export default function MeetingRoomPage() {
           }
         };
 
-        jitsiApiRef.current = new JitsiAPI(domain, options);
+        const jitsiApi = new JitsiAPI(domain, options);
+        jitsiApiRef.current = jitsiApi;
         setJitsiLoading(false);
+
+        // Record join-log once Jitsi has loaded
+        await sendJoinLog();
+
+        // Listen for Jitsi "readyToClose" (user clicked Leave in Jitsi UI)
+        jitsiApi.addListener('readyToClose', () => {
+          sendLeaveLog();
+        });
       } catch (e) {
         if (!cancelled) {
           console.error('Jitsi init failed:', e);
@@ -135,12 +209,26 @@ export default function MeetingRoomPage() {
 
     return () => {
       cancelled = true;
+      // Fire leave-log on component unmount (navigation, back button)
+      sendLeaveLog();
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose();
         jitsiApiRef.current = null;
       }
     };
-  }, [consentState, meeting, userId]);
+  }, [consentState, meeting, userId, sendJoinLog, sendLeaveLog]);
+
+  // --- Browser beforeunload handler ---
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sendLeaveLog();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [sendLeaveLog]);
 
   // Handlers
   const handleAccept = useCallback(async () => {
@@ -221,7 +309,7 @@ export default function MeetingRoomPage() {
         <div className="meeting-room-ended">
           <h2>Access Denied</h2>
           <p className="status-message">
-            You must agree to the privacy terms to join the session. 
+            You must agree to the privacy terms to join the session.
             Monitoring is mandatory for this training platform.
           </p>
           <button className="btn btn-secondary" onClick={() => navigate(-1)}>
@@ -240,6 +328,14 @@ export default function MeetingRoomPage() {
         </button>
         <h2>{meeting.title}</h2>
         {meeting.batch_name && <span className="meeting-room-badge">{meeting.batch_name}</span>}
+
+        {/* Heartbeat indicator */}
+        {heartbeatActive && (
+          <span className="heartbeat-indicator" title="Attendance logging active">
+            <Activity size={14} />
+            <span className="heartbeat-dot" />
+          </span>
+        )}
       </div>
 
       <div className="jitsi-wrapper" style={{ flex: 1, position: 'relative', background: '#111', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
@@ -261,10 +357,10 @@ export default function MeetingRoomPage() {
         )}
 
         {/* Jitsi container */}
-        <div 
-          className="jitsi-container" 
-          ref={jitsiContainerRef} 
-          style={{ width: '100%', height: '100%', display: consentState === 'accepted' ? 'block' : 'none' }} 
+        <div
+          className="jitsi-container"
+          ref={jitsiContainerRef}
+          style={{ width: '100%', height: '100%', display: consentState === 'accepted' ? 'block' : 'none' }}
         />
       </div>
     </div>

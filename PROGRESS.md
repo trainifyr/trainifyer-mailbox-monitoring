@@ -18,11 +18,11 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 5: Meetings & Consent** | 3 | 0 | 0 | 0 | 3 | 0 | 100% |
-| **Phase 6: Attendance Logging** | 2 | 1 | 0 | 0 | 1 | 0 | 50% |
+| **Phase 6: Attendance Logging** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **10** | **0** | **0** | **13** | **0** | **56.5%** |
+| **Total** | **23** | **9** | **0** | **0** | **14** | **0** | **60.9%** |
 
 ---
 
@@ -67,8 +67,8 @@ This document tracks the execution status of all development work items. Each wo
 ### Phase 6: Attendance Logging Engine (Slice 5)
 - [x] [WI-601](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/14): Session Lifecycle Logging API  
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Join/Leave logs and attendance calculations.
-- [ ] [WI-602](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/15): Frontend Join/Leave Triggers & Heartbeats  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-602-prompt.md. Jitsi join/leave triggers, 60s heartbeat, browser exit handlers.
+- [x] [WI-602](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/15): Frontend Join/Leave Triggers & Heartbeats  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Jitsi join/leave triggers, 60s heartbeat, browser exit handlers.
 
 ### Phase 7: Dashboards & Reports (Slice 6)
 - [ ] [WI-701](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/16): Attendance Metrics Query Engine  

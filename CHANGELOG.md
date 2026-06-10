@@ -4,6 +4,25 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-602: Frontend Join/Leave Triggers & Heartbeats
+* **Work Item ID**: WI-602
+* **Summary**: Wired the `MeetingRoomPage` to the attendance logging API. On Jitsi load, fires `POST /api/meetings/:id/join-log`. A 60-second heartbeat interval pings `POST /api/meetings/:id/heartbeat` to update last_heartbeat. On exit (Jitsi readyToClose, component unmount, beforeunload), fires `POST /api/meetings/:id/leave-log` once per session. Added green pulsing heartbeat indicator in the header bar. Backend: added `POST /api/meetings/:id/heartbeat` endpoint to `attendanceLogs.js`.
+* **Files Affected**:
+  - [MODIFIED] `frontend/src/pages/meetings/MeetingRoomPage.jsx` (added attendance logging, heartbeat, exit triggers)
+  - [MODIFIED] `frontend/src/pages/meetings/MeetingRoomPage.css` (added .heartbeat-indicator and .heartbeat-dot styles)
+  - [MODIFIED] `backend/src/routes/attendanceLogs.js` (added POST /api/meetings/:id/heartbeat)
+  - [MODIFIED] `backend/README.md` (added heartbeat endpoint documentation)
+* **Verification Done**:
+  - [x] Join-log fires after Jitsi initializes
+  - [x] Heartbeat pings every 60 seconds via POST /api/meetings/:id/heartbeat
+  - [x] Green heartbeat indicator appears in header when active
+  - [x] Leave-log fires on Jitsi readyToClose event
+  - [x] Leave-log fires on component unmount (navigation, back button)
+  - [x] Leave-log fires on browser beforeunload (tab close, refresh)
+  - [x] Backend heartbeat endpoint returns 404 if no active session
+  - [x] `npm run build` completes with no errors
+* **Impact on Existing Functionality**: The MeetingRoomPage now records attendance automatically.
+
 ## [2026-06-10] - WI-601: Session Lifecycle Logging API
 * **Work Item ID**: WI-601
 * **Summary**: Created attendance logging API with two endpoints: `POST /api/meetings/:id/join-log` (creates attendance_log row with joined_at, status ACTIVE) and `POST /api/meetings/:id/leave-log` (updates row with left_at, computes total_minutes, attendance_percentage, and status: PRESENT >=75%, PARTIAL 30-74%, ABSENT <30%). Idempotent join (active session returns 200). Identity resolution supports req.mockUserId and ?externalName= for anonymous users.

@@ -206,4 +206,51 @@ router.post('/leave-log', async (req, res, next) => {
   }
 });
 
+// --- POST /api/meetings/:id/heartbeat ---
+// Update the last_heartbeat timestamp on the active attendance log.
+// This allows the system to detect stale/disconnected sessions.
+// Returns the updated attendance log row.
+// 404 if no active session found.
+
+router.post('/heartbeat', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const identity = requireIdentity(req, res);
+    if (!identity) return;
+    const { userId, externalName } = identity;
+
+    let result;
+    if (userId) {
+      result = await pool.query(
+        `UPDATE public.attendance_logs
+         SET last_heartbeat = now()
+         WHERE meeting_id = $1 AND user_id = $2 AND left_at IS NULL
+         RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
+                   total_minutes, attendance_percentage, status`,
+        [id, userId]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE public.attendance_logs
+         SET last_heartbeat = now()
+         WHERE meeting_id = $1 AND external_name = $2 AND left_at IS NULL
+         RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
+                   total_minutes, attendance_percentage, status`,
+        [id, externalName]
+      );
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'No active session found for this user in this meeting'
+      });
+    }
+
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
