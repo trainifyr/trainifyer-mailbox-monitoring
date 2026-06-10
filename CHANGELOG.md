@@ -4,6 +4,27 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-801: Supabase Authentication Services Integration
+* **Work Item ID**: WI-801
+* **Summary**: Replaced the mock-only auth system with real Supabase Auth on the frontend. Installed `@supabase/supabase-js`, created Supabase client (`supabaseClient.js`), built `AuthProvider` with login/logout/session management and auto-subscription to auth state changes. Created `LoginPage` with email/password form, password visibility toggle, validation, and error handling. Updated Axios client to inject JWT Bearer token when authenticated (falling back to mock headers for dev mode). Added `/login` route. Updated `HomePage` to show auth status with sign-out button. `MockIdentityProvider` kept alongside for backward compatibility.
+* **Files Affected**:
+  - [NEW] `frontend/src/lib/supabaseClient.js`
+  - [NEW] `frontend/src/context/AuthContext.jsx`
+  - [NEW] `frontend/src/pages/LoginPage.jsx`
+  - [NEW] `frontend/src/pages/LoginPage.css`
+  - [MODIFIED] `frontend/src/App.jsx` (wrapped with `AuthProvider`)
+  - [MODIFIED] `frontend/src/api/client.js` (JWT injection + mock fallback)
+  - [MODIFIED] `frontend/src/routes/AppRoutes.jsx` (added `/login` route)
+  - [MODIFIED] `frontend/src/pages/HomePage.jsx` (added auth status display)
+* **Verification Done**:
+  - [x] Login page renders and validates inputs
+  - [x] Mock Identity Bar still works as fallback
+  - [x] JWT token is injected into Axios headers when logged in
+  - [x] Session persists on refresh
+  - [x] Logout clears session
+  - [x] `npm run build` completes with no errors
+* **Impact on Existing Functionality**: None. Mock system remains available during transition.
+
 ## [2026-06-10] - WI-702: Dashboards and Analytical Reports Interface
 * **Work Item ID**: WI-702
 * **Summary**: Built three frontend pages: Admin Dashboard (KPI cards for sessions/minutes/percentage/status, quick-link navigation cards, recent sessions table), Student Dashboard (personal stat cards, status breakdown bar with Present/Partial/Absent distribution, quick links to meetings and mailbox), and Reports Page (filterable by date range/granularity/status/batch/student, KPI summary bar, time-series period cards, sortable detail data table, CSV export). Added /admin/reports route and home page navigation link.

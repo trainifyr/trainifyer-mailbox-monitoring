@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 
 export default function HomePage() {
+  const { isAuthenticated, user, logout } = useAuth();
+
   const ping = async () => {
     try {
       const res = await apiClient.get('/health');
@@ -16,8 +19,27 @@ export default function HomePage() {
   return (
     <div className="home-page">
       <h2>Welcome</h2>
-      <p>Use the Mock Identity Bar at the bottom to switch roles.</p>
-      
+
+      {/* Real auth status */}
+      {isAuthenticated && user ? (
+        <p style={{ color: '#16a34a', marginBottom: '1rem' }}>
+          Signed in as <strong>{user.full_name}</strong> ({user.email})
+          {' — '}
+          <button
+            onClick={logout}
+            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', textDecoration: 'underline', fontSize: '14px' }}
+          >
+            Sign Out
+          </button>
+        </p>
+      ) : (
+        <p style={{ marginBottom: '1rem' }}>
+          <Link to="/login" style={{ color: '#2563eb' }}>Sign in</Link> to access your dashboard.
+        </p>
+      )}
+
+      <p>Use the Mock Identity Bar at the bottom to switch roles during development.</p>
+
       <div style={{ margin: '2rem 0' }}>
         <h3>Admin Actions</h3>
         <nav style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -40,7 +62,7 @@ export default function HomePage() {
       </div>
 
       <div style={{ marginTop: '3rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-        <button 
+        <button
           onClick={ping}
           style={{ padding: '8px 16px', background: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >

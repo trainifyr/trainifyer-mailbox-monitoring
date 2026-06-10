@@ -11,6 +11,7 @@ import MeetingsListPage from '../pages/meetings/MeetingsListPage';
 import MeetingRoomPage from '../pages/meetings/MeetingRoomPage';
 import StudentDashboard from '../pages/student/StudentDashboard';
 import ReportsPage from '../pages/admin/ReportsPage';
+import LoginPage from '../pages/LoginPage';
 
 export default function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export default function AppRoutes() {
         <Route path="/meetings" element={<MeetingsListPage />} />
         <Route path="/meeting/:id" element={<MeetingRoomPage />} />
         <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.1",
+    "axios": "^1.7.0",
+    "lucide-react": "^0.379.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-router-dom": "^6.23.0",
-    "axios": "^1.7.0",
-    "lucide-react": "^0.379.0"
+    "react-router-dom": "^6.23.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
