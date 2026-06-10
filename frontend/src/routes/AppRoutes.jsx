@@ -10,6 +10,7 @@ import AdminMeetingsPage from '../pages/meetings/AdminMeetingsPage';
 import MeetingsListPage from '../pages/meetings/MeetingsListPage';
 import MeetingRoomPage from '../pages/meetings/MeetingRoomPage';
 import StudentDashboard from '../pages/student/StudentDashboard';
+import ReportsPage from '../pages/admin/ReportsPage';
 
 export default function AppRoutes() {
   return (
@@ -20,6 +21,7 @@ export default function AppRoutes() {
         <Route path="/admin/students" element={<StudentsPage />} />
         <Route path="/admin/batches" element={<BatchesPage />} />
         <Route path="/admin/meetings" element={<AdminMeetingsPage />} />
+        <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/mailbox" element={<MailboxPage />} />
         <Route path="/meetings" element={<MeetingsListPage />} />
         <Route path="/meeting/:id" element={<MeetingRoomPage />} />

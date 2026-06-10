@@ -1,0 +1,256 @@
+/* Reports filter bar */
+.reports-filter-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .filter-group label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+  }
+  
+  .filter-group input,
+  .filter-group select {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    min-width: 140px;
+  }
+  
+  .filter-group input:focus,
+  .filter-group select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+  
+  /* KPI grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+  
+  .kpi-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .kpi-icon {
+    margin-bottom: 6px;
+  }
+  
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+  }
+  
+  .kpi-label {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+  
+  /* Quick links */
+  .quick-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  
+  .quick-link-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .quick-link-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .quick-link-icon {
+    color: #2563eb;
+    display: flex;
+  }
+  
+  .quick-link-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+  }
+  
+  .quick-link-desc {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+  
+  /* Sortable table headers */
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .sortable:hover {
+    background: #e5e7eb;
+  }
+  
+  /* Status breakdown (student dashboard) */
+  .status-breakdown {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  
+  .status-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #e5e7eb;
+  }
+  
+  .status-bar-segment {
+    transition: flex 0.3s;
+  }
+  
+  .status-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 13px;
+  }
+  
+  .status-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  /* Time series cards */
+  .series-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .series-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .series-period {
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+  
+  .series-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+  
+  .series-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    gap: 2px;
+  }
+  
+  .series-bar-segment.present {
+    background: #16a34a;
+  }
+  
+  .series-bar-segment.partial {
+    background: #d97706;
+  }
+  
+  .series-bar-segment.absent {
+    background: #dc2626;
+  }
+  
+  .series-counts {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  
+  /* Badge colors for attendance status */
+  .badge-present {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  
+  .badge-partial {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .badge-absent {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  
+  .badge-active {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+  
+  .badge-scheduled {
+    background: #f3e8ff;
+    color: #9333ea;
+  }
+  
+  .badge-ended {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  .badge-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+  }

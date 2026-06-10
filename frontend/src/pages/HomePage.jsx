@@ -5,7 +5,6 @@ import apiClient from '../api/client';
 export default function HomePage() {
   const ping = async () => {
     try {
-      // Axios client will auto-inject mock headers
       const res = await apiClient.get('/health');
       alert('Backend Response:\n' + JSON.stringify(res.data, null, 2));
     } catch (e) {
@@ -21,11 +20,12 @@ export default function HomePage() {
       
       <div style={{ margin: '2rem 0' }}>
         <h3>Admin Actions</h3>
-        <nav style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+        <nav style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <Link to="/admin/dashboard">Dashboard</Link>
           <Link to="/admin/students">Manage Students</Link>
           <Link to="/admin/batches">Manage Batches</Link>
           <Link to="/admin/meetings">Manage Meetings</Link>
+          <Link to="/admin/reports">Attendance Reports</Link>
           <Link to="/mailbox">Internal Mailbox</Link>
         </nav>
       </div>
