@@ -60,6 +60,7 @@ app.use('/api/batches',        require('./src/routes/batches'));
 app.use('/api/batches/:id/settings', require('./src/routes/batchSettings'));
 app.use('/api/mail',           require('./src/routes/mail'));
 app.use('/api/meetings',       require('./src/routes/meetings'));
+app.use('/api/meetings/:id/consent', require('./src/routes/meetingConsent'));
 
 // 404 handler
 app.use((req, res) => {

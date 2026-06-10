@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMockIdentity } from '../../context/MockIdentityContext';
 import apiClient from '../../api/client';
 import loadJitsiScript from '../../lib/loadJitsiScript';
-import { ArrowLeft, Video, Loader } from 'lucide-react';
+import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
+import { ArrowLeft, Loader } from 'lucide-react';
 import './MeetingRoomPage.css';
 
 export default function MeetingRoomPage() {
@@ -16,15 +17,19 @@ export default function MeetingRoomPage() {
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Consent state
+  const [consentState, setConsentState] = useState('checking'); // 'checking' | 'needed' | 'accepted' | 'declined'
+  const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [jitsiLoading, setJitsiLoading] = useState(true);
 
+  // Fetch meeting data
   useEffect(() => {
     let cancelled = false;
 
     async function fetchMeeting() {
       try {
         setLoading(true);
-        // Fetch all meetings and find this one (no single-meeting endpoint yet)
         const res = await apiClient.get('/meetings');
         const found = res.data.data.find((m) => m.id === id);
         if (!found) {
@@ -50,21 +55,50 @@ export default function MeetingRoomPage() {
     return () => { cancelled = true; };
   }, [id, isAuthenticated]);
 
-  // Load Jitsi iframe once meeting data is available
+  // Check existing consent status
   useEffect(() => {
-    if (!meeting || !jitsiContainerRef.current) return;
+    if (!meeting || !isAuthenticated) return;
     if (meeting.status === 'ENDED' || meeting.status === 'CANCELLED') return;
+
+    let cancelled = false;
+
+    async function checkConsent() {
+      try {
+        const res = await apiClient.get(`/meetings/${id}/consent`);
+        if (!cancelled && res.data.data.consented) {
+          setConsentState('accepted');
+        } else if (!cancelled) {
+          setConsentState('needed');
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Failed to check consent:', e);
+          setConsentState('needed');
+        }
+      }
+    }
+
+    checkConsent();
+    return () => { cancelled = true; };
+  }, [meeting, id, isAuthenticated]);
+
+  // Initialize Jitsi once consent is accepted
+  useEffect(() => {
+    if (consentState !== 'accepted' || !meeting || !jitsiContainerRef.current) return;
 
     let cancelled = false;
 
     async function initJitsi() {
       try {
         const JitsiAPI = await loadJitsiScript();
-
         if (cancelled) return;
 
-        // Determine user display name
         let userDisplayName = `User-${userId?.substring(0, 8) || 'Guest'}`;
+        try {
+          const res = await apiClient.get('/users/students');
+          const user = res.data.data.find((s) => s.id === userId);
+          if (user) userDisplayName = user.full_name;
+        } catch (e) {}
 
         const domain = 'meet.jit.si';
         const options = {
@@ -72,9 +106,7 @@ export default function MeetingRoomPage() {
           width: '100%',
           height: '100%',
           parentNode: jitsiContainerRef.current,
-          userInfo: {
-            displayName: userDisplayName
-          },
+          userInfo: { displayName: userDisplayName },
           configOverrides: {
             startWithAudioMuted: true,
             startWithVideoMuted: false,
@@ -108,13 +140,33 @@ export default function MeetingRoomPage() {
         jitsiApiRef.current = null;
       }
     };
-  }, [meeting, userId]);
+  }, [consentState, meeting, userId]);
+
+  // Handlers
+  const handleAccept = useCallback(async () => {
+    try {
+      setConsentSubmitting(true);
+      await apiClient.post(`/meetings/${id}/consent`);
+      setConsentState('accepted');
+    } catch (e) {
+      console.error('Failed to record consent:', e);
+      alert('Failed to record consent. Please try again.');
+    } finally {
+      setConsentSubmitting(false);
+    }
+  }, [id]);
+
+  const handleDecline = useCallback(() => {
+    setConsentState('declined');
+  }, []);
+
+  // --- Render logic ---
 
   if (!isAuthenticated) {
     return (
       <div className="meeting-room-page">
         <div className="meeting-room-error">
-          <p>Please select a role to join this meeting.</p>
+          <p>Please select a role in the Mock Identity Bar to join this meeting.</p>
           <button className="btn btn-secondary" onClick={() => navigate('/')}>
             Go Home
           </button>
@@ -123,12 +175,12 @@ export default function MeetingRoomPage() {
     );
   }
 
-  if (loading) {
+  if (loading || (consentState === 'checking' && !error)) {
     return (
       <div className="meeting-room-page">
         <div className="meeting-room-loading">
           <Loader size={32} className="spin" />
-          <p>Loading meeting details...</p>
+          <p>Preparing session...</p>
         </div>
       </div>
     );
@@ -163,6 +215,23 @@ export default function MeetingRoomPage() {
     );
   }
 
+  if (consentState === 'declined') {
+    return (
+      <div className="meeting-room-page">
+        <div className="meeting-room-ended">
+          <h2>Access Denied</h2>
+          <p className="status-message">
+            You must agree to the privacy terms to join the session. 
+            Monitoring is mandatory for this training platform.
+          </p>
+          <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} /> Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="meeting-room-page">
       <div className="meeting-room-header">
@@ -173,14 +242,30 @@ export default function MeetingRoomPage() {
         {meeting.batch_name && <span className="meeting-room-badge">{meeting.batch_name}</span>}
       </div>
 
-      <div className="jitsi-wrapper" style={{ flex: 1, position: 'relative', background: '#000', borderRadius: '8px', overflow: 'hidden' }}>
-        {jitsiLoading && (
+      <div className="jitsi-wrapper" style={{ flex: 1, position: 'relative', background: '#111', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+        {/* Consent overlay — blocks Jitsi until accepted */}
+        {consentState === 'needed' && (
+          <PrivacyConsentOverlay
+            onAccept={handleAccept}
+            onDecline={handleDecline}
+            submitting={consentSubmitting}
+          />
+        )}
+
+        {/* Jitsi loading indicator */}
+        {consentState === 'accepted' && jitsiLoading && (
           <div className="jitsi-loading-overlay">
             <Loader size={24} className="spin" />
-            <p>Connecting to video room...</p>
+            <p>Connecting to secure stream...</p>
           </div>
         )}
-        <div className="jitsi-container" ref={jitsiContainerRef} style={{ width: '100%', height: '100%' }} />
+
+        {/* Jitsi container */}
+        <div 
+          className="jitsi-container" 
+          ref={jitsiContainerRef} 
+          style={{ width: '100%', height: '100%', display: consentState === 'accepted' ? 'block' : 'none' }} 
+        />
       </div>
     </div>
   );
