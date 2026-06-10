@@ -58,7 +58,8 @@ app.get('/api/health/db', async (req, res) => {
 app.use('/api/users/students', require('./src/routes/students'));
 app.use('/api/batches',        require('./src/routes/batches'));
 app.use('/api/batches/:id/settings', require('./src/routes/batchSettings'));
-app.use('/api/mail', require('./src/routes/mail'));
+app.use('/api/mail',           require('./src/routes/mail'));
+app.use('/api/meetings',       require('./src/routes/meetings'));
 
 // 404 handler
 app.use((req, res) => {

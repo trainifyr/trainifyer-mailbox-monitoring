@@ -56,3 +56,8 @@ Row Level Security is **OFF** in Phase 1. It is enabled in Phase 8 (WI-804).
 - `GET /api/mail/sent` — List sent messages (paginated)
 - `POST /api/mail/send` — Send a message (permission-checked)
 - `PATCH /api/mail/:id/read` — Mark a message as read
+
+### Meetings (WI-501)
+- `GET /api/meetings` — List visible meetings (scoped by role and batch)
+- `POST /api/meetings` — Create a meeting with auto-generated Jitsi room name (Admin only)
+- `POST /api/meetings/public/join` — Register to join a public meeting (authenticated or anonymous)

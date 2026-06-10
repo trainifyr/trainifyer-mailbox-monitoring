@@ -4,6 +4,21 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-10] - WI-501: Meeting Scheduler APIs
+* **Work Item ID**: WI-501
+* **Summary**: Created 3 meeting API endpoints: `GET /api/meetings` (role-scoped listing — Admin sees all, Student sees batch+public, anonymous sees public), `POST /api/meetings` (Admin-only create with auto-generated Jitsi room name), and `POST /api/meetings/public/join` (register authenticated or anonymous participants). Batch access control is enforced at the list level using cohort assignments.
+* **Files Affected**:
+  - [NEW] `backend/src/routes/meetings.js` (Core meeting logic)
+  - [MODIFIED] `backend/index.js` (Registered /api/meetings route group)
+  - [MODIFIED] `backend/README.md` (Added Meeting endpoints documentation)
+* **Verification Done**:
+  - [x] Admin can create batch and public meetings (Logic verified)
+  - [x] Student restricted from creating meetings (Middleware verified)
+  - [x] Implemented unique Jitsi room name generator
+  - [x] Implemented role-based visibility queries for meeting listing
+  - [x] Implemented idempotent join registration for authenticated users
+* **Impact on Existing Functionality**: None.
+
 ## [2026-06-09] - WI-402: Mailbox Client UI
 * **Work Item ID**: WI-402
 * **Summary**: Implemented a professional three-panel Mailbox Client UI (Outlook-style). Features a sidebar for Inbox/Sent/Compose, a paginated message list with summary cards, and a detail view for reading messages. Included a robust Compose form with validation and role-based error handling. The UI integrates with the backend APIs created in WI-401 and handles network/permission errors gracefully.

@@ -17,12 +17,12 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 5: Meetings & Consent** | 3 | 3 | 0 | 0 | 0 | 0 | 0% |
+| **Phase 5: Meetings & Consent** | 3 | 2 | 0 | 0 | 1 | 0 | 33.3% |
 | **Phase 6: Attendance Logging** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 7: Dashboards & Reports** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 8: Authentication & Security** | 4 | 4 | 0 | 0 | 0 | 0 | 0% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **13** | **0** | **0** | **10** | **0** | **43.5%** |
+| **Total** | **23** | **12** | **0** | **0** | **11** | **0** | **47.8%** |
 
 ---
 
@@ -57,8 +57,8 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-09 | *Notes*: Three-panel Outlook layout messaging workspace.
 
 ### Phase 5: Meetings & Privacy Consent (Slice 4)
-- [ ] [WI-501](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/11): Meeting Scheduler APIs  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Batch/Public meeting schemas & APIs.
+- [x] [WI-501](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/11): Meeting Scheduler APIs  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: 3 Meeting endpoints with role-based visibility.
 - [ ] [WI-502](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/12): Meeting Scheduler & Jitsi Room Integration UI  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: IFrame embedding and scheduling lists.
 - [ ] [WI-503](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/13): Pre-Meeting Privacy Consent flow  
