@@ -7,7 +7,8 @@ Student learning monitoring and internal communication platform — zero-cost MV
 - Backend: Node.js + Express
 - Database: Supabase (PostgreSQL)
 - Auth: Supabase Auth (Phase 8)
-- Video: Jitsi Meet iframe
+- Video: Jitsi Meet (Provider: `meet.guifi.net`)
+  - *Note: Switched from official Jitsi server to Guifi mirror to allow embedding without mandatory host/admin login.*
 - Hosting: Render Free Tier
 
 ## Folder Structure
