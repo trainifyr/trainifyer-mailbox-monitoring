@@ -20,9 +20,9 @@ This document tracks the execution status of all development work items. Each wo
 | **Phase 5: Meetings & Consent** | 3 | 0 | 0 | 0 | 3 | 0 | 100% |
 | **Phase 6: Attendance Logging** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
 | **Phase 7: Dashboards & Reports** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 8: Authentication & Security** | 4 | 3 | 0 | 0 | 1 | 0 | 25% |
+| **Phase 8: Authentication & Security** | 4 | 2 | 0 | 0 | 2 | 0 | 50% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **6** | **0** | **0** | **17** | **0** | **73.9%** |
+| **Total** | **23** | **5** | **0** | **0** | **18** | **0** | **78.3%** |
 
 ---
 
@@ -79,8 +79,8 @@ This document tracks the execution status of all development work items. Each wo
 ### Phase 8: Authentication & Security Hardening (Blocker Phase)
 - [x] [WI-801](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/18): Supabase Authentication Services Integration  
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Login page, AuthContext, JWT injection, Mock fallback.
-- [ ] [WI-802](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/19): Backend JWT Validation Middleware & Role Checks  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-802-prompt.md. JWT verification via jsonwebtoken, authMiddleware, updated requireRole.
+- [x] [WI-802](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/19): Backend JWT Validation Middleware & Role Checks  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-11 | *Notes*: JWT verification via jsonwebtoken, authMiddleware, updated requireRole.
 - [ ] [WI-803](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/20): Secure Frontend Route Guards  
   *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-803-prompt.md. Route guards, remove mock system, Layout user menu, JWT-only client.
 - [ ] [WI-804](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/21): Supabase Row Level Security (RLS) Policies  

@@ -4,6 +4,29 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-11] - WI-802: Backend JWT Validation Middleware & Role Checks
+* **Work Item ID**: WI-802
+* **Summary**: Replaced `mockSession` middleware with real JWT validation. Created `authMiddleware.js` that verifies Supabase JWTs using `jsonwebtoken` (HS256) and `SUPABASE_JWT_SECRET`, looks up user profile from `public.users`, and falls back to `x-mock-role`/`x-mock-user-id` headers for dev mode. Updated `requireRole.js` to check `req.user.role`. Updated `index.js` and health endpoint to reflect new auth structure. Added `SUPABASE_JWT_SECRET` to `.env.example`.
+* **Files Affected**:
+  - [NEW] `backend/src/middleware/authMiddleware.js`
+  - [DELETED] `backend/src/middleware/mockSession.js`
+  - [MODIFIED] `backend/src/lib/requireRole.js` (checks `req.user.role`)
+  - [MODIFIED] `backend/index.js` (uses `authMiddleware`, updated health endpoint)
+  - [MODIFIED] `backend/.env.example` (added `SUPABASE_JWT_SECRET`)
+  - [MODIFIED] `backend/package.json` (added `jsonwebtoken`)
+* **Verification Done**:
+  - [x] JWT Bearer token verified with `jsonwebtoken.verify()` using HS256 algorithm
+  - [x] Decoded `sub` claim used to look up user in `public.users`
+  - [x] `req.user` set with `{ id, email, full_name, role }` for authenticated requests
+  - [x] `req.user` is null for requests with no auth
+  - [x] Mock headers (`x-mock-role`, `x-mock-user-id`) still work as dev fallback
+  - [x] `requireRole()` rejects non-matching roles with 403
+  - [x] All existing routes work with mock headers (no regressions)
+  - [x] Health check returns `auth.method` and `auth.user`
+  - [x] Query parameter auth (`role`/`userId`) removed for security
+  - [x] `npm run dev` starts without errors
+* **Impact on Existing Functionality**: All existing routes continue to work. MockIdentityBar still works for development. Health endpoint response shape changed. Query parameter auth (`?role=&userId=`) is no longer supported.
+
 ## [2026-06-10] - WI-801: Supabase Authentication Services Integration
 * **Work Item ID**: WI-801
 * **Summary**: Replaced the mock-only auth system with real Supabase Auth on the frontend. Installed `@supabase/supabase-js`, created Supabase client (`supabaseClient.js`), built `AuthProvider` with login/logout/session management and auto-subscription to auth state changes. Created `LoginPage` with email/password form, password visibility toggle, validation, and error handling. Updated Axios client to inject JWT Bearer token when authenticated (falling back to mock headers for dev mode). Added `/login` route. Updated `HomePage` to show auth status with sign-out button. `MockIdentityProvider` kept alongside for backward compatibility.
