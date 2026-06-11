@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import {
   Inbox, Send, PenSquare, ChevronLeft, Mail, MailOpen,
@@ -10,7 +10,7 @@ import './MailboxPage.css';
 const PAGE_SIZE = 20;
 
 export default function MailboxPage() {
-  const { isAuthenticated, role } = useMockIdentity();
+  const { isAuthenticated, user, userId } = useAuth();
 
   // View state: 'inbox' | 'sent' | 'compose' | 'detail'
   const [activeView, setActiveView] = useState('inbox');
@@ -29,10 +29,12 @@ export default function MailboxPage() {
   const [sentLoading, setSentLoading] = useState(false);
 
   // Compose state
-  const [composeForm, setComposeForm] = useState({ receiverId: '', subject: '', body: '' });
+  const [composeForm, setComposeForm] = useState({ receiverEmail: '', subject: '', body: '' });
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState(null);
   const [composeSuccess, setComposeSuccess] = useState(false);
+  const [userSuggestions, setUserSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   // Error / notification
   const [error, setError] = useState(null);
@@ -108,9 +110,10 @@ export default function MailboxPage() {
   const handleViewCompose = () => {
     setActiveView('compose');
     setSelectedMessage(null);
-    setComposeForm({ receiverId: '', subject: '', body: '' });
+    setComposeForm({ receiverEmail: '', subject: '', body: '' });
     setComposeError(null);
     setComposeSuccess(false);
+    setUserSuggestions([]);
   };
 
   const handleLoadMoreInbox = () => {
@@ -136,7 +139,12 @@ export default function MailboxPage() {
         // Update the read status locally
         const markRead = (list) =>
           list.map((m) => m.id === msg.id ? { ...m, is_read: true, read_at: new Date().toISOString() } : m);
+        
         setInboxMessages((prev) => markRead(prev));
+        
+        // Also decrement the sidebar count
+        setInboxPagination(prev => prev ? { ...prev, total: Math.max(0, prev.total - 1) } : prev);
+        
         setSelectedMessage((prev) => prev ? { ...prev, is_read: true, read_at: new Date().toISOString() } : prev);
       } catch (e) {
         // Non-critical; ignore
@@ -144,29 +152,60 @@ export default function MailboxPage() {
     }
   };
 
-  const handleComposeChange = (e) => {
-    setComposeForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  // Search users by email/name as the user types in To: field
+  const handleReceiverEmailChange = async (e) => {
+    const val = e.target.value;
+    setComposeForm((prev) => ({ ...prev, receiverEmail: val }));
+    if (val.length < 2) { setUserSuggestions([]); return; }
+    try {
+      setSuggestionsLoading(true);
+      const res = await apiClient.get('/users/students');
+      const all = res.data.data;
+      const filtered = all.filter(
+        (u) =>
+          u.email.toLowerCase().includes(val.toLowerCase()) ||
+          u.full_name.toLowerCase().includes(val.toLowerCase())
+      ).slice(0, 6);
+      setUserSuggestions(filtered);
+    } catch { setUserSuggestions([]); }
+    finally { setSuggestionsLoading(false); }
+  };
+
+  const handlePickSuggestion = (user) => {
+    setComposeForm((prev) => ({ ...prev, receiverEmail: user.email }));
+    setUserSuggestions([]);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!composeForm.receiverId || !composeForm.subject || !composeForm.body) {
+    if (!composeForm.receiverEmail || !composeForm.subject || !composeForm.body) {
       setComposeError('All fields are required.');
       return;
     }
     try {
       setComposeSending(true);
       setComposeError(null);
+
+      // Resolve email → UUID
+      const res = await apiClient.get('/users/students');
+      const all = res.data.data;
+      // also include admins: fetch from a general endpoint if needed
+      const found = all.find((u) => u.email.toLowerCase() === composeForm.receiverEmail.trim().toLowerCase());
+      if (!found) {
+        setComposeError(`No user found with email "${composeForm.receiverEmail}". Make sure the recipient exists.`);
+        return;
+      }
+
       await apiClient.post('/mail/send', {
-        receiverId: composeForm.receiverId,
+        receiverId: found.id,
         subject: composeForm.subject,
-        body: composeForm.body
+        body: composeForm.body,
       });
       setComposeSuccess(true);
-      setComposeForm({ receiverId: '', subject: '', body: '' });
+      setComposeForm({ receiverEmail: '', subject: '', body: '' });
+      setUserSuggestions([]);
     } catch (e) {
-      const msg = e.response?.data?.message || e.message;
-      setComposeError(msg);
+      setComposeError(e.response?.data?.message || e.message);
     } finally {
       setComposeSending(false);
     }
@@ -255,11 +294,10 @@ export default function MailboxPage() {
     if (!selectedMessage) return null;
 
     const msg = selectedMessage;
-    const isIncoming = activeView === 'inbox' || (activeView !== 'sent' && msg.receiver_id === useMockIdentity().userId);
 
     return (
       <div className="message-detail">
-        <button className="back-btn" onClick={() => setActiveView(activeView === 'detail' ? (selectedMessage.sender_id === useMockIdentity().userId ? 'sent' : 'inbox') : 'inbox')}>
+        <button className="back-btn" onClick={() => setActiveView(activeView === 'detail' ? (selectedMessage.sender_id === userId ? 'sent' : 'inbox') : 'inbox')}>
           <ArrowLeft size={16} /> Back
         </button>
         <div className="detail-header">
@@ -267,10 +305,10 @@ export default function MailboxPage() {
           <div className="detail-meta">
             <div className="detail-meta-row">
               <User size={14} />
-              <span className="meta-label">{msg.sender_id === useMockIdentity().userId ? 'To:' : 'From:'}</span>
-              <span className="meta-value">{msg.sender_id === useMockIdentity().userId ? msg.receiver_name : msg.sender_name}</span>
+              <span className="meta-label">{msg.sender_id === userId ? 'To:' : 'From:'}</span>
+              <span className="meta-value">{msg.sender_id === userId ? msg.receiver_name : msg.sender_name}</span>
               <span className="meta-email">
-                ({msg.sender_id === useMockIdentity().userId ? msg.receiver_email : msg.sender_email})
+                ({msg.sender_id === userId ? msg.receiver_email : msg.sender_email})
               </span>
             </div>
             <div className="detail-meta-row">
@@ -304,34 +342,59 @@ export default function MailboxPage() {
       {composeSuccess ? (
         <div className="compose-success">
           <p>Message sent successfully!</p>
-          <button className="btn btn-primary" onClick={handleViewInbox}>
-            Go to Inbox
-          </button>
+          <button className="btn btn-primary" onClick={handleViewInbox}>Go to Inbox</button>
           <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={() => {
             setComposeSuccess(false);
-            setComposeForm({ receiverId: '', subject: '', body: '' });
-          }}>
-            Send Another
-          </button>
+            setComposeForm({ receiverEmail: '', subject: '', body: '' });
+          }}>Send Another</button>
         </div>
       ) : (
         <form onSubmit={handleSend}>
-          <div className="compose-field">
-            <label>Receiver UUID</label>
+          {/* To: field with autocomplete */}
+          <div className="compose-field" style={{ position: 'relative' }}>
+            <label>To (Email)</label>
             <input
-              name="receiverId"
-              value={composeForm.receiverId}
-              onChange={handleComposeChange}
-              placeholder="Paste the receiver's user UUID"
+              name="receiverEmail"
+              type="email"
+              value={composeForm.receiverEmail}
+              onChange={handleReceiverEmailChange}
+              onBlur={() => setTimeout(() => setUserSuggestions([]), 200)}
+              placeholder="Search by name or email..."
+              autoComplete="off"
               required
             />
+            {userSuggestions.length > 0 && (
+              <ul style={{
+                position: 'absolute', top: '100%', left: 0, right: 0,
+                background: '#1e1b4b', border: '1px solid #4f46e5', borderRadius: '6px',
+                listStyle: 'none', margin: 0, padding: '4px 0', zIndex: 100,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+              }}>
+                {userSuggestions.map((u) => (
+                  <li
+                    key={u.id}
+                    onMouseDown={() => handlePickSuggestion(u)}
+                    style={{
+                      padding: '8px 14px', cursor: 'pointer', display: 'flex',
+                      flexDirection: 'column', gap: '2px',
+                      borderBottom: '1px solid rgba(255,255,255,0.05)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#2d2564'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.9rem' }}>{u.full_name}</span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{u.email}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="compose-field">
             <label>Subject</label>
             <input
               name="subject"
               value={composeForm.subject}
-              onChange={handleComposeChange}
+              onChange={(e) => setComposeForm((p) => ({ ...p, subject: e.target.value }))}
               placeholder="Message subject"
               required
               maxLength={200}
@@ -342,7 +405,7 @@ export default function MailboxPage() {
             <textarea
               name="body"
               value={composeForm.body}
-              onChange={handleComposeChange}
+              onChange={(e) => setComposeForm((p) => ({ ...p, body: e.target.value }))}
               placeholder="Write your message here..."
               required
               rows={10}
@@ -363,7 +426,7 @@ export default function MailboxPage() {
     if (!isAuthenticated) {
       return (
         <div className="mailbox-empty">
-          <p>Select a role using the Mock Identity Bar at the bottom to access the mailbox.</p>
+          <p>Please sign in to access the mailbox.</p>
         </div>
       );
     }

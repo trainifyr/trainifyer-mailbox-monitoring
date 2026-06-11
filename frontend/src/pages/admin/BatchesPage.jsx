@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, ChevronDown, ChevronRight, Users, Settings, Check } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Users, Settings, Check, Pencil, X } from 'lucide-react';
 import './BatchesPage.css';
 
 const INITIAL_BATCH_FORM = { name: '' };
-const INITIAL_ASSIGN_FORM = { studentId: '' };
+const INITIAL_ASSIGN_FORM = { email: '' };
 
-// Label map for display in the settings panel
 const SETTINGS_LABELS = {
   mailbox_enabled: 'Mailbox Access',
   student_to_student_messaging: 'Student-to-Student Messaging',
@@ -17,7 +16,6 @@ const SETTINGS_LABELS = {
   require_screen_share: 'Screen Share Mode'
 };
 
-// Description map for tooltips / sub-text
 const SETTINGS_DESCRIPTIONS = {
   mailbox_enabled: 'Allow students to access the internal mailbox',
   student_to_student_messaging: 'Allow students to message each other',
@@ -28,7 +26,7 @@ const SETTINGS_DESCRIPTIONS = {
 };
 
 export default function BatchesPage() {
-  const { isAdmin } = useMockIdentity();
+  const { isAdmin } = useAuth();
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,6 +34,11 @@ export default function BatchesPage() {
   const [batchForm, setBatchForm] = useState(INITIAL_BATCH_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // Inline rename state
+  const [renamingBatchId, setRenamingBatchId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameSubmitting, setRenameSubmitting] = useState(false);
 
   // Expanded batch detail state
   const [expandedBatchId, setExpandedBatchId] = useState(null);
@@ -48,7 +51,7 @@ export default function BatchesPage() {
   // Settings state
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(null); // field name being saved
+  const [settingsSaving, setSettingsSaving] = useState(null);
   const [notification, setNotification] = useState(null);
 
   const fetchBatches = useCallback(async () => {
@@ -64,11 +67,8 @@ export default function BatchesPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBatches();
-  }, [fetchBatches]);
+  useEffect(() => { fetchBatches(); }, [fetchBatches]);
 
-  // Clear notification after 2 seconds
   useEffect(() => {
     if (!notification) return;
     const timer = setTimeout(() => setNotification(null), 2000);
@@ -81,7 +81,6 @@ export default function BatchesPage() {
       const res = await apiClient.get(`/batches/${batchId}/students`);
       setBatchStudents(res.data.data);
     } catch (e) {
-      console.error('Failed to fetch batch students:', e);
       setBatchStudents([]);
     } finally {
       setStudentsLoading(false);
@@ -94,7 +93,6 @@ export default function BatchesPage() {
       const res = await apiClient.get(`/batches/${batchId}/settings`);
       setSettings(res.data.data);
     } catch (e) {
-      console.error('Failed to fetch settings:', e);
       setSettings(null);
     } finally {
       setSettingsLoading(false);
@@ -115,20 +113,13 @@ export default function BatchesPage() {
     }
   };
 
-  const handleBatchFormChange = (e) => {
-    setBatchForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
   const handleCreateBatch = async (e) => {
     e.preventDefault();
-    if (!batchForm.name) {
-      setFormError('Batch name is required.');
-      return;
-    }
+    if (!batchForm.name.trim()) { setFormError('Batch name is required.'); return; }
     try {
       setSubmitting(true);
       setFormError(null);
-      await apiClient.post('/batches', { name: batchForm.name });
+      await apiClient.post('/batches', { name: batchForm.name.trim() });
       setBatchForm(INITIAL_BATCH_FORM);
       setShowForm(false);
       await fetchBatches();
@@ -136,6 +127,35 @@ export default function BatchesPage() {
       setFormError(e.response?.data?.message || e.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // --- Rename batch ---
+  const startRename = (e, batch) => {
+    e.stopPropagation();
+    setRenamingBatchId(batch.id);
+    setRenameValue(batch.name);
+  };
+
+  const cancelRename = (e) => {
+    e?.stopPropagation();
+    setRenamingBatchId(null);
+    setRenameValue('');
+  };
+
+  const handleRename = async (e, batchId) => {
+    e.stopPropagation();
+    if (!renameValue.trim()) return;
+    try {
+      setRenameSubmitting(true);
+      await apiClient.patch(`/batches/${batchId}`, { name: renameValue.trim() });
+      setRenamingBatchId(null);
+      setNotification('Batch renamed');
+      await fetchBatches();
+    } catch (err) {
+      setNotification('Failed to rename batch');
+    } finally {
+      setRenameSubmitting(false);
     }
   };
 
@@ -149,25 +169,30 @@ export default function BatchesPage() {
     }
   };
 
-  const handleAssignFormChange = (e) => {
-    setAssignForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
+  // --- Assign student by email ---
   const handleAssignStudent = async (e) => {
     e.preventDefault();
-    if (!assignForm.studentId) {
-      setAssignError('Student ID is required.');
-      return;
-    }
+    if (!assignForm.email.trim()) { setAssignError('Email is required.'); return; }
     try {
       setAssignSubmitting(true);
       setAssignError(null);
-      await apiClient.post(`/batches/${expandedBatchId}/students`, {
-        studentId: assignForm.studentId
-      });
+
+      // Step 1: find student by email
+      const lookup = await apiClient.get('/users/students');
+      const all = lookup.data.data;
+      const found = all.find(s => s.email.toLowerCase() === assignForm.email.trim().toLowerCase());
+
+      if (!found) {
+        setAssignError(`No student found with email "${assignForm.email}". Create the student first under Manage Students.`);
+        return;
+      }
+
+      // Step 2: assign by UUID
+      await apiClient.post(`/batches/${expandedBatchId}/students`, { studentId: found.id });
       setAssignForm(INITIAL_ASSIGN_FORM);
       await fetchBatchStudents(expandedBatchId);
-      await fetchBatches(); // Refresh to update student counts
+      await fetchBatches();
+      setNotification(`${found.full_name} added to batch`);
     } catch (e) {
       setAssignError(e.response?.data?.message || e.message);
     } finally {
@@ -176,16 +201,12 @@ export default function BatchesPage() {
   };
 
   // --- Settings handlers ---
-
   const handleToggleSetting = async (field, currentValue) => {
-    const newValue = !currentValue;
     try {
       setSettingsSaving(field);
-      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, {
-        [field]: newValue
-      });
+      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, { [field]: !currentValue });
       setSettings(res.data.data);
-      setNotification(`Settings saved`);
+      setNotification('Settings saved');
     } catch (e) {
       console.error('Failed to update setting:', e);
     } finally {
@@ -194,14 +215,11 @@ export default function BatchesPage() {
   };
 
   const handleScreenShareChange = async (e) => {
-    const newValue = e.target.value;
     try {
       setSettingsSaving('require_screen_share');
-      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, {
-        require_screen_share: newValue
-      });
+      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, { require_screen_share: e.target.value });
       setSettings(res.data.data);
-      setNotification(`Settings saved`);
+      setNotification('Settings saved');
     } catch (e) {
       console.error('Failed to update screen share setting:', e);
     } finally {
@@ -209,23 +227,11 @@ export default function BatchesPage() {
     }
   };
 
-  // --- Render helpers ---
-
   const renderSettingsPanel = () => {
-    if (settingsLoading) {
-      return <p className="status-message">Loading settings...</p>;
-    }
-    if (!settings) {
-      return <p className="status-message">Settings not available.</p>;
-    }
+    if (settingsLoading) return <p className="status-message">Loading settings...</p>;
+    if (!settings) return <p className="status-message">Settings not available.</p>;
 
-    const booleanFields = [
-      'mailbox_enabled',
-      'student_to_student_messaging',
-      'meeting_join_enabled',
-      'require_camera',
-      'require_microphone'
-    ];
+    const booleanFields = ['mailbox_enabled', 'student_to_student_messaging', 'meeting_join_enabled', 'require_camera', 'require_microphone'];
 
     return (
       <div className="settings-panel">
@@ -239,45 +245,29 @@ export default function BatchesPage() {
               </div>
               <div className="setting-control">
                 {isAdmin ? (
-                  <button
-                    className={`toggle-switch ${settings[field] ? 'active' : ''}`}
-                    onClick={() => handleToggleSetting(field, settings[field])}
-                    disabled={settingsSaving === field}
-                    aria-label={`Toggle ${SETTINGS_LABELS[field]}`}
-                  >
+                  <button className={`toggle-switch ${settings[field] ? 'active' : ''}`} onClick={() => handleToggleSetting(field, settings[field])} disabled={settingsSaving === field}>
                     <span className="toggle-knob" />
                   </button>
                 ) : (
-                  <span className={`toggle-readonly ${settings[field] ? 'on' : 'off'}`}>
-                    {settings[field] ? 'ON' : 'OFF'}
-                  </span>
+                  <span className={`toggle-readonly ${settings[field] ? 'on' : 'off'}`}>{settings[field] ? 'ON' : 'OFF'}</span>
                 )}
               </div>
             </div>
           ))}
-
-          {/* Screen share mode is a dropdown, not a toggle */}
-          <div key="require_screen_share" className="setting-row">
+          <div className="setting-row">
             <div className="setting-info">
               <span className="setting-label">{SETTINGS_LABELS.require_screen_share}</span>
               <span className="setting-desc">{SETTINGS_DESCRIPTIONS.require_screen_share}</span>
             </div>
             <div className="setting-control">
               {isAdmin ? (
-                <select
-                  className="setting-select"
-                  value={settings.require_screen_share}
-                  onChange={handleScreenShareChange}
-                  disabled={settingsSaving === 'require_screen_share'}
-                >
+                <select className="setting-select" value={settings.require_screen_share} onChange={handleScreenShareChange} disabled={settingsSaving === 'require_screen_share'}>
                   <option value="OPTIONAL">Optional</option>
                   <option value="REQUIRED">Required</option>
                   <option value="OFF">Off</option>
                 </select>
               ) : (
-                <span className="toggle-readonly on">
-                  {settings.require_screen_share}
-                </span>
+                <span className="toggle-readonly on">{settings.require_screen_share}</span>
               )}
             </div>
           </div>
@@ -289,9 +279,7 @@ export default function BatchesPage() {
   return (
     <div className="batches-page">
       {notification && (
-        <div className="notification">
-          <Check size={14} /> {notification}
-        </div>
+        <div className="notification"><Check size={14} /> {notification}</div>
       )}
 
       <div className="page-header">
@@ -309,20 +297,12 @@ export default function BatchesPage() {
           <div className="form-row">
             <label>
               Batch Name
-              <input
-                name="name"
-                value={batchForm.name}
-                onChange={handleBatchFormChange}
-                placeholder="e.g. Cohort-1"
-                required
-              />
+              <input name="name" value={batchForm.name} onChange={(e) => setBatchForm({ name: e.target.value })} placeholder="e.g. Cohort-1" required />
             </label>
           </div>
           {formError && <p className="form-error">{formError}</p>}
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create'}
-            </button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</button>
           </div>
         </form>
       )}
@@ -340,43 +320,48 @@ export default function BatchesPage() {
                 <th>Status</th>
                 <th>Students</th>
                 <th>Created</th>
-                {isAdmin && <th style={{ width: 100 }}>Actions</th>}
+                {isAdmin && <th style={{ width: 160 }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {batches.length === 0 ? (
-                <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="empty-row">No batches found.</td>
-                </tr>
+                <tr><td colSpan={isAdmin ? 6 : 5} className="empty-row">No batches found.</td></tr>
               ) : (
                 batches.map((b) => (
                   <React.Fragment key={b.id}>
-                    <tr className="batch-row" onClick={() => handleToggleExpand(b.id)}>
+                    <tr className="batch-row" onClick={() => renamingBatchId !== b.id && handleToggleExpand(b.id)}>
                       <td>
-                        <button
-                          className="expand-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleExpand(b.id);
-                          }}
-                        >
+                        <button className="expand-btn" onClick={(e) => { e.stopPropagation(); handleToggleExpand(b.id); }}>
                           {expandedBatchId === b.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </button>
                       </td>
-                      <td className="batch-name">{b.name}</td>
-                      <td>
-                        <span className={`badge badge-${b.status}`}>{b.status}</span>
+                      <td className="batch-name">
+                        {renamingBatchId === b.id ? (
+                          <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                            <input
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(e, b.id); if (e.key === 'Escape') cancelRename(); }}
+                              autoFocus
+                              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #4f46e5', fontSize: '0.9rem' }}
+                            />
+                            <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={(e) => handleRename(e, b.id)} disabled={renameSubmitting}>Save</button>
+                            <button className="btn" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={cancelRename}><X size={14} /></button>
+                          </span>
+                        ) : b.name}
                       </td>
+                      <td><span className={`badge badge-${b.status}`}>{b.status}</span></td>
                       <td>{b.student_count}</td>
                       <td>{new Date(b.created_at).toLocaleDateString()}</td>
                       {isAdmin && (
-                        <td>
+                        <td style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button className="btn" title="Rename" onClick={(e) => startRename(e, b)}>
+                            <Pencil size={14} />
+                          </button>
                           <button
                             className={`btn btn-${b.status === 'active' ? 'danger' : 'success'}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleStatus(b);
-                            }}
+                            style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(b); }}
                           >
                             {b.status === 'active' ? 'Deactivate' : 'Activate'}
                           </button>
@@ -387,10 +372,8 @@ export default function BatchesPage() {
                       <tr key={`${b.id}-detail`}>
                         <td colSpan={isAdmin ? 6 : 5}>
                           <div className="batch-detail">
-                            {/* Settings panel — always shown */}
                             {renderSettingsPanel()}
 
-                            {/* Assigned Students section */}
                             <h4 className="section-title" style={{ marginTop: '1.5rem' }}>
                               <Users size={16} /> Assigned Students
                             </h4>
@@ -398,12 +381,13 @@ export default function BatchesPage() {
                             {isAdmin && (
                               <form className="assign-form" onSubmit={handleAssignStudent}>
                                 <label>
-                                  Student UUID
+                                  Student Email
                                   <input
-                                    name="studentId"
-                                    value={assignForm.studentId}
-                                    onChange={handleAssignFormChange}
-                                    placeholder="Paste student UUID"
+                                    name="email"
+                                    type="email"
+                                    value={assignForm.email}
+                                    onChange={(e) => setAssignForm({ email: e.target.value })}
+                                    placeholder="student@example.com"
                                   />
                                 </label>
                                 <button type="submit" className="btn btn-primary" disabled={assignSubmitting}>

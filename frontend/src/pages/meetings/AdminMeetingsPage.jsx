@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Plus, Video, Calendar, Globe, Users } from 'lucide-react';
 import './AdminMeetingsPage.css';
@@ -14,7 +14,7 @@ const INITIAL_FORM = {
 };
 
 export default function AdminMeetingsPage() {
-  const { isAdmin } = useMockIdentity();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,12 +75,20 @@ export default function AdminMeetingsPage() {
       return;
     }
 
+    // Helper to format local datetime-local to ISO with timezone
+    const toISODate = (val) => {
+      if (!val) return null;
+      // datetime-local gives "YYYY-MM-DDTHH:mm" in local time.
+      // We convert it to a real Date object and then to ISO string which includes 'Z' or offset.
+      return new Date(val).toISOString();
+    };
+
     const payload = {
       title: form.title,
       isPublic: form.isPublic,
       batchId: form.isPublic ? null : form.batchId,
-      scheduledStart: form.scheduledStart || null,
-      scheduledEnd: form.scheduledEnd || null
+      scheduledStart: toISODate(form.scheduledStart),
+      scheduledEnd: toISODate(form.scheduledEnd)
     };
 
     try {

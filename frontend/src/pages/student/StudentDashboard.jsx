@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Video, Clock, BarChart3, Calendar, Mail, CheckCircle, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
 import '../admin/ReportsPage.css'; // Import shared report styles
 
 export default function StudentDashboard() {
-  const { isStudent } = useMockIdentity();
+  const { isStudent } = useAuth();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

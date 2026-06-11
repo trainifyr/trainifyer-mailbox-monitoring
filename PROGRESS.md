@@ -11,18 +11,9 @@ This document tracks the execution status of all development work items. Each wo
 
 ## Progress Overview
 
-| Phase | Total Items | Not Started | In Progress | Blocked | Done | Verified | Completion % |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Phase 1: Skeleton Setup** | 4 | 0 | 0 | 0 | 4 | 0 | 100% |
-| **Phase 2: Student & Batch CRUD** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 3: Cohort Settings** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 4: Mailbox System** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 5: Meetings & Consent** | 3 | 0 | 0 | 0 | 3 | 0 | 100% |
-| **Phase 6: Attendance Logging** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 7: Dashboards & Reports** | 2 | 0 | 0 | 0 | 2 | 0 | 100% |
-| **Phase 8: Authentication & Security** | 4 | 2 | 0 | 0 | 2 | 0 | 50% |
+| **Phase 8: Authentication & Security** | 4 | 0 | 0 | 0 | 4 | 0 | 100% |
 | **Phase 9: Release & Deployment** | 2 | 2 | 0 | 0 | 0 | 0 | 0% |
-| **Total** | **23** | **5** | **0** | **0** | **18** | **0** | **78.3%** |
+| **Total** | **23** | **3** | **0** | **0** | **20** | **0** | **87.0%** |
 
 ---
 
@@ -81,10 +72,10 @@ This document tracks the execution status of all development work items. Each wo
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-10 | *Notes*: Login page, AuthContext, JWT injection, Mock fallback.
 - [x] [WI-802](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/19): Backend JWT Validation Middleware & Role Checks  
   *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-11 | *Notes*: JWT verification via jsonwebtoken, authMiddleware, updated requireRole.
-- [ ] [WI-803](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/20): Secure Frontend Route Guards  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-803-prompt.md. Route guards, remove mock system, Layout user menu, JWT-only client.
-- [ ] [WI-804](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/21): Supabase Row Level Security (RLS) Policies  
-  *Status*: `Not Started` | *Assignee*: TBD | *Target Date*: TBD | *Notes*: Prompt ready at prompts/WI-804-prompt.md. RLS policies for all 9 tables, is_admin() helper, supabaseAnonClient.js.
+- [x] [WI-803](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/20): Secure Frontend Route Guards  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-11 | *Notes*: Replaced mock routing with real React route guards (`ProtectedRoute`, `AdminRoute`, `StudentRoute`). Completely removed `MockIdentityBar`, `MockIdentityContext`, and associated CSS. Updated all frontend pages to use real `useAuth` hook. Refactored `Layout.jsx` to show user profile details and a production Sign Out button. Cleaned up Axios client to use strictly JWT-based authentication. Implemented smart redirection—the login page now returns you to your previous page after signing in.
+- [x] [WI-804](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/21): Supabase Row Level Security (RLS) Policies  
+  *Status*: `Done` | *Assignee*: Antigravity | *Target Date*: 2026-06-11 | *Notes*: RLS policies for all 9 tables, is_admin() helper, ENABLE ROW LEVEL SECURITY in schema.sql.
 
 ### Phase 9: Release and Deployment
 - [ ] [WI-901](https://github.com/trainifyr/trainifyer-mailbox-monitoring/issues/22): Multi-Role Integration & Staging Validation  

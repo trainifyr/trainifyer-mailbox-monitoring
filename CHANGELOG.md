@@ -4,6 +4,38 @@ This document tracks all changes made to the Student Learning Monitoring and Int
 
 ---
 
+## [2026-06-11] - WI-804: Supabase Row Level Security (RLS) Policies
+* **Work Item ID**: WI-804
+* **Summary**: Enabled Row Level Security on all 9 tables. Created granular SQL policies for role-based access control. Implemented `public.is_admin()` helper. Created `supabaseAnonClient.js`.
+* **Files Affected**:
+  - [NEW] `backend/db/rls_policies.sql`
+  - [MODIFIED] `backend/db/schema.sql`
+  - [NEW] `backend/src/lib/supabaseAnonClient.js`
+* **Verification Done**:
+  - [x] RLS enabled on all tables
+  - [x] Admin role can perform all CRUD operations
+  - [x] Students restricted to their own records
+  - [x] `public.is_admin()` helper correctly identifies admin users
+  - [x] `supabaseAnonClient.js` correctly handles service role/anon keys
+* **Impact on Existing Functionality**: Database access is now strictly governed by RLS policies.
+
+## [2026-06-11] - WI-803: Secure Frontend Route Guards & Mock Auth Removal
+* **Work Item ID**: WI-803
+* **Summary**: Replaced mock routing with real React route guards (`ProtectedRoute`, `AdminRoute`, `StudentRoute`). Completely removed `MockIdentityBar`, `MockIdentityContext`, and associated CSS. Updated all frontend pages to use real `useAuth` hook instead of mock identity. Refactored `Layout.jsx` to show user profile details and a production Sign Out button. Cleaned up Axios client to use strictly JWT-based authentication. Implemented smart redirection—the login page now returns you to your previous page after signing in.
+* **Files Affected**:
+  - [NEW] `frontend/src/components/auth/ProtectedRoute.jsx`
+  - [DELETED] `frontend/src/components/MockIdentityBar.jsx`
+  - [MODIFIED] `frontend/src/routes/AppRoutes.jsx`
+  - [MODIFIED] `frontend/src/components/Layout.jsx`
+  - [MODIFIED] `frontend/src/api/client.js`
+* **Verification Done**:
+  - [x] Unauthenticated users are redirected to /login
+  - [x] Unauthorized roles are blocked from admin routes
+  - [x] MockIdentityBar is fully removed from the UI
+  - [x] Login redirect functionality works as expected
+  - [x] `npm run build` completes with no errors
+* **Impact on Existing Functionality**: Mock identity features are no longer available.
+
 ## [2026-06-11] - WI-802: Backend JWT Validation Middleware & Role Checks
 * **Work Item ID**: WI-802
 * **Summary**: Replaced `mockSession` middleware with real JWT validation. Created `authMiddleware.js` that verifies Supabase JWTs using `jsonwebtoken` (HS256) and `SUPABASE_JWT_SECRET`, looks up user profile from `public.users`, and falls back to `x-mock-role`/`x-mock-user-id` headers for dev mode. Updated `requireRole.js` to check `req.user.role`. Updated `index.js` and health endpoint to reflect new auth structure. Added `SUPABASE_JWT_SECRET` to `.env.example`.

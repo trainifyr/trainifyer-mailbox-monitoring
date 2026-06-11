@@ -3,10 +3,8 @@
 -- Project: Trainifyer Mailbox Monitoring Platform
 --
 -- IMPORTANT:
---   * RLS is intentionally DISABLED in this phase.
---   * Phase 8 (WI-804) will add policies and enable RLS.
---   * The supabase_user_id column is nullable with NO FK yet.
---     Phase 8 (WI-801) will link it to auth.users.
+--   * RLS is ENABLED with per-table policies defined in rls_policies.sql (WI-804).
+--   * The supabase_user_id column is linked to auth.users (WI-801).
 -- =============================================================
 
 -- 0. Required extensions
@@ -203,14 +201,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- 13. DISABLE Row Level Security on all base tables
--- TODO(PHASE-8: ENABLE RLS) - WI-804 will add policies and re-enable RLS.
-ALTER TABLE public.users                 DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.batches               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.student_batches       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.batch_settings        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.mail_messages         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meetings              DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meeting_participants  DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meeting_consents      DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance_logs       DISABLE ROW LEVEL SECURITY;
+-- 13. ENABLE Row Level Security on all base tables
+-- Policies are defined in backend/db/rls_policies.sql (WI-804).
+ALTER TABLE public.users                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.batches               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_batches       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.batch_settings        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mail_messages         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meetings              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_participants  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_consents      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_logs       ENABLE ROW LEVEL SECURITY;

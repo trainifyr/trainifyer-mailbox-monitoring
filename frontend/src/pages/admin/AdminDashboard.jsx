@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Users, FolderOpen, Video, BarChart3, Calendar, Mail, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import './ReportsPage.css'; // Shared dashboard styles
 
 export default function AdminDashboard() {
-  const { isAdmin } = useMockIdentity();
+  const { isAdmin } = useAuth();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

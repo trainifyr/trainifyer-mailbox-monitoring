@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { BarChart3, Clock, CheckCircle, AlertTriangle, XCircle, Download, Search } from 'lucide-react';
 import './ReportsPage.css';
 
 export default function ReportsPage() {
-  const { isAdmin } = useMockIdentity();
+  const { isAdmin } = useAuth();
 
   // Filters
   const [fromDate, setFromDate] = useState('');

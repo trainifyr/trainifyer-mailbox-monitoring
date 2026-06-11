@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMockIdentity } from '../../context/MockIdentityContext';
+import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Video, Calendar, Globe, Users, Clock } from 'lucide-react';
 import './MeetingsListPage.css';
 
 export default function MeetingsListPage() {
-  const { isAuthenticated } = useMockIdentity();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +31,13 @@ export default function MeetingsListPage() {
     }
   }, [fetchMeetings, isAuthenticated]);
 
+  const getEffectiveStatus = (m) => {
+    if (m.status === 'CANCELLED') return 'CANCELLED';
+    if (m.status === 'ENDED') return 'ENDED';
+    if (m.scheduled_end && new Date() > new Date(m.scheduled_end)) return 'ENDED';
+    return m.status || 'SCHEDULED';
+  };
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'LIVE': return 'badge badge-live';
@@ -41,9 +48,18 @@ export default function MeetingsListPage() {
     }
   };
 
-  const formatDateTime = (iso) => {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleString();
+  const formatTimeRange = (start, end) => {
+    if (!start) return '—';
+    const s = new Date(start);
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    const dateStr = s.toLocaleDateString();
+    const startStr = s.toLocaleTimeString([], options);
+    
+    if (!end) return `${dateStr}, ${startStr}`;
+    
+    const e = new Date(end);
+    const endStr = e.toLocaleTimeString([], options);
+    return `${dateStr}, ${startStr} - ${endStr}`;
   };
 
   if (!isAuthenticated) {
@@ -70,37 +86,48 @@ export default function MeetingsListPage() {
             <p className="status-message">No meetings available for your account at this time.</p>
           ) : (
             <div className="meetings-grid">
-              {meetings.map((m) => (
-                <div key={m.id} className="meeting-card">
-                  <div className="meeting-card-header">
-                    <h3>{m.title}</h3>
-                    <span className={getStatusBadgeClass(m.status)}>{m.status}</span>
+              {meetings.map((m) => {
+                const status = getEffectiveStatus(m);
+                const isOver = status === 'ENDED' || status === 'CANCELLED';
+                
+                return (
+                  <div key={m.id} className={`meeting-card ${isOver ? 'meeting-over' : ''}`}>
+                    <div className="meeting-card-header">
+                      <h3>{m.title}</h3>
+                      <span className={getStatusBadgeClass(status)}>{status}</span>
+                    </div>
+                    <div className="meeting-card-meta">
+                      <span>
+                        {m.is_public ? (
+                          <><Globe size={14} /> Public Session</>
+                        ) : (
+                          <><Users size={14} /> {m.batch_name || 'Cohort Meeting'}</>
+                        )}
+                      </span>
+                      <span><Calendar size={14} /> {formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
+                    </div>
+                    <div className="meeting-card-actions">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => navigate(`/meeting/${m.id}`)}
+                        disabled={isOver}
+                        style={{ 
+                          width: '100%', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '8px',
+                          opacity: isOver ? 0.6 : 1,
+                          cursor: isOver ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        <Video size={18} />
+                        {isOver ? 'Meeting Ended' : 'Join Session'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="meeting-card-meta">
-                    <span>
-                      {m.is_public ? (
-                        <><Globe size={14} /> Public Session</>
-                      ) : (
-                        <><Users size={14} /> {m.batch_name || 'Cohort Meeting'}</>
-                      )}
-                    </span>
-                    {m.scheduled_start && (
-                      <span><Calendar size={14} /> {formatDateTime(m.scheduled_start)}</span>
-                    )}
-                  </div>
-                  <div className="meeting-card-actions">
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => navigate(`/meeting/${m.id}`)}
-                      disabled={m.status === 'ENDED' || m.status === 'CANCELLED'}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    >
-                      <Video size={18} />
-                      {m.status === 'ENDED' || m.status === 'CANCELLED' ? 'Meeting Ended' : 'Join Session'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>

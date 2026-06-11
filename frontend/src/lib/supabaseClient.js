@@ -19,13 +19,13 @@ export const supabase = createClient(
  * Fetch the user's profile from the public.users table.
  * Returns null if the user is not found or the session is invalid.
  */
-export async function fetchUserProfile(userId) {
-  if (!userId) return null;
+export async function fetchUserProfile(supabaseAuthId) {
+  if (!supabaseAuthId) return null;
 
   const { data, error } = await supabase
     .from('users')
     .select('id, email, full_name, role')
-    .eq('id', userId)
+    .eq('supabase_user_id', supabaseAuthId)
     .single();
 
   if (error || !data) {
