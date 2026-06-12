@@ -105,14 +105,16 @@ router.get('/inbox', async (req, res, next) => {
     const query = inboxQuerySchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
 
-    // Get total count for pagination info
+    // Get total count AND unread count for pagination info/badges
     const { rows: countRows } = await pool.query(
-      `SELECT COUNT(*)::int AS total
+      `SELECT 
+         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE is_read = false)::int AS unread_count
        FROM public.mail_messages
        WHERE receiver_id = $1`,
       [userId]
     );
-    const total = countRows[0].total;
+    const { total, unread_count } = countRows[0];
 
     // Fetch paginated results with sender info
     const { rows } = await pool.query(
@@ -135,6 +137,7 @@ router.get('/inbox', async (req, res, next) => {
         page: query.page,
         limit: query.limit,
         total,
+        unreadCount: unread_count,
         totalPages: Math.ceil(total / query.limit)
       }
     });

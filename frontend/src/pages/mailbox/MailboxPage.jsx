@@ -142,8 +142,8 @@ export default function MailboxPage() {
         
         setInboxMessages((prev) => markRead(prev));
         
-        // Also decrement the sidebar count
-        setInboxPagination(prev => prev ? { ...prev, total: Math.max(0, prev.total - 1) } : prev);
+        // Also decrement the sidebar unread count
+        setInboxPagination(prev => prev ? { ...prev, unreadCount: Math.max(0, (prev.unreadCount || 0) - 1) } : prev);
         
         setSelectedMessage((prev) => prev ? { ...prev, is_read: true, read_at: new Date().toISOString() } : prev);
       } catch (e) {
@@ -235,8 +235,8 @@ export default function MailboxPage() {
         onClick={handleViewInbox}
       >
         <Inbox size={16} /> Inbox
-        {inboxPagination && inboxPagination.total > 0 && (
-          <span className="sidebar-count">{inboxPagination.total}</span>
+        {inboxPagination && inboxPagination.unreadCount > 0 && (
+          <span className="sidebar-count">{inboxPagination.unreadCount}</span>
         )}
       </button>
       <button
