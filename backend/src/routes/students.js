@@ -58,6 +58,21 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// --- GET /api/users/directory ---
+// List all users (Admins and Students) for mailbox searching.
+// Open to all authenticated roles.
+router.get('/directory', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, email, full_name, role FROM public.users
+       ORDER BY full_name ASC`
+    );
+    res.json({ data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- POST /api/users/students ---
 // Create a student profile. Admin only.
 // Generates a UUID for the student ID. No Supabase Auth user is created.

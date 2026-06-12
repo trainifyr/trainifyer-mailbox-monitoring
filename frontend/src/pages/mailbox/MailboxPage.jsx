@@ -159,7 +159,7 @@ export default function MailboxPage() {
     if (val.length < 2) { setUserSuggestions([]); return; }
     try {
       setSuggestionsLoading(true);
-      const res = await apiClient.get('/users/students');
+      const res = await apiClient.get('/users/students/directory');
       const all = res.data.data;
       const filtered = all.filter(
         (u) =>
@@ -187,7 +187,7 @@ export default function MailboxPage() {
       setComposeError(null);
 
       // Resolve email → UUID
-      const res = await apiClient.get('/users/students');
+      const res = await apiClient.get('/users/students/directory');
       const all = res.data.data;
       // also include admins: fetch from a general endpoint if needed
       const found = all.find((u) => u.email.toLowerCase() === composeForm.receiverEmail.trim().toLowerCase());
