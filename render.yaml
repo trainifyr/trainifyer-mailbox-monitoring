@@ -1,0 +1,44 @@
+services:
+  # 1. Backend Web Service
+  - type: web
+    name: trainifyer-backend
+    env: node
+    plan: free # Use 'free' for MVP
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard
+      - key: SUPABASE_URL
+        sync: false # Set in Render Dashboard
+      - key: SUPABASE_ANON_KEY
+        sync: false # Set in Render Dashboard
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # Set in Render Dashboard
+      - key: SUPABASE_JWT_SECRET
+        sync: false # Set in Render Dashboard (Required for JWT validation)
+
+  # 2. Frontend Static Site
+  - type: static
+    name: trainifyer-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://trainifyer-backend.onrender.com/api # Adjust once backend URL is confirmed
+      - key: VITE_SUPABASE_URL
+        sync: false # Set in Render Dashboard
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false # Set in Render Dashboard
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html # Support for React Router
