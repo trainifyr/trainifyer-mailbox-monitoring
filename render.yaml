@@ -27,7 +27,6 @@ services:
   - type: web
     name: trainifyer-frontend
     env: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
