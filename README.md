@@ -19,7 +19,8 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 *   **Unified Monitoring**: Administrators can monitor all internal communications for quality assurance.
 
 ### 🎥 Meetings & Jitsi Integration
-*   **Embedded Video**: Seamless Jitsi Meet integration using the `guifi.net` provider (no host login required).
+*   **Embedded Video**: Seamless Jitsi Meet integration using the `meet.guifi.net` provider.
+    *   *Note: We use this specialized mirror to bypass mandatory host/admin logins required by the official Jitsi server, ensuring a zero-friction experience for iframe embedding.*
 *   **Privacy Consent**: Mandatory privacy gatekeeper for all participants before entering video rooms.
 *   **Batch Isolation**: Meetings can be restricted to specific cohorts or marked as public.
 
@@ -38,7 +39,7 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 | **Backend** | Node.js, Express, Zod (Validation), pg (Pool) |
 | **Database** | Supabase (PostgreSQL) with RLS enabled |
 | **Auth** | Supabase Auth (JWT HS256) |
-| **Video** | Jitsi External API |
+| **Video** | Jitsi External API (Provider: `meet.guifi.net`) |
 
 ---
 
