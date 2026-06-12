@@ -12,7 +12,25 @@ const PORT = process.env.PORT || 5000;
 
 // Security & parsing
 app.use(helmet());
-app.use(cors());
+
+// Production CORS: Allow our Render frontend + local dev
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://trainifyer-frontend.onrender.com' // Adjust to your actual Render URL
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Auth middleware (JWT + mock fallback)
