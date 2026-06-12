@@ -1,19 +1,27 @@
-# Trainifyer Frontend
+# Trainifyer Frontend Client
 
-React + Vite client for the Trainifyer Mailbox Monitoring Platform.
+React + Vite frontend for the Trainifyer Mailbox Monitoring Platform.
 
 ## Setup
-1. Copy `.env.example` to `.env` and adjust values.
-2. Install: `npm install`
-3. Start dev server: `npm run dev`
-4. Open: http://localhost:5173
+1. Copy `.env.example` to `.env` and configure your Supabase URL/Key.
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev` (starts on port 5173)
 
-## Mock Identity (Phase 1-7)
-A floating bar at the bottom of the screen lets you switch between:
-- Admin (userId: admin-001)
-- Student (userId: student-001, cohortId: cohort-1)
-- Clear (anonymous)
+## Authentication
+This application uses **Supabase Auth** and a centralized `AuthContext`. 
+*   **Role-Based Access**: The app uses `AdminRoute` and `StudentRoute` guards to protect specific views.
+*   **API Client**: The specialized Axios client at `src/api/client.js` automatically injects the active JWT into every request to the backend.
 
-The selected role is sent to the backend as `x-mock-role` and `x-mock-user-id` headers.
+## Building for Production
+```bash
+npm run build
+```
+The production bundle will be output to the `dist/` directory, ready for deployment to Render or any static host.
 
-This bar will be removed in Phase 8 once real authentication is integrated.
+## Project Structure
+*   `src/components/` — Shared UI elements and Auth guards.
+*   `src/context/` — Auth and State management providers.
+*   `src/pages/` — Feature-specific views (Mailbox, Meetings, Dashboards).
+*   `src/api/` — API client and central request logic.
+
+For full project details, see the root [README](../README.md).
