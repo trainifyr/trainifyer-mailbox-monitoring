@@ -24,7 +24,7 @@ services:
         sync: false # Set in Render Dashboard (Required for JWT validation)
 
   # 2. Frontend Static Site
-  - type: static
+  - type: web
     name: trainifyer-frontend
     env: static
     plan: free
