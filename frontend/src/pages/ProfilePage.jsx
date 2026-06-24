@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { User, Lock, Mail, Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import './ProfilePage.css';
 
