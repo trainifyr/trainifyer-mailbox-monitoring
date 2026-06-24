@@ -77,22 +77,26 @@ const supabase = require('../lib/supabaseClient');
 
 // --- POST /api/users/students ---
 // Create a student profile. Admin only.
-// Generates a real Supabase Auth invitation and links it to the profile.
+// Manually creates a Supabase Auth user with a default password.
 
 router.post('/', requireRole('ADMIN'), async (req, res, next) => {
   try {
     const body = createStudentSchema.parse(req.body);
 
-    // 1. Create/Invite user in Supabase Auth using Service Role key
-    // This sends the "Join" email with a password-reset link.
-    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(body.email, {
-      data: { full_name: body.fullName }
+    // 1. Create user in Supabase Auth using Service Role key
+    // We set a default password and auto-confirm the email
+    const TEMP_PASSWORD = 'Trainifyer@2024';
+    
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: body.email,
+      password: TEMP_PASSWORD,
+      email_confirm: true,
+      user_metadata: { full_name: body.fullName }
     });
 
     if (authError) {
-      // If the user already exists in Auth but not in public.users, we continue
-      // If it's a real error (like invalid email), we stop.
-      if (authError.status !== 422) { // 422 usually means user already exists
+      // 422 usually means user already exists in Auth
+      if (authError.status !== 422) { 
          return res.status(authError.status || 400).json({ 
            error: 'Auth Error', 
            message: authError.message 
@@ -111,7 +115,13 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
       [body.email, body.fullName, body.role, supabaseUserId]
     );
 
-    res.status(201).json({ data: rows[0] });
+    // Return the student data plus the temp password so the admin can share it
+    res.status(201).json({ 
+      data: { 
+        ...rows[0], 
+        tempPassword: TEMP_PASSWORD 
+      } 
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({
@@ -119,7 +129,6 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
         details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message }))
       });
     }
-    // Unique violation (email already exists in public.users)
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Conflict', message: 'A profile with this email already exists' });
     }

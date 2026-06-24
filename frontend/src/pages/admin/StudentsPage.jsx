@@ -40,7 +40,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     if (!notification) return;
-    const timer = setTimeout(() => setNotification(null), 2500);
+    const timer = setTimeout(() => setNotification(null), 10000);
     return () => clearTimeout(timer);
   }, [notification]);
 
@@ -52,10 +52,11 @@ export default function StudentsPage() {
     try {
       setSubmitting(true);
       setFormError(null);
-      await apiClient.post('/users/students', { email: form.email, fullName: form.fullName, role: 'STUDENT' });
+      const res = await apiClient.post('/users/students', { email: form.email, fullName: form.fullName, role: 'STUDENT' });
       setForm(INITIAL_FORM);
       setShowForm(false);
-      setNotification('Student created successfully');
+      const tempPass = res.data.data.tempPassword;
+      setNotification(`Student created! Temporary password: ${tempPass}`);
       await fetchStudents();
     } catch (e) {
       setFormError(e.response?.data?.message || e.message);
