@@ -155,7 +155,7 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
     params.push(id);
     const { rows } = await pool.query(
       `UPDATE public.users SET ${sets.join(', ')} WHERE id = $${idx} AND role = 'STUDENT'
-       RETURNING id, email, full_name, role, created_at, updated_at`,
+       RETURNING id, email, full_name, role, supabase_user_id, created_at, updated_at`,
       params
     );
 
@@ -163,7 +163,25 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Student not found' });
     }
 
-    res.json({ data: rows[0] });
+    const updatedStudent = rows[0];
+
+    // If the email was updated, sync with Supabase Auth
+    if (body.email && updatedStudent.supabase_user_id) {
+      const { error: syncError } = await supabase.auth.admin.updateUserById(
+        updatedStudent.supabase_user_id,
+        { email: body.email }
+      );
+      
+      if (syncError) {
+        console.error('Failed to sync email to Supabase Auth:', syncError);
+        // We continue anyway as the DB is primary, but we log the error
+      } else {
+        // Optionially re-trigger an invite to the new email
+        await supabase.auth.admin.inviteUserByEmail(body.email);
+      }
+    }
+
+    res.json({ data: updatedStudent });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({

@@ -15,6 +15,7 @@ import MeetingsListPage from '../pages/meetings/MeetingsListPage';
 import MeetingRoomPage from '../pages/meetings/MeetingRoomPage';
 import StudentDashboard from '../pages/student/StudentDashboard';
 import ReportsPage from '../pages/admin/ReportsPage';
+import ProfilePage from '../pages/ProfilePage';
 
 export default function AppRoutes() {
   return (
@@ -55,6 +56,9 @@ export default function AppRoutes() {
         } />
         <Route path="/meeting/:id" element={
           <ProtectedRoute><MeetingRoomPage /></ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute><ProfilePage /></ProtectedRoute>
         } />
 
         {/* Fallback */}

@@ -36,7 +36,7 @@ export default function Layout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {isAuthenticated && user ? (
             <>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#374151' }}>
+              <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', fontSize: '14px', color: '#374151' }} title="Visit Profile">
                 <User size={16} />
                 {user.full_name}
                 <span className="badge" style={{
@@ -51,7 +51,7 @@ export default function Layout() {
                 }}>
                   {user.role}
                 </span>
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 style={{
