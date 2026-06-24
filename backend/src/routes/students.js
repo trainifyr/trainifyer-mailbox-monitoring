@@ -73,19 +73,42 @@ router.get('/directory', async (req, res, next) => {
   }
 });
 
+const supabase = require('../lib/supabaseClient');
+
 // --- POST /api/users/students ---
 // Create a student profile. Admin only.
-// Generates a UUID for the student ID. No Supabase Auth user is created.
+// Generates a real Supabase Auth invitation and links it to the profile.
 
 router.post('/', requireRole('ADMIN'), async (req, res, next) => {
   try {
     const body = createStudentSchema.parse(req.body);
 
+    // 1. Create/Invite user in Supabase Auth using Service Role key
+    // This sends the "Join" email with a password-reset link.
+    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(body.email, {
+      data: { full_name: body.fullName }
+    });
+
+    if (authError) {
+      // If the user already exists in Auth but not in public.users, we continue
+      // If it's a real error (like invalid email), we stop.
+      if (authError.status !== 422) { // 422 usually means user already exists
+         return res.status(authError.status || 400).json({ 
+           error: 'Auth Error', 
+           message: authError.message 
+         });
+      }
+    }
+
+    const authUser = authData?.user;
+    const supabaseUserId = authUser?.id || null;
+
+    // 2. Insert into public.users
     const { rows } = await pool.query(
-      `INSERT INTO public.users (email, full_name, role)
-       VALUES ($1, $2, $3)
-       RETURNING id, email, full_name, role, created_at, updated_at`,
-      [body.email, body.fullName, body.role]
+      `INSERT INTO public.users (email, full_name, role, supabase_user_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, email, full_name, role, supabase_user_id, created_at, updated_at`,
+      [body.email, body.fullName, body.role, supabaseUserId]
     );
 
     res.status(201).json({ data: rows[0] });
@@ -96,9 +119,9 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
         details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message }))
       });
     }
-    // Unique violation (email already exists)
+    // Unique violation (email already exists in public.users)
     if (err.code === '23505') {
-      return res.status(409).json({ error: 'Conflict', message: 'A user with this email already exists' });
+      return res.status(409).json({ error: 'Conflict', message: 'A profile with this email already exists' });
     }
     next(err);
   }

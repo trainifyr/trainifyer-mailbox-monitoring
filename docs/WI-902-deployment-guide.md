@@ -10,6 +10,7 @@ This guide details the steps to deploy the **Trainifyer Mailbox Monitoring Platf
 *   Your **Supabase** Project URL, Anon Key, and Service Role Key.
 *   Your **Supabase JWT Secret** (found in Supabase Dashboard > Settings > API).
 *   Your **Supabase Connection String** (found in Supabase Dashboard > Settings > Database).
+*   **Supabase Site URL**: Set this to your production Frontend URL in `Supabase Dashboard > Authentication > URL Configuration > Site URL`. This is required for invitation links to work.
 
 ---
 
