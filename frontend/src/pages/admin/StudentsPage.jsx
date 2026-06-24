@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, UserPlus, Pencil, X, Check, Trash2 } from 'lucide-react';
+import { Plus, UserPlus, Pencil, X, Check, Trash2, KeyRound } from 'lucide-react';
 import './StudentsPage.css';
 
 const INITIAL_FORM = { email: '', fullName: '' };
@@ -113,6 +113,15 @@ export default function StudentsPage() {
     }
   };
 
+  const handleResetPassword = async (studentId) => {
+    try {
+      const res = await apiClient.post(`/users/students/${studentId}/reset-password`);
+      setNotification(`Password reset! Temp password: ${res.data.tempPassword}`);
+    } catch (e) {
+      alert(`Reset failed: ${e.response?.data?.message || e.message}`);
+    }
+  };
+
   return (
     <div className="students-page">
       {notification && (
@@ -185,6 +194,9 @@ export default function StudentsPage() {
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button className="btn" title="Edit student" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
                               <Pencil size={14} />
+                            </button>
+                            <button className="btn" title="Reset password" onClick={() => handleResetPassword(s.id)} style={{ padding: '4px 8px', color: '#facc15' }}>
+                              <KeyRound size={14} />
                             </button>
                             <button className="btn" title="Delete student" onClick={() => handleDelete(s.id, s.full_name)} style={{ padding: '4px 8px', color: '#f87171' }}>
                               <Trash2 size={14} />
