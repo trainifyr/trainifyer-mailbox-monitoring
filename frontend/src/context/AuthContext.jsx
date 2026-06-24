@@ -14,17 +14,40 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       if (initialSession?.user) {
-        fetchUserProfile(initialSession.user.id).then(setUser);
+        fetchUserProfile(initialSession.user.id).then((profile) => {
+          setUser(profile);
+          // Mount check for invite links
+          if (window.location.hash.includes('access_token')) {
+            window.location.hash = ''; // Clear hash
+            window.location.assign('/profile');
+          }
+        });
       }
       setLoading(false);
     });
 
     // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      (event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
-          fetchUserProfile(newSession.user.id).then(setUser);
+          fetchUserProfile(newSession.user.id).then((profile) => {
+            setUser(profile);
+            
+            // AUTO-REDIRECT FOR INVITE LINKS
+            // If the user arrived via a #access_token=... (invite/recovery),
+            // take them straight to the profile page to set their password.
+            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+              if (window.location.hash.includes('access_token')) {
+                console.log('Detected invitation/recovery link, redirecting to profile...');
+                // Small delay to allow session to settle
+                setTimeout(() => {
+                  window.location.hash = ''; // Clear hash
+                  window.location.assign('/profile');
+                }, 800);
+              }
+            }
+          });
         } else {
           setUser(null);
         }
