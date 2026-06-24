@@ -134,7 +134,7 @@ export default function MeetingRoomPage() {
           lang: 'en', // Explicit language lock
           parentNode: jitsiContainerRef.current,
           userInfo: { displayName: userDisplayName },
-          configOverrides: {
+          configOverwrite: {
             defaultLanguage: 'en',
             startWithAudioMuted: true,
             prejoinPageEnabled: false,
@@ -143,7 +143,7 @@ export default function MeetingRoomPage() {
             enableLobby: false,
             requireDisplayName: false
           },
-          interfaceConfigOverrides: {
+          interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
             TOOLBAR_ALWAYS_VISIBLE: true
