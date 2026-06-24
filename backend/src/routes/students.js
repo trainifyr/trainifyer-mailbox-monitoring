@@ -175,21 +175,36 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
     const updatedStudent = rows[0];
     const TEMP_PASSWORD = 'Trainifyer@2024';
 
-    // If the email was updated, sync with Supabase Auth AND reset password
-    if (body.email && updatedStudent.supabase_user_id) {
-      const { error: syncError } = await supabase.auth.admin.updateUserById(
-        updatedStudent.supabase_user_id,
-        { 
+    // Ensure we have a Supabase Auth account linked when email is provided
+    if (body.email) {
+      if (updatedStudent.supabase_user_id) {
+        // CASE A: User already linked, just update email and reset password
+        const { error: syncError } = await supabase.auth.admin.updateUserById(
+          updatedStudent.supabase_user_id,
+          { 
+            email: body.email,
+            password: TEMP_PASSWORD,
+            email_confirm: true 
+          }
+        );
+        if (!syncError) updatedStudent.tempPassword = TEMP_PASSWORD;
+      } else {
+        // CASE B: Legacy user not yet in Auth. Create them now!
+        const { data: authData, error: createError } = await supabase.auth.admin.createUser({
           email: body.email,
           password: TEMP_PASSWORD,
-          email_confirm: true 
+          email_confirm: true,
+          user_metadata: { full_name: updatedStudent.full_name }
+        });
+        
+        if (!createError && authData?.user) {
+          // Link the newly created auth ID to the profile
+          await pool.query(
+            'UPDATE public.users SET supabase_user_id = $1 WHERE id = $2',
+            [authData.user.id, updatedStudent.id]
+          );
+          updatedStudent.tempPassword = TEMP_PASSWORD;
         }
-      );
-      
-      if (syncError) {
-        console.error('Failed to sync/reset Supabase Auth:', syncError);
-      } else {
-        updatedStudent.tempPassword = TEMP_PASSWORD;
       }
     }
 
