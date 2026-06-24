@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, UserPlus, Pencil, X, Check } from 'lucide-react';
+import { Plus, UserPlus, Pencil, X, Check, Trash2 } from 'lucide-react';
 import './StudentsPage.css';
 
 const INITIAL_FORM = { email: '', fullName: '' };
@@ -102,6 +102,17 @@ export default function StudentsPage() {
     }
   };
 
+  const handleDelete = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to delete ${studentName}? This will also delete their login account.`)) return;
+    try {
+      await apiClient.delete(`/users/students/${studentId}`);
+      setNotification('Student deleted successfully');
+      await fetchStudents();
+    } catch (e) {
+      alert(`Delete failed: ${e.response?.data?.message || e.message}`);
+    }
+  };
+
   return (
     <div className="students-page">
       {notification && (
@@ -171,9 +182,14 @@ export default function StudentsPage() {
                       <td>{new Date(s.created_at).toLocaleDateString()}</td>
                       {isAdmin && (
                         <td>
-                          <button className="btn" title="Edit student" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
-                            <Pencil size={14} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button className="btn" title="Edit student" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
+                              <Pencil size={14} />
+                            </button>
+                            <button className="btn" title="Delete student" onClick={() => handleDelete(s.id, s.full_name)} style={{ padding: '4px 8px', color: '#f87171' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>

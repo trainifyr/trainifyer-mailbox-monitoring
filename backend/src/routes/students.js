@@ -224,3 +224,33 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
 });
 
 module.exports = router;
+
+// --- DELETE /api/users/students/:id ---
+// Remove a student profile and their Supabase Auth account. Admin only.
+
+router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Find the user first to get the supabase_user_id
+    const { rows } = await pool.query('SELECT supabase_user_id FROM public.users WHERE id = $1 AND role = \'STUDENT\'', [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Student not found' });
+    }
+
+    const supabaseUserId = rows[0].supabase_user_id;
+
+    // 2. Delete from Supabase Auth if linked
+    if (supabaseUserId) {
+      await supabase.auth.admin.deleteUser(supabaseUserId);
+    }
+
+    // 3. Delete from public.users (DB cascades will handle related records)
+    await pool.query('DELETE FROM public.users WHERE id = $1', [id]);
+
+    res.json({ message: 'Student deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
