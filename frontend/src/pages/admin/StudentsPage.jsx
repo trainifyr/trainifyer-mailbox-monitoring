@@ -83,12 +83,17 @@ export default function StudentsPage() {
     try {
       setEditSubmitting(true);
       setEditError(null);
-      await apiClient.patch(`/users/students/${studentId}`, {
+      const res = await apiClient.patch(`/users/students/${studentId}`, {
         email: editForm.email,
         fullName: editForm.fullName,
       });
       cancelEdit();
-      setNotification('Student updated successfully');
+      const updated = res.data.data;
+      if (updated.tempPassword) {
+        setNotification(`Student updated! New credentials: ${updated.tempPassword}`);
+      } else {
+        setNotification('Student updated successfully');
+      }
       await fetchStudents();
     } catch (e) {
       setEditError(e.response?.data?.message || e.message);

@@ -173,20 +173,23 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
     }
 
     const updatedStudent = rows[0];
+    const TEMP_PASSWORD = 'Trainifyer@2024';
 
-    // If the email was updated, sync with Supabase Auth
+    // If the email was updated, sync with Supabase Auth AND reset password
     if (body.email && updatedStudent.supabase_user_id) {
       const { error: syncError } = await supabase.auth.admin.updateUserById(
         updatedStudent.supabase_user_id,
-        { email: body.email }
+        { 
+          email: body.email,
+          password: TEMP_PASSWORD,
+          email_confirm: true 
+        }
       );
       
       if (syncError) {
-        console.error('Failed to sync email to Supabase Auth:', syncError);
-        // We continue anyway as the DB is primary, but we log the error
+        console.error('Failed to sync/reset Supabase Auth:', syncError);
       } else {
-        // Optionially re-trigger an invite to the new email
-        await supabase.auth.admin.inviteUserByEmail(body.email);
+        updatedStudent.tempPassword = TEMP_PASSWORD;
       }
     }
 
