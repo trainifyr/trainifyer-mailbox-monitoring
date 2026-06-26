@@ -32,9 +32,10 @@ router.get('/', async (req, res, next) => {
     if (batchId) {
       query = `
         SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.updated_at,
-               sb.batch_id, sb.assigned_at
+               sb.batch_id, sb.assigned_at, b.name as batch_name
         FROM public.users u
         LEFT JOIN public.student_batches sb ON sb.student_id = u.id
+        LEFT JOIN public.batches b ON b.id = sb.batch_id
         WHERE u.role = 'STUDENT' AND sb.batch_id = $1
         ORDER BY u.full_name ASC
       `;
@@ -42,9 +43,10 @@ router.get('/', async (req, res, next) => {
     } else {
       query = `
         SELECT u.id, u.email, u.full_name, u.role, u.created_at, u.updated_at,
-               sb.batch_id, sb.assigned_at
+               sb.batch_id, sb.assigned_at, b.name as batch_name
         FROM public.users u
         LEFT JOIN public.student_batches sb ON sb.student_id = u.id
+        LEFT JOIN public.batches b ON b.id = sb.batch_id
         WHERE u.role = 'STUDENT'
         ORDER BY u.full_name ASC
       `;

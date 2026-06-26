@@ -11,8 +11,6 @@ import {
   BarChart3, 
   Mail,
   Home,
-  Bell,
-  Search,
   ChevronRight
 } from 'lucide-react';
 
@@ -91,19 +89,7 @@ export default function Layout() {
                </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search anything..." 
-                  style={{ padding: '0.5rem 1rem 0.5rem 2.5rem', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg-app)', fontSize: '0.875rem', width: '240px' }} 
-                />
-              </div>
-              
-              <button className="btn-ghost" style={{ padding: '8px', borderRadius: '50%' }}><Bell size={20} /></button>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem' }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)' }}>{user?.full_name}</div>
                   <div className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-student'}`} style={{ fontSize: '0.65rem' }}>{user?.role}</div>
@@ -117,7 +103,6 @@ export default function Layout() {
                   <LogOut size={20} />
                 </button>
               </div>
-            </div>
           </header>
         ) : (
           <header className="top-bar">
