@@ -48,7 +48,7 @@ export default function Layout() {
             </Link>
           </div>
           
-          <nav style={{ flex: 1, paddingTop: '1rem' }}>
+          <nav style={{ flex: 1, paddingTop: '1rem', overflowY: 'auto', overflowX: 'hidden' }}>
             <NavLink to="/" icon={Home}>Home</NavLink>
             
             {user?.role === 'ADMIN' && (

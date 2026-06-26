@@ -230,6 +230,24 @@ ul {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
+/* Sidebar Custom Scrollbar */
+.sidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.sidebar nav:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .top-bar {
   height: var(--nav-height);
   padding: 0 2rem;
