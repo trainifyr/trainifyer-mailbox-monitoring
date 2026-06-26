@@ -3,9 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import {
   Inbox, Send, PenSquare, ChevronLeft, Mail, MailOpen,
-  Paperclip, Eye, Clock, User, ArrowLeft
+  Paperclip, Eye, Clock, User, ArrowLeft, 
+  Search,
+  MoreVertical,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
-import './MailboxPage.css';
 
 const PAGE_SIZE = 20;
 
@@ -36,7 +39,6 @@ export default function MailboxPage() {
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
-  // Error / notification
   const [error, setError] = useState(null);
 
   const fetchInbox = useCallback(async (page) => {
@@ -44,15 +46,11 @@ export default function MailboxPage() {
       setInboxLoading(true);
       setError(null);
       const res = await apiClient.get(`/mail/inbox?page=${page}&limit=${PAGE_SIZE}`);
-      if (page === 1) {
-        setInboxMessages(res.data.data);
-      } else {
-        setInboxMessages((prev) => [...prev, ...res.data.data]);
-      }
+      if (page === 1) setInboxMessages(res.data.data);
+      else setInboxMessages((prev) => [...prev, ...res.data.data]);
       setInboxPagination(res.data.pagination);
     } catch (e) {
-      const msg = e.response?.data?.message || e.message;
-      setError(msg);
+      setError(e.response?.data?.message || e.message);
       if (page === 1) setInboxMessages([]);
     } finally {
       setInboxLoading(false);
@@ -64,15 +62,11 @@ export default function MailboxPage() {
       setSentLoading(true);
       setError(null);
       const res = await apiClient.get(`/mail/sent?page=${page}&limit=${PAGE_SIZE}`);
-      if (page === 1) {
-        setSentMessages(res.data.data);
-      } else {
-        setSentMessages((prev) => [...prev, ...res.data.data]);
-      }
+      if (page === 1) setSentMessages(res.data.data);
+      else setSentMessages((prev) => [...prev, ...res.data.data]);
       setSentPagination(res.data.pagination);
     } catch (e) {
-      const msg = e.response?.data?.message || e.message;
-      setError(msg);
+      setError(e.response?.data?.message || e.message);
       if (page === 1) setSentMessages([]);
     } finally {
       setSentLoading(false);
@@ -81,129 +75,46 @@ export default function MailboxPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeView === 'inbox') {
-      setInboxPage(1);
-      fetchInbox(1);
-    }
-  }, [activeView, isAuthenticated, fetchInbox]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (activeView === 'sent') {
-      setSentPage(1);
-      fetchSent(1);
-    }
-  }, [activeView, isAuthenticated, fetchSent]);
-
-  const handleViewInbox = () => {
-    setActiveView('inbox');
-    setSelectedMessage(null);
-    setComposeSuccess(false);
-  };
-
-  const handleViewSent = () => {
-    setActiveView('sent');
-    setSelectedMessage(null);
-    setComposeSuccess(false);
-  };
-
-  const handleViewCompose = () => {
-    setActiveView('compose');
-    setSelectedMessage(null);
-    setComposeForm({ receiverEmail: '', subject: '', body: '' });
-    setComposeError(null);
-    setComposeSuccess(false);
-    setUserSuggestions([]);
-  };
-
-  const handleLoadMoreInbox = () => {
-    const nextPage = inboxPage + 1;
-    setInboxPage(nextPage);
-    fetchInbox(nextPage);
-  };
-
-  const handleLoadMoreSent = () => {
-    const nextPage = sentPage + 1;
-    setSentPage(nextPage);
-    fetchSent(nextPage);
-  };
+    if (activeView === 'inbox') { setInboxPage(1); fetchInbox(1); }
+    if (activeView === 'sent') { setSentPage(1); fetchSent(1); }
+  }, [activeView, isAuthenticated, fetchInbox, fetchSent]);
 
   const handleOpenMessage = async (msg) => {
     setSelectedMessage(msg);
     setActiveView('detail');
-
-    // If unread, mark as read
     if (!msg.is_read) {
       try {
         await apiClient.patch(`/mail/${msg.id}/read`);
-        // Update the read status locally
-        const markRead = (list) =>
-          list.map((m) => m.id === msg.id ? { ...m, is_read: true, read_at: new Date().toISOString() } : m);
-        
-        setInboxMessages((prev) => markRead(prev));
-        
-        // Also decrement the sidebar unread count
-        setInboxPagination(prev => prev ? { ...prev, unreadCount: Math.max(0, (prev.unreadCount || 0) - 1) } : prev);
-        
-        setSelectedMessage((prev) => prev ? { ...prev, is_read: true, read_at: new Date().toISOString() } : prev);
-      } catch (e) {
-        // Non-critical; ignore
-      }
+        setInboxMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_read: true } : m));
+        setInboxPagination(prev => prev ? { ...prev, unreadCount: Math.max(0, prev.unreadCount - 1) } : prev);
+      } catch {}
     }
   };
 
-  // Search users by email/name as the user types in To: field
   const handleReceiverEmailChange = async (e) => {
     const val = e.target.value;
-    setComposeForm((prev) => ({ ...prev, receiverEmail: val }));
+    setComposeForm(prev => ({ ...prev, receiverEmail: val }));
     if (val.length < 2) { setUserSuggestions([]); return; }
     try {
       setSuggestionsLoading(true);
       const res = await apiClient.get('/users/students/directory');
-      const all = res.data.data;
-      const filtered = all.filter(
-        (u) =>
-          u.email.toLowerCase().includes(val.toLowerCase()) ||
-          u.full_name.toLowerCase().includes(val.toLowerCase())
-      ).slice(0, 6);
+      const filtered = res.data.data.filter(u => u.email.toLowerCase().includes(val.toLowerCase()) || u.full_name.toLowerCase().includes(val.toLowerCase())).slice(0, 5);
       setUserSuggestions(filtered);
     } catch { setUserSuggestions([]); }
     finally { setSuggestionsLoading(false); }
   };
 
-  const handlePickSuggestion = (user) => {
-    setComposeForm((prev) => ({ ...prev, receiverEmail: user.email }));
-    setUserSuggestions([]);
-  };
-
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!composeForm.receiverEmail || !composeForm.subject || !composeForm.body) {
-      setComposeError('All fields are required.');
-      return;
-    }
     try {
       setComposeSending(true);
       setComposeError(null);
-
-      // Resolve email → UUID
       const res = await apiClient.get('/users/students/directory');
-      const all = res.data.data;
-      // also include admins: fetch from a general endpoint if needed
-      const found = all.find((u) => u.email.toLowerCase() === composeForm.receiverEmail.trim().toLowerCase());
-      if (!found) {
-        setComposeError(`No user found with email "${composeForm.receiverEmail}". Make sure the recipient exists.`);
-        return;
-      }
-
-      await apiClient.post('/mail/send', {
-        receiverId: found.id,
-        subject: composeForm.subject,
-        body: composeForm.body,
-      });
+      const found = res.data.data.find(u => u.email.toLowerCase() === composeForm.receiverEmail.trim().toLowerCase());
+      if (!found) { setComposeError(`No user found with email "${composeForm.receiverEmail}".`); return; }
+      await apiClient.post('/mail/send', { receiverId: found.id, subject: composeForm.subject, body: composeForm.body });
       setComposeSuccess(true);
       setComposeForm({ receiverEmail: '', subject: '', body: '' });
-      setUserSuggestions([]);
     } catch (e) {
       setComposeError(e.response?.data?.message || e.message);
     } finally {
@@ -211,264 +122,130 @@ export default function MailboxPage() {
     }
   };
 
-  // --- Render helpers ---
-
   const formatDate = (iso) => {
-    if (!iso) return '';
     const d = new Date(iso);
     const now = new Date();
-    const diffMs = now - d;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString();
-  };
-
-  const renderSidebar = () => (
-    <div className="mailbox-sidebar">
-      <button
-        className={`sidebar-btn ${activeView === 'inbox' ? 'active' : ''}`}
-        onClick={handleViewInbox}
-      >
-        <Inbox size={16} /> Inbox
-        {inboxPagination && inboxPagination.unreadCount > 0 && (
-          <span className="sidebar-count">{inboxPagination.unreadCount}</span>
-        )}
-      </button>
-      <button
-        className={`sidebar-btn ${activeView === 'sent' ? 'active' : ''}`}
-        onClick={handleViewSent}
-      >
-        <Send size={16} /> Sent
-      </button>
-      <button
-        className={`sidebar-btn ${activeView === 'compose' ? 'active' : ''}`}
-        onClick={handleViewCompose}
-      >
-        <PenSquare size={16} /> Compose
-      </button>
-    </div>
-  );
-
-  const renderMessageList = (messages, loading, pagination, onLoadMore) => (
-    <div className="message-list">
-      {loading && messages.length === 0 ? (
-        <p className="status-message">Loading messages...</p>
-      ) : messages.length === 0 ? (
-        <p className="status-message">No messages.</p>
-      ) : (
-        <>
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message-row ${!msg.is_read && activeView === 'inbox' ? 'unread' : ''} ${selectedMessage?.id === msg.id ? 'selected' : ''}`}
-              onClick={() => handleOpenMessage(msg)}
-            >
-              <div className="message-row-icon">
-                {msg.is_read ? <MailOpen size={16} /> : <Mail size={16} />}
-              </div>
-              <div className="message-row-content">
-                <span className="message-row-name">
-                  {activeView === 'inbox' ? msg.sender_name : msg.receiver_name}
-                </span>
-                <span className="message-row-subject">{msg.subject}</span>
-              </div>
-              <span className="message-row-date">{formatDate(msg.created_at)}</span>
-            </div>
-          ))}
-          {pagination && pagination.page < pagination.totalPages && (
-            <button className="load-more-btn" onClick={onLoadMore} disabled={loading}>
-              {loading ? 'Loading...' : 'Load more'}
-            </button>
-          )}
-        </>
-      )}
-    </div>
-  );
-
-  const renderDetail = () => {
-    if (!selectedMessage) return null;
-
-    const msg = selectedMessage;
-
-    return (
-      <div className="message-detail">
-        <button className="back-btn" onClick={() => setActiveView(activeView === 'detail' ? (selectedMessage.sender_id === userId ? 'sent' : 'inbox') : 'inbox')}>
-          <ArrowLeft size={16} /> Back
-        </button>
-        <div className="detail-header">
-          <h3>{msg.subject}</h3>
-          <div className="detail-meta">
-            <div className="detail-meta-row">
-              <User size={14} />
-              <span className="meta-label">{msg.sender_id === userId ? 'To:' : 'From:'}</span>
-              <span className="meta-value">{msg.sender_id === userId ? msg.receiver_name : msg.sender_name}</span>
-              <span className="meta-email">
-                ({msg.sender_id === userId ? msg.receiver_email : msg.sender_email})
-              </span>
-            </div>
-            <div className="detail-meta-row">
-              <Clock size={14} />
-              <span className="meta-label">Date:</span>
-              <span className="meta-value">{new Date(msg.created_at).toLocaleString()}</span>
-            </div>
-            <div className="detail-meta-row">
-              {msg.is_read ? <Eye size={14} /> : <Mail size={14} />}
-              <span className="meta-label">Status:</span>
-              <span className="meta-value">
-                {msg.is_read
-                  ? `Read ${msg.read_at ? `(${new Date(msg.read_at).toLocaleString()})` : ''}`
-                  : 'Unread'}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="detail-body">
-          {msg.body.split('\n').map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCompose = () => (
-    <div className="compose-form">
-      <h3><PenSquare size={16} /> New Message</h3>
-      {composeSuccess ? (
-        <div className="compose-success">
-          <p>Message sent successfully!</p>
-          <button className="btn btn-primary" onClick={handleViewInbox}>Go to Inbox</button>
-          <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={() => {
-            setComposeSuccess(false);
-            setComposeForm({ receiverEmail: '', subject: '', body: '' });
-          }}>Send Another</button>
-        </div>
-      ) : (
-        <form onSubmit={handleSend}>
-          {/* To: field with autocomplete */}
-          <div className="compose-field" style={{ position: 'relative' }}>
-            <label>To (Email)</label>
-            <input
-              name="receiverEmail"
-              type="email"
-              value={composeForm.receiverEmail}
-              onChange={handleReceiverEmailChange}
-              onBlur={() => setTimeout(() => setUserSuggestions([]), 200)}
-              placeholder="Search by name or email..."
-              autoComplete="off"
-              required
-            />
-            {userSuggestions.length > 0 && (
-              <ul style={{
-                position: 'absolute', top: '100%', left: 0, right: 0,
-                background: '#1e1b4b', border: '1px solid #4f46e5', borderRadius: '6px',
-                listStyle: 'none', margin: 0, padding: '4px 0', zIndex: 100,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
-              }}>
-                {userSuggestions.map((u) => (
-                  <li
-                    key={u.id}
-                    onMouseDown={() => handlePickSuggestion(u)}
-                    style={{
-                      padding: '8px 14px', cursor: 'pointer', display: 'flex',
-                      flexDirection: 'column', gap: '2px',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#2d2564'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <span style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.9rem' }}>{u.full_name}</span>
-                    <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{u.email}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="compose-field">
-            <label>Subject</label>
-            <input
-              name="subject"
-              value={composeForm.subject}
-              onChange={(e) => setComposeForm((p) => ({ ...p, subject: e.target.value }))}
-              placeholder="Message subject"
-              required
-              maxLength={200}
-            />
-          </div>
-          <div className="compose-field">
-            <label>Body</label>
-            <textarea
-              name="body"
-              value={composeForm.body}
-              onChange={(e) => setComposeForm((p) => ({ ...p, body: e.target.value }))}
-              placeholder="Write your message here..."
-              required
-              rows={10}
-            />
-          </div>
-          {composeError && <p className="form-error">{composeError}</p>}
-          <div className="compose-actions">
-            <button type="submit" className="btn btn-primary" disabled={composeSending}>
-              {composeSending ? 'Sending...' : 'Send Message'}
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-
-  const renderMainContent = () => {
-    if (!isAuthenticated) {
-      return (
-        <div className="mailbox-empty">
-          <p>Please sign in to access the mailbox.</p>
-        </div>
-      );
-    }
-
-    if (activeView === 'compose') {
-      return renderCompose();
-    }
-
-    if (error) {
-      const isForbidden = error.includes('disabled') || error === 'Forbidden' || error.includes('not assigned');
-      return (
-        <div className="mailbox-empty">
-          <div className="error-container" style={{ textAlign: 'center' }}>
-            <p className="error" style={{ color: '#dc2626', fontWeight: '500' }}>{error}</p>
-            {isForbidden && (
-              <p style={{ marginTop: '0.5rem', opacity: 0.7 }}>
-                This is enforced by the batch settings for your cohort.
-              </p>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    switch (activeView) {
-      case 'inbox':
-        return renderMessageList(inboxMessages, inboxLoading, inboxPagination, handleLoadMoreInbox);
-      case 'sent':
-        return renderMessageList(sentMessages, sentLoading, sentPagination, handleLoadMoreSent);
-      case 'detail':
-        return renderDetail();
-      default:
-        return null;
-    }
+    if (now.toDateString() === d.toDateString()) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   return (
-    <div className="mailbox-page">
-      {renderSidebar()}
-      <div className="mailbox-main">
-        {renderMainContent()}
-      </div>
+    <div className="animate-fade-in card" style={{ height: 'calc(100vh - var(--nav-height) - 4rem)', display: 'grid', gridTemplateColumns: '260px 1fr', overflow: 'hidden', padding: 0 }}>
+      {/* Sidebar */}
+      <aside style={{ background: 'var(--border-light)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '1.5rem' }}>
+           <button onClick={() => setActiveView('compose')} className="btn btn-primary" style={{ width: '100%', borderRadius: '12px', padding: '0.875rem' }}>
+              <PenSquare size={18} /> Compose
+           </button>
+        </div>
+        
+        <nav style={{ flex: 1, padding: '0 0.75rem' }}>
+           <button onClick={() => setActiveView('inbox')} className={`nav-link ${activeView === 'inbox' ? 'active' : ''}`} style={{ width: 'calc(100% - 1.5rem)', color: activeView === 'inbox' ? 'white' : 'var(--text-main)', border: 'none', background: activeView === 'inbox' ? 'var(--primary)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}>
+              <Inbox size={18} /> Inbox
+              {inboxPagination?.unreadCount > 0 && <span className="counter-badge" style={{ marginLeft: 'auto', background: 'white', color: 'var(--primary)' }}>{inboxPagination.unreadCount}</span>}
+           </button>
+           <button onClick={() => setActiveView('sent')} className={`nav-link ${activeView === 'sent' ? 'active' : ''}`} style={{ width: 'calc(100% - 1.5rem)', color: activeView === 'sent' ? 'white' : 'var(--text-main)', border: 'none', background: activeView === 'sent' ? 'var(--primary)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}>
+              <Send size={18} /> Sent
+           </button>
+        </nav>
+      </aside>
+
+      {/* Main Mail Area */}
+      <main style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+         <div style={{ padding: '1.25rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '1.125rem', textTransform: 'capitalize' }}>{activeView}</h2>
+            <div style={{ position: 'relative' }}>
+               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+               <input className="input" placeholder="Search mail..." style={{ width: '200px', padding: '0.4rem 0.75rem 0.4rem 2rem', fontSize: '0.8125rem', borderRadius: '12px' }} />
+            </div>
+         </div>
+
+         <div style={{ flex: 1, overflowY: 'auto' }}>
+            {activeView === 'compose' ? (
+               <div style={{ padding: '2.5rem', maxWidth: '800px' }}>
+                  {composeSuccess ? (
+                    <div style={{ textAlign: 'center', padding: '4rem' }}>
+                       <div style={{ width: '64px', height: '64px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}><CheckCircle2 size={32} /></div>
+                       <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Message Dispatched</h3>
+                       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Your message has been successfully delivered to the recipient.</p>
+                       <button className="btn btn-primary" onClick={() => { setComposeSuccess(false); setActiveView('inbox'); }}>Back to Inbox</button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                       <div className="input-group">
+                          <label className="label">Recipient</label>
+                          <div style={{ position: 'relative' }}>
+                             <input className="input" placeholder="Type name or email..." value={composeForm.receiverEmail} onChange={handleReceiverEmailChange} onBlur={() => setTimeout(() => setUserSuggestions([]), 200)} required />
+                             {userSuggestions.length > 0 && (
+                               <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: '4px', padding: '4px' }}>
+                                 {userSuggestions.map(u => (
+                                   <div key={u.id} onClick={() => setComposeForm(p => ({...p, receiverEmail: u.email}))} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={e => e.target.style.background = 'var(--bg-app)'} onMouseLeave={e => e.target.style.background = 'transparent'}>
+                                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{u.full_name}</div>
+                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                          </div>
+                       </div>
+                       <div className="input-group">
+                          <label className="label">Subject</label>
+                          <input className="input" placeholder="What is this about?" value={composeForm.subject} onChange={e => setComposeForm(p => ({...p, subject: e.target.value}))} required />
+                       </div>
+                       <div className="input-group">
+                          <label className="label">Message Body</label>
+                          <textarea className="input" style={{ minHeight: '300px', resize: 'vertical' }} placeholder="Compose your update..." value={composeForm.body} onChange={e => setComposeForm(p => ({...p, body: e.target.value}))} required />
+                       </div>
+                       {composeError && <div style={{ color: '#ef4444', fontSize: '0.875rem' }}>{composeError}</div>}
+                       <button type="submit" className="btn btn-primary" style={{ width: 'fit-content' }} disabled={composeSending}>{composeSending ? 'Dispatching...' : 'Send Message'}</button>
+                    </form>
+                  )}
+               </div>
+            ) : activeView === 'detail' && selectedMessage ? (
+               <div style={{ padding: '2.5rem' }}>
+                  <button className="btn btn-ghost" onClick={() => setActiveView(selectedMessage.sender_id === userId ? 'sent' : 'inbox')} style={{ marginBottom: '2rem', paddingLeft: 0 }}><ArrowLeft size={18} /> Back to {selectedMessage.sender_id === userId ? 'Sent' : 'Inbox'}</button>
+                  <div style={{ marginBottom: '2.5rem' }}>
+                     <h1 style={{ fontSize: '1.75rem', marginBottom: '1.5rem' }}>{selectedMessage.subject}</h1>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)' }}>{selectedMessage.sender_name.charAt(0)}</div>
+                        <div style={{ flex: 1 }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{selectedMessage.sender_name}</span>
+                              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{new Date(selectedMessage.created_at).toLocaleString()}</span>
+                           </div>
+                           <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>to {selectedMessage.receiver_name} &lt;{selectedMessage.receiver_email}&gt;</div>
+                        </div>
+                     </div>
+                  </div>
+                  <div style={{ padding: '2rem 0', borderTop: '1px solid var(--border)', lineHeight: '1.8', color: 'var(--text-main)', whiteSpace: 'pre-wrap' }}>
+                     {selectedMessage.body}
+                  </div>
+               </div>
+            ) : (
+               <div className="animate-fade-in">
+                  {(activeView === 'inbox' ? inboxMessages : sentMessages).length === 0 ? (
+                    <div style={{ padding: '6rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                       <Mail size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                       <p>Your {activeView} is empty.</p>
+                    </div>
+                  ) : (
+                    (activeView === 'inbox' ? inboxMessages : sentMessages).map(msg => (
+                      <div key={msg.id} onClick={() => handleOpenMessage(msg)} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '180px 1fr 100px', gap: '2rem', alignItems: 'center', cursor: 'pointer', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary-glow)' : 'transparent', fontWeight: !msg.is_read && activeView === 'inbox' ? 600 : 400 }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary)' : 'transparent' }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeView === 'inbox' ? msg.sender_name : msg.receiver_name}</span>
+                         </div>
+                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-heading)' }}>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginRight: '8px' }}>{msg.subject}</span> — {msg.body.substring(0, 100)}...
+                         </div>
+                         <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatDate(msg.created_at)}</div>
+                      </div>
+                    ))
+                  )}
+               </div>
+            )}
+         </div>
+      </main>
     </div>
   );
 }

@@ -1,8 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { BarChart3, Clock, CheckCircle, AlertTriangle, XCircle, Download, Search } from 'lucide-react';
-import './ReportsPage.css';
+import { 
+  BarChart3, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  Download, 
+  Search, 
+  RefreshCcw,
+  Calendar,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  FileSpreadsheet
+} from 'lucide-react';
 
 export default function ReportsPage() {
   const { isAdmin } = useAuth();
@@ -20,7 +33,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Batch/user lists for filter dropdowns
+  // Filter options
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
 
@@ -28,7 +41,6 @@ export default function ReportsPage() {
   const [sortField, setSortField] = useState('joined_at');
   const [sortDir, setSortDir] = useState('desc');
 
-  // Fetch filter options (batches + students)
   useEffect(() => {
     if (!isAdmin) return;
     Promise.all([
@@ -40,7 +52,6 @@ export default function ReportsPage() {
     }).catch(() => {});
   }, [isAdmin]);
 
-  // Fetch report data
   const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
@@ -65,7 +76,6 @@ export default function ReportsPage() {
     if (isAdmin) fetchReport();
   }, [fetchReport, isAdmin]);
 
-  // Sort details
   const sortedDetails = report?.details
     ? [...report.details].sort((a, b) => {
         let aVal = a[sortField];
@@ -91,9 +101,9 @@ export default function ReportsPage() {
     }
   };
 
-  const sortArrow = (field) => {
-    if (sortField !== field) return '';
-    return sortDir === 'asc' ? ' ▲' : ' ▼';
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronDown size={14} style={{ opacity: 0.3 }} />;
+    return sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
   };
 
   const handleExport = () => {
@@ -119,211 +129,166 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="students-page">
-        <p className="status-message">Admin access required.</p>
-      </div>
-    );
-  }
+  if (!isAdmin) return <div className="card" style={{ padding: '4rem', textAlign: 'center' }}>Admin access required.</div>;
 
   const { summary, series } = report || {};
 
   return (
-    <div className="students-page">
-      <div className="page-header">
-        <h2>Attendance Reports</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-secondary" onClick={fetchReport} disabled={loading}>
-            <Search size={16} /> Refresh
-          </button>
-          <button className="btn btn-primary" onClick={handleExport} disabled={!sortedDetails.length}>
-            <Download size={16} /> Export CSV
-          </button>
+    <div className="animate-fade-in">
+      {/* Header */}
+      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Attendance Intelligence</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Deep dive into participant engagement across your training ecosystem.</p>
         </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+           <button className="btn btn-ghost" onClick={fetchReport} style={{ border: '1px solid var(--border)' }}>
+             <RefreshCcw size={18} /> Sync Data
+           </button>
+           <button className="btn btn-primary" onClick={handleExport} disabled={!sortedDetails.length}>
+             <FileSpreadsheet size={18} /> Export Results
+           </button>
+        </div>
+      </header>
+
+      {/* Advanced Filter Panel */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '2.5rem', background: 'var(--border-light)', border: '1px solid var(--border)' }}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', color: 'var(--text-heading)', fontWeight: 600, fontSize: '0.875rem' }}>
+            <Filter size={16} /> Filters & Parameters
+         </div>
+         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1.25rem' }}>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+               <label className="label" style={{ fontSize: '0.7rem' }}>From Date</label>
+               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+               <label className="label" style={{ fontSize: '0.7rem' }}>To Date</label>
+               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+               <label className="label" style={{ fontSize: '0.7rem' }}>Time Scale</label>
+               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={granularity} onChange={(e) => setGranularity(e.target.value)}>
+                 <option value="daily">Daily View</option>
+                 <option value="weekly">Weekly Rollup</option>
+                 <option value="monthly">Monthly Aggregate</option>
+               </select>
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+               <label className="label" style={{ fontSize: '0.7rem' }}>Status</label>
+               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                 <option value="">All Statuses</option>
+                 <option value="PRESENT">Present</option>
+                 <option value="PARTIAL">Partial</option>
+                 <option value="ABSENT">Absent</option>
+               </select>
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+               <label className="label" style={{ fontSize: '0.7rem' }}>Batch</label>
+               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+                 <option value="">All Batches</option>
+                 {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+               </select>
+            </div>
+         </div>
       </div>
 
-      {/* Filter bar */}
-      <div className="reports-filter-bar">
-        <div className="filter-group">
-          <label>From</label>
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label>To</label>
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </div>
-        <div className="filter-group">
-          <label>Period</label>
-          <select value={granularity} onChange={(e) => setGranularity(e.target.value)}>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Status</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">All</option>
-            <option value="PRESENT">Present</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="ABSENT">Absent</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Batch</label>
-          <select value={batchId} onChange={(e) => setBatchId(e.target.value)}>
-            <option value="">All Batches</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-group">
-          <label>Student</label>
-          <select value={userId} onChange={(e) => setUserId(e.target.value)}>
-            <option value="">All Students</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {loading && <p className="status-message">Loading report...</p>}
-      {error && <p className="status-message error">{error}</p>}
-
+      {loading && <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Generating intelligence report...</div>}
+      
       {!loading && !error && report && (
         <>
-          {/* Summary KPI cards */}
-          <div className="kpi-grid">
-            <div className="kpi-card" style={{ borderTop: '3px solid #2563eb' }}>
-              <div className="kpi-icon" style={{ color: '#2563eb' }}><BarChart3 size={22} /></div>
-              <div className="kpi-value">{summary.total_sessions}</div>
-              <div className="kpi-label">Total Sessions</div>
+          {/* Summary KPIs */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
+            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--primary)' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Active Sessions</div>
+               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)' }}>{summary.total_sessions}</div>
             </div>
-            <div className="kpi-card" style={{ borderTop: '3px solid #16a34a' }}>
-              <div className="kpi-icon" style={{ color: '#16a34a' }}><Clock size={22} /></div>
-              <div className="kpi-value">{Math.round(summary.total_minutes)}m</div>
-              <div className="kpi-label">Total Minutes</div>
+            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Engagement Level</div>
+               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)' }}>{Math.round(summary.average_percentage)}%</div>
             </div>
-            <div className="kpi-card" style={{ borderTop: '3px solid #d97706' }}>
-              <div className="kpi-icon" style={{ color: '#d97706' }}><BarChart3 size={22} /></div>
-              <div className="kpi-value">{Math.round(summary.average_percentage)}%</div>
-              <div className="kpi-label">Avg Attendance</div>
+            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Present</div>
+               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)' }}>{summary.present_count}</div>
             </div>
-            <div className="kpi-card" style={{ borderTop: '3px solid #16a34a' }}>
-              <div className="kpi-icon" style={{ color: '#16a34a' }}><CheckCircle size={22} /></div>
-              <div className="kpi-value">{summary.present_count}</div>
-              <div className="kpi-label">Present</div>
+            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Partial / Away</div>
+               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)' }}>{summary.partial_count}</div>
             </div>
-            <div className="kpi-card" style={{ borderTop: '3px solid #d97706' }}>
-              <div className="kpi-icon" style={{ color: '#d97706' }}><AlertTriangle size={22} /></div>
-              <div className="kpi-value">{summary.partial_count}</div>
-              <div className="kpi-label">Partial</div>
-            </div>
-            <div className="kpi-card" style={{ borderTop: '3px solid #dc2626' }}>
-              <div className="kpi-icon" style={{ color: '#dc2626' }}><XCircle size={22} /></div>
-              <div className="kpi-value">{summary.absent_count}</div>
-              <div className="kpi-label">Absent</div>
+            <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #ef4444' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>No Show</div>
+               <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)' }}>{summary.absent_count}</div>
             </div>
           </div>
 
-          {/* Time series cards */}
+          {/* Time Analysis Area */}
           {series && series.length > 0 && (
-            <>
-              <h3 style={{ margin: '2rem 0 1rem' }}>
-                Attendance Over Time ({granularity})
-              </h3>
-              <div className="series-grid">
-                {series.map((s) => (
-                  <div key={s.period} className="series-card">
-                    <div className="series-period">{s.period}</div>
-                    <div className="series-stats">
-                      <span>{s.sessions} sessions</span>
-                      <span>{Math.round(s.total_minutes)}m</span>
-                      <span>{Math.round(s.average_percentage)}%</span>
+            <div style={{ marginBottom: '3.5rem' }}>
+               <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Temporal Trends ({granularity})</h2>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                  {series.map((s) => (
+                    <div key={s.period} className="card" style={{ padding: '1.25rem' }}>
+                       <div style={{ fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border)' }}>{s.period}</div>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                         <span>{s.sessions} Sessions</span>
+                         <span style={{ fontWeight: 600, color: '#10b981' }}>{Math.round(s.average_percentage)}% Enrolled</span>
+                       </div>
+                       <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', background: 'var(--border-light)' }}>
+                          <div style={{ flex: s.present_count, background: '#10b981' }} />
+                          <div style={{ flex: s.partial_count, background: '#f59e0b' }} />
+                          <div style={{ flex: s.absent_count, background: '#ef4444' }} />
+                       </div>
                     </div>
-                    <div className="series-bar">
-                      {s.present_count > 0 && (
-                        <div className="series-bar-segment present" style={{ flex: s.present_count }} title={`Present: ${s.present_count}`} />
-                      )}
-                      {s.partial_count > 0 && (
-                        <div className="series-bar-segment partial" style={{ flex: s.partial_count }} title={`Partial: ${s.partial_count}`} />
-                      )}
-                      {s.absent_count > 0 && (
-                        <div className="series-bar-segment absent" style={{ flex: s.absent_count }} title={`Absent: ${s.absent_count}`} />
-                      )}
-                    </div>
-                    <div className="series-counts">
-                      <span style={{ color: '#16a34a' }}>{s.present_count}</span>
-                      <span style={{ color: '#d97706' }}>{s.partial_count}</span>
-                      <span style={{ color: '#dc2626' }}>{s.absent_count}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
+                  ))}
+               </div>
+            </div>
           )}
 
-          {/* Detail table */}
-          <h3 style={{ margin: '2rem 0 1rem' }}>Attendance Details</h3>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort('user_name')} className="sortable">
-                    Student{sortArrow('user_name')}
-                  </th>
-                  <th onClick={() => handleSort('meeting_title')} className="sortable">
-                    Meeting{sortArrow('meeting_title')}
-                  </th>
-                  <th onClick={() => handleSort('batch_name')} className="sortable">
-                    Batch{sortArrow('batch_name')}
-                  </th>
-                  <th onClick={() => handleSort('joined_at')} className="sortable">
-                    Joined{sortArrow('joined_at')}
-                  </th>
-                  <th onClick={() => handleSort('total_minutes')} className="sortable">
-                    Duration{sortArrow('total_minutes')}
-                  </th>
-                  <th onClick={() => handleSort('attendance_percentage')} className="sortable">
-                    %{sortArrow('attendance_percentage')}
-                  </th>
-                  <th onClick={() => handleSort('status')} className="sortable">
-                    Status{sortArrow('status')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedDetails.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="empty-row">No attendance records match the current filters.</td>
-                  </tr>
-                ) : (
-                  sortedDetails.map((d) => (
-                    <tr key={d.attendance_log_id}>
-                      <td>{d.user_name || d.external_name || '—'}</td>
-                      <td>{d.meeting_title}</td>
-                      <td>{d.batch_name || 'Public'}</td>
-                      <td>{d.joined_at ? new Date(d.joined_at).toLocaleString() : '—'}</td>
-                      <td>{d.total_minutes != null ? `${Math.round(d.total_minutes)}m` : '—'}</td>
-                      <td>{d.attendance_percentage != null ? `${Math.round(d.attendance_percentage)}%` : '—'}</td>
-                      <td>
-                        <span className={`badge badge-${(d.status || '').toLowerCase()}`}>
-                          {d.status || '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="status-message" style={{ fontSize: '13px', textAlign: 'right' }}>
-            Showing {sortedDetails.length} of {report.filters ? 'filtered' : ''} records
-          </p>
+          {/* Master Detail Table */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+               <h2 style={{ fontSize: '1.5rem' }}>Detailed Audit Log</h2>
+               <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Showing {sortedDetails.length} validated records</div>
+            </div>
+            
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+               <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleSort('user_name')} style={{ cursor: 'pointer' }}>Student <SortIcon field="user_name" /></th>
+                        <th onClick={() => handleSort('meeting_title')} style={{ cursor: 'pointer' }}>Session <SortIcon field="meeting_title" /></th>
+                        <th onClick={() => handleSort('batch_name')} style={{ cursor: 'pointer' }}>Context <SortIcon field="batch_name" /></th>
+                        <th onClick={() => handleSort('joined_at')} style={{ cursor: 'pointer' }}>Timestamp <SortIcon field="joined_at" /></th>
+                        <th onClick={() => handleSort('attendance_percentage')} style={{ cursor: 'pointer', textAlign: 'center' }}>% <SortIcon field="attendance_percentage" /></th>
+                        <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', textAlign: 'right' }}>Status <SortIcon field="status" /></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedDetails.map((d) => (
+                        <tr key={d.attendance_log_id}>
+                          <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.user_name || d.external_name}</td>
+                          <td style={{ fontSize: '0.875rem' }}>{d.meeting_title}</td>
+                          <td><span className="badge badge-admin" style={{ textTransform: 'none' }}>{d.batch_name || 'Public'}</span></td>
+                          <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 700 }}>{Math.round(d.attendance_percentage)}%</td>
+                          <td style={{ textAlign: 'right' }}>
+                            <span className={`badge ${
+                              d.status === 'PRESENT' ? 'badge-student' : 
+                              d.status === 'PARTIAL' ? 'badge-admin' : ''
+                            }`} style={{ 
+                              background: d.status === 'ABSENT' ? '#fee2e2' : '',
+                              color: d.status === 'ABSENT' ? '#ef4444' : ''
+                            }}>
+                              {d.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+               </div>
+            </div>
+          </section>
         </>
       )}
     </div>

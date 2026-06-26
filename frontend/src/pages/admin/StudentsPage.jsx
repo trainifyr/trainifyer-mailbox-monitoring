@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, UserPlus, Pencil, X, Check, Trash2, KeyRound } from 'lucide-react';
-import './StudentsPage.css';
+import { 
+  Plus, 
+  UserPlus, 
+  Pencil, 
+  X, 
+  Check, 
+  Trash2, 
+  KeyRound, 
+  Mail, 
+  User,
+  Search,
+  Filter
+} from 'lucide-react';
 
 const INITIAL_FORM = { email: '', fullName: '' };
 
@@ -16,6 +27,7 @@ export default function StudentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Inline edit state
   const [editingId, setEditingId] = useState(null);
@@ -56,7 +68,7 @@ export default function StudentsPage() {
       setForm(INITIAL_FORM);
       setShowForm(false);
       const tempPass = res.data.data.tempPassword;
-      setNotification(`Student created! Temporary password: ${tempPass}`);
+      setNotification(`Student created! Temp password: ${tempPass}`);
       await fetchStudents();
     } catch (e) {
       setFormError(e.response?.data?.message || e.message);
@@ -65,7 +77,6 @@ export default function StudentsPage() {
     }
   };
 
-  // --- Inline Edit ---
   const startEdit = (student) => {
     setEditingId(student.id);
     setEditForm({ email: student.email, fullName: student.full_name });
@@ -79,7 +90,6 @@ export default function StudentsPage() {
   };
 
   const handleEditSubmit = async (studentId) => {
-    if (!editForm.email && !editForm.fullName) { setEditError('Provide at least one field to update.'); return; }
     try {
       setEditSubmitting(true);
       setEditError(null);
@@ -89,11 +99,7 @@ export default function StudentsPage() {
       });
       cancelEdit();
       const updated = res.data.data;
-      if (updated.tempPassword) {
-        setNotification(`Student updated! New credentials: ${updated.tempPassword}`);
-      } else {
-        setNotification('Student updated successfully');
-      }
+      setNotification(updated.tempPassword ? `Updated! Credentials: ${updated.tempPassword}` : 'Updated successfully');
       await fetchStudents();
     } catch (e) {
       setEditError(e.response?.data?.message || e.message);
@@ -103,10 +109,10 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async (studentId, studentName) => {
-    if (!window.confirm(`Are you sure you want to delete ${studentName}? This will also delete their login account.`)) return;
+    if (!window.confirm(`Delete ${studentName}?`)) return;
     try {
       await apiClient.delete(`/users/students/${studentId}`);
-      setNotification('Student deleted successfully');
+      setNotification('Student deleted');
       await fetchStudents();
     } catch (e) {
       alert(`Delete failed: ${e.response?.data?.message || e.message}`);
@@ -122,128 +128,163 @@ export default function StudentsPage() {
     }
   };
 
+  const filteredStudents = students.filter(s => 
+    s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="students-page">
+    <div className="animate-fade-in">
+      {/* Toast Notification */}
       {notification && (
         <div style={{
-          position: 'fixed', top: '1rem', right: '1rem', background: '#10b981',
-          color: '#fff', padding: '10px 18px', borderRadius: '8px', zIndex: 9999,
-          display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          position: 'fixed', top: '2rem', right: '2rem', background: 'var(--bg-sidebar)',
+          color: 'white', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', gap: '12px', boxShadow: 'var(--shadow-lg)',
+          borderLeft: '4px solid #10b981', animation: 'fadeIn 0.3s ease'
         }}>
-          <Check size={16} /> {notification}
+          <div style={{ background: '#10b981', padding: '4px', borderRadius: '50%' }}><Check size={14} /></div>
+          <span style={{ fontWeight: 500 }}>{notification}</span>
+          <button onClick={() => setNotification(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}><X size={16} /></button>
         </div>
       )}
 
-      <div className="page-header">
-        <h2>Students</h2>
+      {/* Page Header */}
+      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Student Directory</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Manage your training scholars and their access credentials.</p>
+        </div>
         {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-            <UserPlus size={16} /> {showForm ? 'Cancel' : 'Create Student'}
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={18} /> : <UserPlus size={18} />}
+            {showForm ? 'Cancel' : 'Enroll Student'}
           </button>
         )}
-      </div>
+      </header>
 
+      {/* Enroll Form Card */}
       {showForm && isAdmin && (
-        <form className="create-form" onSubmit={handleSubmit}>
-          <h3><Plus size={16} /> New Student</h3>
-          <div className="form-row">
-            <label>
-              Full Name
-              <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="e.g. Rahul Sharma" required />
-            </label>
-            <label>
-              Email
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="e.g. rahul@test.com" required />
-            </label>
-          </div>
-          {formError && <p className="form-error">{formError}</p>}
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</button>
-          </div>
-        </form>
-      )}
-
-      {loading && <p className="status-message">Loading students...</p>}
-      {error && <p className="status-message error">{error}</p>}
-
-      {!loading && !error && (
-        <div className="table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Batch</th>
-                <th>Created</th>
-                {isAdmin && <th style={{ width: 80 }}>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {students.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 5 : 4} className="empty-row">No students found.</td></tr>
-              ) : (
-                students.map((s) => (
-                  <React.Fragment key={s.id}>
-                    <tr>
-                      <td>{s.full_name}</td>
-                      <td>{s.email}</td>
-                      <td>{s.batch_id ? s.batch_id.substring(0, 8) + '...' : '—'}</td>
-                      <td>{new Date(s.created_at).toLocaleDateString()}</td>
-                      {isAdmin && (
-                        <td>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button className="btn" title="Edit student" onClick={() => startEdit(s)} style={{ padding: '4px 8px' }}>
-                              <Pencil size={14} />
-                            </button>
-                            <button className="btn" title="Reset password" onClick={() => handleResetPassword(s.id)} style={{ padding: '4px 8px', color: '#facc15' }}>
-                              <KeyRound size={14} />
-                            </button>
-                            <button className="btn" title="Delete student" onClick={() => handleDelete(s.id, s.full_name)} style={{ padding: '4px 8px', color: '#f87171' }}>
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                    {editingId === s.id && (
-                      <tr style={{ background: '#1e1b4b' }}>
-                        <td colSpan={isAdmin ? 5 : 4}>
-                          <div style={{ padding: '12px 16px', display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', color: '#a5b4fc' }}>
-                              Full Name
-                              <input
-                                value={editForm.fullName}
-                                onChange={(e) => setEditForm((p) => ({ ...p, fullName: e.target.value }))}
-                                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #4f46e5', background: '#0f0a1e', color: '#fff', fontSize: '0.9rem', width: '200px' }}
-                              />
-                            </label>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', color: '#a5b4fc' }}>
-                              Email
-                              <input
-                                type="email"
-                                value={editForm.email}
-                                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
-                                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #4f46e5', background: '#0f0a1e', color: '#fff', fontSize: '0.9rem', width: '220px' }}
-                              />
-                            </label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button className="btn btn-primary" style={{ padding: '6px 14px' }} onClick={() => handleEditSubmit(s.id)} disabled={editSubmitting}>
-                                {editSubmitting ? 'Saving...' : 'Save'}
-                              </button>
-                              <button className="btn" style={{ padding: '6px 10px' }} onClick={cancelEdit}><X size={14} /></button>
-                            </div>
-                            {editError && <p className="form-error" style={{ width: '100%', margin: 0 }}>{editError}</p>}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="card animate-fade-in" style={{ marginBottom: '2.5rem', padding: '2rem', maxWidth: '800px' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Plus size={20} color="var(--primary)" /> New Student Registration
+          </h2>
+          <form style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 140px', gap: '1rem', alignItems: 'flex-end' }} onSubmit={handleSubmit}>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="label">Full Name</label>
+              <input name="fullName" className="input" value={form.fullName} onChange={handleChange} placeholder="e.g. Rahul Sharma" required />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="label">Email Address</label>
+              <input name="email" type="email" className="input" value={form.email} onChange={handleChange} placeholder="e.g. rahul@test.com" required />
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
+              {submitting ? 'Registering...' : 'Register'}
+            </button>
+          </form>
+          {formError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '1rem' }}>{formError}</p>}
         </div>
       )}
+
+      {/* Table Actions */}
+      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--border-light)' }}>
+           <div style={{ position: 'relative' }}>
+              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="text" 
+                placeholder="Search by name or email..." 
+                className="input" 
+                style={{ paddingLeft: '2.5rem', width: '320px', background: 'var(--bg-card)' }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+           </div>
+           <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', background: 'var(--bg-card)' }}><Filter size={16} /> Filters</button>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Retrieving student records...</div>
+        ) : (
+          <div className="table-container" style={{ border: 'none', borderRadius: '0' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Student Info</th>
+                  <th>Status</th>
+                  <th>Current Batch</th>
+                  <th>Enrolled On</th>
+                  {isAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.length === 0 ? (
+                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>No student records found matching your search.</td></tr>
+                ) : (
+                  filteredStudents.map((s) => (
+                    <React.Fragment key={s.id}>
+                      <tr style={editingId === s.id ? { background: 'var(--primary-glow)' } : {}}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--border-light)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.875rem' }}>
+                              {s.full_name.charAt(0)}
+                            </div>
+                            <div>
+                               <div style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{s.full_name}</div>
+                               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={12} /> {s.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                           <span className="badge badge-student">Active</span>
+                        </td>
+                        <td>
+                           <div style={{ fontSize: '0.875rem', color: 'var(--text-heading)', fontWeight: 500 }}>
+                              {s.batch_name || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>No Batch</span>}
+                           </div>
+                        </td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        {isAdmin && (
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              <button className="btn btn-ghost" onClick={() => startEdit(s)} style={{ padding: '6px' }} title="Edit Profile"><Pencil size={16} /></button>
+                              <button className="btn btn-ghost" onClick={() => handleResetPassword(s.id)} style={{ padding: '6px', color: '#f59e0b' }} title="Reset Password"><KeyRound size={16} /></button>
+                              <button className="btn btn-ghost" onClick={() => handleDelete(s.id, s.full_name)} style={{ padding: '6px', color: '#ef4444' }} title="Delete"><Trash2 size={16} /></button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                      {editingId === s.id && (
+                        <tr>
+                          <td colSpan="5" style={{ padding: '1.5rem', background: 'var(--bg-app)' }}>
+                            <div className="card animate-fade-in" style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1.25fr auto', gap: '1rem', alignItems: 'flex-end' }}>
+                               <div className="input-group" style={{ marginBottom: 0 }}>
+                                 <label className="label">Full Name</label>
+                                 <input className="input" value={editForm.fullName} onChange={(e) => setEditForm(p => ({ ...p, fullName: e.target.value }))} />
+                               </div>
+                               <div className="input-group" style={{ marginBottom: 0 }}>
+                                 <label className="label">Email Address</label>
+                                 <input className="input" value={editForm.email} onChange={(e) => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                               </div>
+                               <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button className="btn btn-primary" onClick={() => handleEditSubmit(s.id)} disabled={editSubmitting}>
+                                    {editSubmitting ? 'Saving...' : 'Update Student'}
+                                  </button>
+                                  <button className="btn btn-ghost" style={{ border: '1px solid var(--border)' }} onClick={cancelEdit}><X size={18} /></button>
+                               </div>
+                               {editError && <p style={{ color: '#ef4444', fontSize: '0.875rem', gridColumn: 'span 3' }}>{editError}</p>}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

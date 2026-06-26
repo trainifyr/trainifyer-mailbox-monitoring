@@ -1,11 +1,25 @@
 import React from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { 
+  LogOut, 
+  User, 
+  LayoutDashboard, 
+  Users, 
+  Layers, 
+  Video, 
+  BarChart3, 
+  Mail,
+  Home,
+  Bell,
+  Search,
+  ChevronRight
+} from 'lucide-react';
 
 export default function Layout() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -16,86 +30,106 @@ export default function Layout() {
     }
   };
 
+  const isActive = (path) => location.pathname === path;
+
+  const NavLink = ({ to, icon: Icon, children }) => (
+    <Link to={to} className={`nav-link ${isActive(to) ? 'active' : ''}`}>
+      <Icon size={18} />
+      <span>{children}</span>
+    </Link>
+  );
+
   return (
-    <div className="app-layout" style={{ minHeight: '100vh' }}>
-      <header
-        className="app-header"
-        style={{
-          padding: '1rem 2rem',
-          background: '#f5f5f5',
-          borderBottom: '1px solid #ddd',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
-        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Trainifyer</h1>
-        </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {isAuthenticated && user ? (
-            <>
-              <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', fontSize: '14px', color: '#374151' }} title="Visit Profile">
-                <User size={16} />
-                {user.full_name}
-                <span className="badge" style={{
-                  background: user.role === 'ADMIN' ? '#dbeafe' : '#dcfce7',
-                  color: user.role === 'ADMIN' ? '#2563eb' : '#16a34a',
-                  fontSize: '10px',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  marginLeft: '4px'
-                }}>
-                  {user.role}
-                </span>
-              </Link>
-              <button
-                onClick={handleLogout}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  background: 'none',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  color: '#6b7280',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.color = '#ef4444'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; }}
-                title="Sign Out"
-              >
-                <LogOut size={14} /> Sign Out
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              style={{
-                padding: '6px 14px',
-                background: '#2563eb',
-                color: 'white',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 600
-              }}
-            >
-              Sign In
+    <div className="app-container">
+      {isAuthenticated && (
+        <aside className="sidebar">
+          <div className="sidebar-logo">
+            <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontWeight: 'bold' }}>T</div>
+              Trainifyer
             </Link>
-          )}
-        </div>
-      </header>
+          </div>
+          
+          <nav style={{ flex: 1, paddingTop: '1rem' }}>
+            <NavLink to="/" icon={Home}>Home</NavLink>
+            
+            {user?.role === 'ADMIN' && (
+              <>
+                <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Management</div>
+                <NavLink to="/admin/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
+                <NavLink to="/admin/students" icon={Users}>Students</NavLink>
+                <NavLink to="/admin/batches" icon={Layers}>Batches</NavLink>
+                <NavLink to="/admin/meetings" icon={Video}>Meetings</NavLink>
+                <NavLink to="/admin/reports" icon={BarChart3}>Reports</NavLink>
+              </>
+            )}
 
-      <main className="app-main" style={{ padding: '2rem' }}>
-        <Outlet />
-      </main>
+            {user?.role === 'STUDENT' && (
+              <>
+                <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Student Area</div>
+                <NavLink to="/student/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
+                <NavLink to="/meetings" icon={Video}>My Meetings</NavLink>
+              </>
+            )}
+
+            <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Communication</div>
+            <NavLink to="/mailbox" icon={Mail}>Mailbox</NavLink>
+          </nav>
+
+          <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+             <NavLink to="/profile" icon={User}>Profile</NavLink>
+          </div>
+        </aside>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {isAuthenticated ? (
+          <header className="top-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+               <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Pages <ChevronRight size={14} /> <span style={{ color: 'var(--text-heading)', fontWeight: 500 }}>{location.pathname.split('/').pop() || 'Home'}</span>
+               </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search anything..." 
+                  style={{ padding: '0.5rem 1rem 0.5rem 2.5rem', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg-app)', fontSize: '0.875rem', width: '240px' }} 
+                />
+              </div>
+              
+              <button className="btn-ghost" style={{ padding: '8px', borderRadius: '50%' }}><Bell size={20} /></button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)' }}>{user?.full_name}</div>
+                  <div className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-student'}`} style={{ fontSize: '0.65rem' }}>{user?.role}</div>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="btn-ghost" 
+                  style={{ color: '#ef4444', padding: '8px' }} 
+                  title="Sign Out"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            </div>
+          </header>
+        ) : (
+          <header className="top-bar">
+             <Link to="/" style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)' }}>Trainifyer</Link>
+             <Link to="/login" className="btn btn-primary">Sign In</Link>
+          </header>
+        )}
+
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

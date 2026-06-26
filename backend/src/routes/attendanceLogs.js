@@ -55,7 +55,7 @@ router.post('/join-log', async (req, res, next) => {
 
     // Verify the meeting exists
     const { rows: meetingRows } = await pool.query(
-      `SELECT id, status FROM public.meetings WHERE id = $1`,
+      `SELECT id, status, is_public, batch_id FROM public.meetings WHERE id = $1`,
       [id]
     );
     if (meetingRows.length === 0) {
@@ -63,6 +63,11 @@ router.post('/join-log', async (req, res, next) => {
     }
 
     const meeting = meetingRows[0];
+
+    // WI-904: Skip attendance for public meetings
+    if (meeting.is_public || !meeting.batch_id) {
+      return res.json({ data: null, message: 'Public meeting — attendance not recorded' });
+    }
 
     if (meeting.status === 'CANCELLED' || meeting.status === 'ENDED') {
       return res.status(410).json({
@@ -130,6 +135,17 @@ router.post('/leave-log', async (req, res, next) => {
     const identity = requireIdentity(req, res);
     if (!identity) return;
     const { userId, externalName } = identity;
+
+    // WI-904: Skip attendance for public meetings
+    const { rows: meetingCheck } = await pool.query(
+      `SELECT is_public, batch_id FROM public.meetings WHERE id = $1`, [id]
+    );
+    if (meetingCheck.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Meeting not found' });
+    }
+    if (meetingCheck[0].is_public || !meetingCheck[0].batch_id) {
+      return res.json({ data: null, message: 'Public meeting — attendance not recorded' });
+    }
 
     // Find the active attendance log
     let attendanceRow;
@@ -218,6 +234,15 @@ router.post('/heartbeat', async (req, res, next) => {
     const identity = requireIdentity(req, res);
     if (!identity) return;
     const { userId, externalName } = identity;
+
+    // WI-904: Skip attendance for public meetings
+    const { rows: hbCheck } = await pool.query(
+      `SELECT is_public, batch_id FROM public.meetings WHERE id = $1`, [id]
+    );
+    if (hbCheck.length === 0) return res.status(404).json({ error: 'Not Found', message: 'Meeting not found' });
+    if (hbCheck[0].is_public || !hbCheck[0].batch_id) {
+      return res.json({ data: null, message: 'Public meeting — attendance not recorded' });
+    }
 
     let result;
     if (userId) {

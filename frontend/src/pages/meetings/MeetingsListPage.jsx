@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Video, Calendar, Globe, Users, Clock } from 'lucide-react';
-import './MeetingsListPage.css';
+import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight } from 'lucide-react';
 
 export default function MeetingsListPage() {
   const { isAuthenticated } = useAuth();
@@ -26,9 +25,7 @@ export default function MeetingsListPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMeetings();
-    }
+    if (isAuthenticated) fetchMeetings();
   }, [fetchMeetings, isAuthenticated]);
 
   const getEffectiveStatus = (m) => {
@@ -38,99 +35,98 @@ export default function MeetingsListPage() {
     return m.status || 'SCHEDULED';
   };
 
-  const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case 'LIVE': return 'badge badge-live';
-      case 'SCHEDULED': return 'badge badge-scheduled';
-      case 'ENDED': return 'badge badge-ended';
-      case 'CANCELLED': return 'badge badge-cancelled';
-      default: return 'badge';
-    }
-  };
-
   const formatTimeRange = (start, end) => {
     if (!start) return '—';
     const s = new Date(start);
     const options = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const dateStr = s.toLocaleDateString();
+    const dateStr = s.toLocaleDateString([], { month: 'short', day: 'numeric' });
     const startStr = s.toLocaleTimeString([], options);
-    
-    if (!end) return `${dateStr}, ${startStr}`;
-    
-    const e = new Date(end);
-    const endStr = e.toLocaleTimeString([], options);
-    return `${dateStr}, ${startStr} - ${endStr}`;
+    const endStr = end ? new Date(end).toLocaleTimeString([], options) : '';
+    return `${dateStr} • ${startStr} ${endStr ? `- ${endStr}` : ''}`;
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="meetings-list-page">
-        <p className="status-message">Please select a role in the Mock Identity Bar to view meetings.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="meetings-list-page">
-      <div className="page-header">
-        <h2>Sessions & Meetings</h2>
-        <p style={{ color: '#666', marginBottom: '2rem' }}>Join live training sessions and cohort meetings.</p>
-      </div>
+    <div className="animate-fade-in content-area">
+      <header style={{ marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Sessions & Learning</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.125rem' }}>Access your scheduled training and join live interactive sessions.</p>
+      </header>
 
-      {loading && <p className="status-message">Loading meetings...</p>}
-      {error && <p className="status-message error">{error}</p>}
-
-      {!loading && !error && (
-        <>
+      {loading ? (
+        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Checking for active sessions...</div>
+      ) : error ? (
+        <div className="card" style={{ padding: '2rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2' }}>{error}</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '2rem' }}>
           {meetings.length === 0 ? (
-            <p className="status-message">No meetings available for your account at this time.</p>
-          ) : (
-            <div className="meetings-grid">
-              {meetings.map((m) => {
-                const status = getEffectiveStatus(m);
-                const isOver = status === 'ENDED' || status === 'CANCELLED';
-                
-                return (
-                  <div key={m.id} className={`meeting-card ${isOver ? 'meeting-over' : ''}`}>
-                    <div className="meeting-card-header">
-                      <h3>{m.title}</h3>
-                      <span className={getStatusBadgeClass(status)}>{status}</span>
-                    </div>
-                    <div className="meeting-card-meta">
-                      <span>
-                        {m.is_public ? (
-                          <><Globe size={14} /> Public Session</>
-                        ) : (
-                          <><Users size={14} /> {m.batch_name || 'Cohort Meeting'}</>
-                        )}
-                      </span>
-                      <span><Calendar size={14} /> {formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
-                    </div>
-                    <div className="meeting-card-actions">
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => navigate(`/meeting/${m.id}`)}
-                        disabled={isOver}
-                        style={{ 
-                          width: '100%', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          gap: '8px',
-                          opacity: isOver ? 0.6 : 1,
-                          cursor: isOver ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        <Video size={18} />
-                        {isOver ? 'Meeting Ended' : 'Join Session'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="card" style={{ gridColumn: '1 / -1', padding: '4rem', textAlign: 'center' }}>
+               <Video size={48} color="var(--border)" style={{ marginBottom: '1rem' }} />
+               <p style={{ color: 'var(--text-muted)' }}>No meetings scheduled for your account at this time.</p>
             </div>
+          ) : (
+            meetings.map((m) => {
+              const status = getEffectiveStatus(m);
+              const isOver = status === 'ENDED' || status === 'CANCELLED';
+              const isLive = status === 'LIVE';
+
+              return (
+                <div key={m.id} className="card" style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  padding: '2rem',
+                  opacity: isOver ? 0.6 : 1,
+                  border: isLive ? '2px solid var(--primary)' : '1px solid var(--border)',
+                  background: isLive ? 'linear-gradient(to bottom right, var(--bg-card), var(--primary-glow))' : 'var(--bg-card)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '8px', background: isLive ? 'var(--primary)' : 'var(--border-light)', color: isLive ? 'white' : 'var(--text-muted)', borderRadius: '12px' }}>
+                       <Video size={24} />
+                    </div>
+                    <span className={`badge ${
+                      status === 'LIVE' ? 'badge-student' : 
+                      status === 'SCHEDULED' ? 'badge-admin' : ''
+                    }`} style={{ 
+                      background: isLive ? '#10b981' : isOver ? 'var(--border-light)' : '', 
+                      color: isLive ? 'white' : isOver ? 'var(--text-muted)' : '' 
+                    }}>
+                      {status === 'LIVE' ? '● LIVE NOW' : status}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-heading)' }}>{m.title}</h3>
+                  
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        <Calendar size={16} /> <span>{formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
+                     </div>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        {m.is_public ? (
+                          <><Globe size={16} /> <span>Public Training Session</span></>
+                        ) : (
+                          <><Users size={16} /> <span>{m.batch_name || 'Restricted Cohort'}</span></>
+                        )}
+                     </div>
+                  </div>
+
+                  <button
+                    className={`btn ${isLive ? 'btn-primary' : 'btn-ghost'}`}
+                    disabled={isOver}
+                    onClick={() => navigate(`/meeting/${m.id}`)}
+                    style={{ 
+                      width: '100%', 
+                      border: isLive ? 'none' : '1px solid var(--border)',
+                      justifyContent: 'center',
+                      padding: '1rem'
+                    }}
+                  >
+                    {isLive ? <><PlayCircle size={18} /> Join Now</> : isOver ? 'Session Closed' : 'View Details'}
+                    {!isOver && <ArrowRight size={16} style={{ marginLeft: '8px' }} />}
+                  </button>
+                </div>
+              );
+            })
           )}
-        </>
+        </div>
       )}
     </div>
   );
