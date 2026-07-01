@@ -76,37 +76,56 @@ router.post('/join-log', async (req, res, next) => {
       });
     }
 
-    // Check for existing active attendance log (idempotent)
+    // Check for existing attendance log (consolidated)
+    let existingRow = null;
     if (userId) {
-      const { rows: existing } = await pool.query(
+      const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
          FROM public.attendance_logs
-         WHERE meeting_id = $1 AND user_id = $2 AND left_at IS NULL
+         WHERE meeting_id = $1 AND user_id = $2
          LIMIT 1`,
         [id, userId]
       );
-      if (existing.length > 0) {
-        return res.json({ data: existing[0] });
-      }
+      if (rows.length > 0) existingRow = rows[0];
     } else if (externalName) {
-      const { rows: existing } = await pool.query(
+      const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
          FROM public.attendance_logs
-         WHERE meeting_id = $1 AND external_name = $2 AND left_at IS NULL
+         WHERE meeting_id = $1 AND external_name = $2
          LIMIT 1`,
         [id, externalName]
       );
-      if (existing.length > 0) {
-        return res.json({ data: existing[0] });
-      }
+      if (rows.length > 0) existingRow = rows[0];
     }
 
-    // Insert new attendance log
+    if (existingRow) {
+      // If it is already active, return as is (idempotent)
+      if (existingRow.left_at === null) {
+        return res.json({ data: existingRow });
+      }
+
+      // If it was previously disconnected, reactivate it!
+      const { rows: updated } = await pool.query(
+        `UPDATE public.attendance_logs
+         SET joined_at = now(),
+             left_at = NULL,
+             status = 'ACTIVE'::public.attendance_status,
+             last_heartbeat = now(),
+             updated_at = now()
+         WHERE id = $1
+         RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
+                   total_minutes, attendance_percentage, status`,
+        [existingRow.id]
+      );
+      return res.json({ data: updated[0] });
+    }
+
+    // Insert new attendance log (with default total_minutes = 0.00)
     const { rows } = await pool.query(
-      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, status)
-       VALUES ($1, $2, $3, now(), 'ACTIVE')
+      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, total_minutes, status)
+       VALUES ($1, $2, $3, now(), 0.00, 'ACTIVE')
        RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                  total_minutes, attendance_percentage, status`,
       [id, userId, externalName]
@@ -151,7 +170,7 @@ router.post('/leave-log', async (req, res, next) => {
     let attendanceRow;
     if (userId) {
       const { rows } = await pool.query(
-        `SELECT al.id, al.joined_at, m.scheduled_start, m.scheduled_end
+        `SELECT al.id, al.joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.user_id = $2 AND al.left_at IS NULL
@@ -167,7 +186,7 @@ router.post('/leave-log', async (req, res, next) => {
       attendanceRow = rows[0];
     } else {
       const { rows } = await pool.query(
-        `SELECT al.id, al.joined_at, m.scheduled_start, m.scheduled_end
+        `SELECT al.id, al.joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.external_name = $2 AND al.left_at IS NULL
@@ -186,7 +205,11 @@ router.post('/leave-log', async (req, res, next) => {
     const now = new Date();
     const joinedAt = new Date(attendanceRow.joined_at);
     const diffMs = now - joinedAt;
-    const totalMinutes = Math.round((diffMs / 60000) * 100) / 100; // round to 2 decimal places
+    const sessionMinutes = diffMs / 60000;
+    
+    // Add current session minutes to existing accumulated total_minutes
+    const priorMinutes = parseFloat(attendanceRow.total_minutes) || 0;
+    const totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
 
     let attendancePercentage = null;
     let status = null;
@@ -198,7 +221,9 @@ router.post('/leave-log', async (req, res, next) => {
       const meetingDurationMs = scheduledEnd - scheduledStart;
 
       if (meetingDurationMs > 0) {
-        attendancePercentage = Math.round((diffMs / meetingDurationMs) * 100 * 100) / 100;
+        const totalMinutesMs = totalMinutes * 60000;
+        attendancePercentage = Math.round((totalMinutesMs / meetingDurationMs) * 100 * 100) / 100;
+        if (attendancePercentage > 100) attendancePercentage = 100;
         status = computeAttendanceStatus(attendancePercentage);
       }
     }
