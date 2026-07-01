@@ -123,8 +123,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // meet.ffmuc.net: clean public server that allows anonymous moderators (no login required)
-        const domain = 'meet.ffmuc.net'; 
+        // meet.greenhost.net: clean public server that allows anonymous moderators and iframe embedding
+        const domain = 'meet.greenhost.net'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
