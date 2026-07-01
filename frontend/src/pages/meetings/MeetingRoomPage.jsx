@@ -123,9 +123,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // --- NEW DOMAIN ---
-        // We use ffmuc.net because it allows anonymous meetings without mandatory host login
-        const domain = 'meet.guifi.net'; 
+        // Official Jitsi server — no community popups or foreign-language notices
+        const domain = 'meet.jit.si'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
