@@ -123,8 +123,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // Official Jitsi server — no community popups or foreign-language notices
-        const domain = 'meet.jit.si'; 
+        // meet.ffmuc.net: clean public server that allows anonymous moderators (no login required)
+        const domain = 'meet.ffmuc.net'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
