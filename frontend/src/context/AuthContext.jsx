@@ -21,9 +21,14 @@ export function AuthProvider({ children }) {
             window.location.hash = ''; // Clear hash
             window.location.assign('/profile');
           }
+          setLoading(false);
+        }).catch((err) => {
+          console.error('Error loading initial user profile:', err);
+          setLoading(false);
         });
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // Subscribe to auth state changes

@@ -20,7 +20,7 @@ import ProfilePage from '../pages/ProfilePage';
 // Smart redirect: sends the user to the correct dashboard based on their role
 function RootRedirect() {
   const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return null;
+  if (loading || (isAuthenticated && !user)) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
   return <Navigate to="/student/dashboard" replace />;
