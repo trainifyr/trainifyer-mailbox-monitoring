@@ -38,7 +38,7 @@ export default function Layout() {
 
   return (
     <div className="app-container">
-      {isAuthenticated && (
+      {isAuthenticated && !location.pathname.startsWith('/meeting/') && (
         <aside className="sidebar">
           <div className="sidebar-logo">
             <Link to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
