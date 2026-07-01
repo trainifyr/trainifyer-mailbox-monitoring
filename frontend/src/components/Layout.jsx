@@ -10,7 +10,6 @@ import {
   Video, 
   BarChart3, 
   Mail,
-  Home,
   ChevronRight
 } from 'lucide-react';
 
@@ -42,15 +41,13 @@ export default function Layout() {
       {isAuthenticated && (
         <aside className="sidebar">
           <div className="sidebar-logo">
-            <Link to="/" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontWeight: 'bold' }}>T</div>
               Trainifyer
             </Link>
           </div>
           
           <nav style={{ flex: 1, paddingTop: '1rem', overflowY: 'auto', overflowX: 'hidden' }}>
-            <NavLink to="/" icon={Home}>Home</NavLink>
-            
             {user?.role === 'ADMIN' && (
               <>
                 <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Management</div>

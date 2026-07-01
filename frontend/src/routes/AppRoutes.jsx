@@ -1,10 +1,10 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminRoute from '../components/AdminRoute';
 import StudentRoute from '../components/StudentRoute';
-import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import StudentsPage from '../pages/admin/StudentsPage';
@@ -17,12 +17,21 @@ import StudentDashboard from '../pages/student/StudentDashboard';
 import ReportsPage from '../pages/admin/ReportsPage';
 import ProfilePage from '../pages/ProfilePage';
 
+// Smart redirect: sends the user to the correct dashboard based on their role
+function RootRedirect() {
+  const { isAuthenticated, user, loading } = useAuth();
+  if (loading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
+  return <Navigate to="/student/dashboard" replace />;
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
+        {/* Root smart redirect */}
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Admin-only routes */}
