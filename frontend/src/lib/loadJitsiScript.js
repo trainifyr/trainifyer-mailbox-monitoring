@@ -15,7 +15,7 @@ export default function loadJitsiScript() {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://meet.greenhost.net/external_api.js';
+    script.src = 'https://fairmeeting.net/external_api.js';
     script.async = true;
     script.onload = () => {
       if (window.JitsiMeetExternalAPI) {
