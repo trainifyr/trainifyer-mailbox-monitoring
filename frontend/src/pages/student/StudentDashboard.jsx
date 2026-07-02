@@ -127,6 +127,48 @@ export default function StudentDashboard() {
                   ))}
                </div>
              </div>
+
+           {/* Attendance Log Table */}
+           {report?.details && report.details.length > 0 && (
+             <div className="card" style={{ padding: '2rem', marginTop: '2rem' }}>
+               <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Recent Attendance Logs</h2>
+               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Your session-by-session attendance history.</p>
+               <div className="table-container" style={{ border: 'none', borderRadius: 0, padding: 0 }}>
+                 <table>
+                   <thead>
+                     <tr>
+                       <th>Session</th>
+                       <th>Date</th>
+                       <th style={{ textAlign: 'center' }}>Duration</th>
+                       <th style={{ textAlign: 'center' }}>Attendance %</th>
+                       <th style={{ textAlign: 'right' }}>Status</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {report.details.slice(0, 15).map((d) => (
+                       <tr key={d.attendance_log_id}>
+                         <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
+                         <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                           {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                         </td>
+                         <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
+                           {d.total_minutes != null ? ${Math.round(d.total_minutes)}m : '—'}
+                         </td>
+                         <td style={{ textAlign: 'center', fontWeight: 700 }}>
+                           {d.attendance_percentage != null ? ${Math.round(d.attendance_percentage)}% : '—'}
+                         </td>
+                         <td style={{ textAlign: 'right' }}>
+                           <span className={adge } style={{ background: d.status === 'ABSENT' ? '#fee2e2' : '', color: d.status === 'ABSENT' ? '#ef4444' : '' }}>
+                             {d.status}
+                           </span>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             </div>
+           )}
           </section>
 
           {/* Sidebar Area */}
