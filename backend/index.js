@@ -6,6 +6,7 @@ const cors    = require('cors');
 const helmet  = require('helmet');
 
 const authMiddleware = require('./src/middleware/authMiddleware');
+const { startRecurringMeetingScheduler } = require('./src/lib/recurringMeetingScheduler');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -94,4 +95,5 @@ app.listen(PORT, () => {
   console.log(`[INFO] Trainifyer backend running on port ${PORT}`);
   console.log(`[INFO] Health check:    http://localhost:${PORT}/api/health`);
   console.log(`[INFO] DB health check: http://localhost:${PORT}/api/health/db`);
+  startRecurringMeetingScheduler();
 });

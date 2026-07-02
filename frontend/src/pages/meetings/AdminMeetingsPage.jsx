@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, Video, Calendar, Globe, Users } from 'lucide-react';
+import { Plus, Video, Calendar, Globe, Users, RefreshCw } from 'lucide-react';
 import './AdminMeetingsPage.css';
 
 const INITIAL_FORM = {
@@ -10,7 +10,10 @@ const INITIAL_FORM = {
   batchId: '',
   isPublic: false,
   scheduledStart: '',
-  scheduledEnd: ''
+  scheduledEnd: '',
+  isRecurring: false,
+  recurStartTime: '',
+  recurEndTime: ''
 };
 
 export default function AdminMeetingsPage() {
@@ -62,6 +65,14 @@ export default function AdminMeetingsPage() {
     if (name === 'isPublic' && checked) {
       setForm((prev) => ({ ...prev, isPublic: true, batchId: '' }));
     }
+    // When enabling recurring, clear one-off times
+    if (name === 'isRecurring' && checked) {
+      setForm((prev) => ({ ...prev, isRecurring: true, scheduledStart: '', scheduledEnd: '' }));
+    }
+    // When disabling recurring, clear recur times
+    if (name === 'isRecurring' && !checked) {
+      setForm((prev) => ({ ...prev, isRecurring: false, recurStartTime: '', recurEndTime: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -87,8 +98,11 @@ export default function AdminMeetingsPage() {
       title: form.title,
       isPublic: form.isPublic,
       batchId: form.isPublic ? null : form.batchId,
-      scheduledStart: toISODate(form.scheduledStart),
-      scheduledEnd: toISODate(form.scheduledEnd)
+      scheduledStart: form.isRecurring ? null : toISODate(form.scheduledStart),
+      scheduledEnd: form.isRecurring ? null : toISODate(form.scheduledEnd),
+      isRecurring: form.isRecurring,
+      recurStartTime: form.isRecurring ? form.recurStartTime : null,
+      recurEndTime: form.isRecurring ? form.recurEndTime : null
     };
 
     try {
@@ -118,6 +132,15 @@ export default function AdminMeetingsPage() {
   const formatDateTime = (iso) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleString();
+  };
+
+  const formatRecurTime = (t) => {
+    if (!t) return '—';
+    // t is like "09:00:00" from DB
+    const [h, m] = t.split(':');
+    const d = new Date();
+    d.setHours(parseInt(h), parseInt(m));
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   if (!isAdmin) {
@@ -177,28 +200,68 @@ export default function AdminMeetingsPage() {
               </label>
             </div>
           )}
-          <div className="form-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-            <label style={{ flex: 1 }}>
-              Start Time
+          {/* Recurring Toggle */}
+          <div className="form-row" style={{ marginBottom: '1rem' }}>
+            <label className="field-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input
-                name="scheduledStart"
-                type="datetime-local"
-                value={form.scheduledStart}
+                type="checkbox"
+                name="isRecurring"
+                checked={form.isRecurring}
                 onChange={handleChange}
-                style={{ width: '100%', padding: '8px', marginTop: '4px' }}
               />
-            </label>
-            <label style={{ flex: 1 }}>
-              End Time
-              <input
-                name="scheduledEnd"
-                type="datetime-local"
-                value={form.scheduledEnd}
-                onChange={handleChange}
-                style={{ width: '100%', padding: '8px', marginTop: '4px' }}
-              />
+              <RefreshCw size={14} /> Daily recurring meeting (repeats every day)
             </label>
           </div>
+
+          {form.isRecurring ? (
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              <label style={{ flex: 1 }}>
+                Daily Start Time
+                <input
+                  name="recurStartTime"
+                  type="time"
+                  value={form.recurStartTime}
+                  onChange={handleChange}
+                  required={form.isRecurring}
+                  style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                />
+              </label>
+              <label style={{ flex: 1 }}>
+                Daily End Time
+                <input
+                  name="recurEndTime"
+                  type="time"
+                  value={form.recurEndTime}
+                  onChange={handleChange}
+                  required={form.isRecurring}
+                  style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+              <label style={{ flex: 1 }}>
+                Start Time
+                <input
+                  name="scheduledStart"
+                  type="datetime-local"
+                  value={form.scheduledStart}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                />
+              </label>
+              <label style={{ flex: 1 }}>
+                End Time
+                <input
+                  name="scheduledEnd"
+                  type="datetime-local"
+                  value={form.scheduledEnd}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+                />
+              </label>
+            </div>
+          )}
           {formError && <p className="form-error" style={{ color: '#dc2626', fontSize: '14px', marginBottom: '1rem' }}>{formError}</p>}
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={submitting}>
@@ -232,28 +295,35 @@ export default function AdminMeetingsPage() {
                 </tr>
               ) : (
                 meetings.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td className="meeting-title" style={{ padding: '12px' }}>{m.title}</td>
-                    <td style={{ padding: '12px' }}>
-                      {m.is_public ? (
-                        <span className="type-badge public"><Globe size={12} /> Public</span>
-                      ) : (
-                        <span className="type-badge batch"><Users size={12} /> Batch</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px' }}>{m.batch_name || '—'}</td>
-                    <td style={{ padding: '12px' }}><span className={getStatusBadgeClass(m.status)}>{m.status}</span></td>
-                    <td style={{ padding: '12px' }}>{formatDateTime(m.scheduled_start)}</td>
-                    <td style={{ padding: '12px' }}>{formatDateTime(m.scheduled_end)}</td>
-                    <td style={{ padding: '12px' }}>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => navigate(`/meeting/${m.id}`)}
-                      >
-                        <Video size={14} /> Join
-                      </button>
-                    </td>
-                  </tr>
+                    <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td className="meeting-title" style={{ padding: '12px' }}>
+                        {m.is_recurring && <RefreshCw size={12} style={{ marginRight: '6px', color: '#6366f1', verticalAlign: 'middle' }} />}
+                        {m.title}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {m.is_public ? (
+                          <span className="type-badge public"><Globe size={12} /> Public</span>
+                        ) : (
+                          <span className="type-badge batch"><Users size={12} /> Batch</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px' }}>{m.batch_name || '—'}</td>
+                      <td style={{ padding: '12px' }}><span className={getStatusBadgeClass(m.status)}>{m.status}</span></td>
+                      <td style={{ padding: '12px' }}>
+                        {m.is_recurring ? formatRecurTime(m.recur_start_time) : formatDateTime(m.scheduled_start)}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {m.is_recurring ? `${formatRecurTime(m.recur_end_time)} (daily)` : formatDateTime(m.scheduled_end)}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => navigate(`/meeting/${m.id}`)}
+                        >
+                          <Video size={14} /> Join
+                        </button>
+                      </td>
+                    </tr>
                 ))
               )}
             </tbody>

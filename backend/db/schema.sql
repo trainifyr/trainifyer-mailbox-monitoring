@@ -106,9 +106,17 @@ CREATE TABLE IF NOT EXISTS public.meetings (
   scheduled_start   timestamptz NULL,
   scheduled_end     timestamptz NULL,
   status            public.meeting_status NOT NULL DEFAULT 'SCHEDULED',
+  is_recurring      boolean NOT NULL DEFAULT false,
+  recur_start_time  time NULL,
+  recur_end_time    time NULL,
   created_by        uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
+  updated_at        timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT meetings_recurring_times_chk
+    CHECK (
+      (is_recurring = false) OR 
+      (is_recurring = true AND recur_start_time IS NOT NULL AND recur_end_time IS NOT NULL AND recur_start_time < recur_end_time)
+    )
 );
 CREATE INDEX IF NOT EXISTS idx_meetings_batch_id ON public.meetings(batch_id);
 CREATE INDEX IF NOT EXISTS idx_meetings_status   ON public.meetings(status);

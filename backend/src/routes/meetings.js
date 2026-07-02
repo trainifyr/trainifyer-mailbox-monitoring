@@ -13,25 +13,28 @@ const createMeetingSchema = z.object({
   batchId: z.string().uuid('batchId must be a valid UUID').nullable().optional().default(null),
   isPublic: z.boolean().optional().default(false),
   scheduledStart: z.string().datetime({ offset: true }).nullable().optional().default(null),
-  scheduledEnd: z.string().datetime({ offset: true }).nullable().optional().default(null)
+  scheduledEnd: z.string().datetime({ offset: true }).nullable().optional().default(null),
+  isRecurring: z.boolean().optional().default(false),
+  recurStartTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'recurStartTime must be HH:MM').nullable().optional().default(null),
+  recurEndTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'recurEndTime must be HH:MM').nullable().optional().default(null)
 }).refine(
   (data) => {
-    // If isPublic is true, batchId must be null
-    if (data.isPublic && data.batchId) {
-      return false;
-    }
+    if (data.isPublic && data.batchId) return false;
     return true;
   },
   { message: 'Public meetings cannot have a batchId', path: ['batchId'] }
 ).refine(
   (data) => {
-    // If isPublic is false (batch meeting), batchId is required
-    if (!data.isPublic && !data.batchId) {
-      return false;
-    }
+    if (!data.isPublic && !data.batchId) return false;
     return true;
   },
   { message: 'Batch meetings require a batchId', path: ['batchId'] }
+).refine(
+  (data) => {
+    if (data.isRecurring && (!data.recurStartTime || !data.recurEndTime)) return false;
+    return true;
+  },
+  { message: 'Recurring meetings require both recurStartTime and recurEndTime', path: ['recurStartTime'] }
 );
 
 const publicJoinSchema = z.object({
@@ -77,7 +80,9 @@ router.get('/', async (req, res, next) => {
       // Admin sees all meetings
       const result = await pool.query(
         `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
-                m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
+                m.scheduled_start, m.scheduled_end, m.status,
+                m.is_recurring, m.recur_start_time, m.recur_end_time,
+                m.created_by, m.created_at, m.updated_at,
                 creator.full_name AS created_by_name,
                 b.name AS batch_name
          FROM public.meetings m
@@ -178,9 +183,9 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
     const roomName = generateRoomName(body.title);
 
     const { rows } = await pool.query(
-      `INSERT INTO public.meetings (title, batch_id, jitsi_room_name, is_public, scheduled_start, scheduled_end, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, title, batch_id, jitsi_room_name, is_public, scheduled_start, scheduled_end, status, created_by, created_at, updated_at`,
+      `INSERT INTO public.meetings (title, batch_id, jitsi_room_name, is_public, scheduled_start, scheduled_end, is_recurring, recur_start_time, recur_end_time, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, title, batch_id, jitsi_room_name, is_public, scheduled_start, scheduled_end, status, is_recurring, recur_start_time, recur_end_time, created_by, created_at, updated_at`,
       [
         body.title,
         body.batchId,
@@ -188,6 +193,9 @@ router.post('/', requireRole('ADMIN'), async (req, res, next) => {
         body.isPublic,
         body.scheduledStart,
         body.scheduledEnd,
+        body.isRecurring,
+        body.recurStartTime || null,
+        body.recurEndTime || null,
         creatorId
       ]
     );

@@ -55,7 +55,7 @@ router.post('/join-log', async (req, res, next) => {
 
     // Verify the meeting exists
     const { rows: meetingRows } = await pool.query(
-      `SELECT id, status, is_public, batch_id FROM public.meetings WHERE id = $1`,
+      `SELECT id, status, is_public, batch_id, is_recurring FROM public.meetings WHERE id = $1`,
       [id]
     );
     if (meetingRows.length === 0) {
@@ -76,6 +76,10 @@ router.post('/join-log', async (req, res, next) => {
       });
     }
 
+    // For recurring meetings: look up existing row scoped to TODAY only (fresh record each day).
+    // For one-off meetings: look up by meeting+user alone (consolidated across disconnects).
+    const dateClause = meeting.is_recurring ? `AND DATE(joined_at) = CURRENT_DATE` : '';
+
     // Check for existing attendance log (consolidated)
     let existingRow = null;
     if (userId) {
@@ -83,7 +87,8 @@ router.post('/join-log', async (req, res, next) => {
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
          FROM public.attendance_logs
-         WHERE meeting_id = $1 AND user_id = $2
+         WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
+         ORDER BY joined_at DESC
          LIMIT 1`,
         [id, userId]
       );
@@ -93,7 +98,8 @@ router.post('/join-log', async (req, res, next) => {
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
          FROM public.attendance_logs
-         WHERE meeting_id = $1 AND external_name = $2
+         WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
+         ORDER BY joined_at DESC
          LIMIT 1`,
         [id, externalName]
       );
