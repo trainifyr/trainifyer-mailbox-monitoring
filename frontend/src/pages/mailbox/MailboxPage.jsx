@@ -7,7 +7,8 @@ import {
   Search,
   MoreVertical,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -109,6 +110,22 @@ export default function MailboxPage() {
     setComposeSuccess(false);
     setComposeError(null);
     setActiveView('compose');
+  };
+
+  const handleDelete = async (id, isDetail = false) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) return;
+    try {
+      await apiClient.delete(`/mail/${id}`);
+      if (isDetail) {
+        setActiveView(selectedMessage.sender_id === userId ? 'sent' : 'inbox');
+        setSelectedMessage(null);
+      } else {
+        if (activeView === 'inbox') fetchInbox(inboxPage);
+        else if (activeView === 'sent') fetchSent(sentPage);
+      }
+    } catch (e) {
+      alert(e.response?.data?.message || e.message);
+    }
   };
 
   const handleReceiverEmailChange = async (e) => {
@@ -258,17 +275,23 @@ export default function MailboxPage() {
                   <div style={{ padding: '2rem 0', borderTop: '1px solid var(--border)', lineHeight: '1.8', color: 'var(--text-main)', whiteSpace: 'pre-wrap' }}>
                      {selectedMessage.body}
                   </div>
-                   {/* Reply button - only for received messages */}
-                   {selectedMessage.sender_id !== userId && (
-                     <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                       <button
-                         className="btn btn-primary"
-                         onClick={() => handleReply(selectedMessage)}
-                       >
-                         Reply
-                       </button>
-                     </div>
-                   )}
+                    <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>
+                      {selectedMessage.sender_id !== userId && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleReply(selectedMessage)}
+                        >
+                          Reply
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => handleDelete(selectedMessage.id, true)}
+                        style={{ border: '1px solid #fee2e2', background: '#fef2f2', color: '#dc2626' }}
+                      >
+                        <Trash2 size={16} style={{ marginRight: '6px' }} /> Delete
+                      </button>
+                    </div>
                </div>
             ) : (
                <div className="animate-fade-in">
@@ -282,7 +305,7 @@ export default function MailboxPage() {
                       </div>
                     );
                     return filtered.map(msg => (
-                      <div key={msg.id} onClick={() => handleOpenMessage(msg)} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '180px 1fr 100px', gap: '2rem', alignItems: 'center', cursor: 'pointer', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary-glow)' : 'transparent', fontWeight: !msg.is_read && activeView === 'inbox' ? 600 : 400 }}>
+                      <div key={msg.id} onClick={() => handleOpenMessage(msg)} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '180px 1fr 100px 40px', gap: '2rem', alignItems: 'center', cursor: 'pointer', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary-glow)' : 'transparent', fontWeight: !msg.is_read && activeView === 'inbox' ? 600 : 400 }}>
                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary)' : 'transparent' }} />
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeView === 'inbox' ? msg.sender_name : msg.receiver_name}</span>
@@ -291,6 +314,13 @@ export default function MailboxPage() {
                             <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginRight: '8px' }}>{msg.subject}</span> — {msg.body.substring(0, 100)}...
                          </div>
                          <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatDate(msg.created_at)}</div>
+                         <button
+                           onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                           style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                           aria-label="Delete message"
+                         >
+                            <Trash2 size={16} />
+                         </button>
                       </div>
                     ));
                   })()}

@@ -86,9 +86,11 @@ CREATE TABLE IF NOT EXISTS public.mail_messages (
   receiver_id  uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
   subject      text NOT NULL,
   body         text NOT NULL,
-  is_read      boolean NOT NULL DEFAULT false,
-  read_at      timestamptz NULL,
-  created_at   timestamptz NOT NULL DEFAULT now(),
+  is_read            boolean NOT NULL DEFAULT false,
+  read_at            timestamptz NULL,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  deleted_by_sender  boolean NOT NULL DEFAULT false,
+  deleted_by_receiver boolean NOT NULL DEFAULT false,
   CONSTRAINT mail_messages_no_self_mail CHECK (sender_id <> receiver_id)
 );
 CREATE INDEX IF NOT EXISTS idx_mail_messages_receiver_id      ON public.mail_messages(receiver_id);

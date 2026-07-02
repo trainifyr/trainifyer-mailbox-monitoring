@@ -111,7 +111,7 @@ router.get('/inbox', async (req, res, next) => {
          COUNT(*)::int AS total,
          COUNT(*) FILTER (WHERE is_read = false)::int AS unread_count
        FROM public.mail_messages
-       WHERE receiver_id = $1`,
+       WHERE receiver_id = $1 AND deleted_by_receiver = false`,
       [userId]
     );
     const { total, unread_count } = countRows[0];
@@ -125,7 +125,7 @@ router.get('/inbox', async (req, res, next) => {
               sender.role AS sender_role
        FROM public.mail_messages m
        JOIN public.users sender ON sender.id = m.sender_id
-       WHERE m.receiver_id = $1
+       WHERE m.receiver_id = $1 AND m.deleted_by_receiver = false
        ORDER BY m.created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, query.limit, offset]
@@ -188,7 +188,7 @@ router.get('/sent', async (req, res, next) => {
     const { rows: countRows } = await pool.query(
       `SELECT COUNT(*)::int AS total
        FROM public.mail_messages
-       WHERE sender_id = $1`,
+       WHERE sender_id = $1 AND deleted_by_sender = false`,
       [userId]
     );
     const total = countRows[0].total;
@@ -201,7 +201,7 @@ router.get('/sent', async (req, res, next) => {
               receiver.role AS receiver_role
        FROM public.mail_messages m
        JOIN public.users receiver ON receiver.id = m.receiver_id
-       WHERE m.sender_id = $1
+       WHERE m.sender_id = $1 AND m.deleted_by_sender = false
        ORDER BY m.created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, query.limit, offset]
@@ -362,6 +362,59 @@ router.patch('/:id/read', async (req, res, next) => {
     );
 
     res.json({ data: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- DELETE /api/mail/:id ---
+// Soft-delete a message for the current user. Real delete occurs if both parties delete it.
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const userId = req.mockUserId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Mock user ID is required' });
+    }
+
+    const { id } = req.params;
+
+    // Fetch the message to see who is deleting it
+    const { rows: msgRows } = await pool.query(
+      `SELECT id, sender_id, receiver_id FROM public.mail_messages WHERE id = $1`,
+      [id]
+    );
+
+    if (msgRows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Message not found' });
+    }
+
+    const msg = msgRows[0];
+    if (msg.sender_id !== userId && msg.receiver_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not have permission to delete this message' });
+    }
+
+    if (msg.sender_id === userId) {
+      await pool.query(
+        `UPDATE public.mail_messages SET deleted_by_sender = true WHERE id = $1`,
+        [id]
+      );
+    }
+
+    if (msg.receiver_id === userId) {
+      await pool.query(
+        `UPDATE public.mail_messages SET deleted_by_receiver = true WHERE id = $1`,
+        [id]
+      );
+    }
+
+    // Real delete if both flagged as deleted
+    await pool.query(
+      `DELETE FROM public.mail_messages 
+       WHERE id = $1 AND deleted_by_sender = true AND deleted_by_receiver = true`,
+      [id]
+    );
+
+    res.json({ message: 'Message deleted successfully' });
   } catch (err) {
     next(err);
   }
