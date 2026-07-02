@@ -28,6 +28,8 @@ export default function AdminMeetingsPage() {
   const [formError, setFormError] = useState(null);
   const [batches, setBatches] = useState([]);
 
+  const [editingMeetingId, setEditingMeetingId] = useState(null);
+
   const fetchMeetings = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,6 +77,28 @@ export default function AdminMeetingsPage() {
     }
   };
 
+  const handleEdit = (m) => {
+    setEditingMeetingId(m.id);
+    setShowForm(true);
+    setForm({
+      title: m.title,
+      batchId: m.batch_id || '',
+      isPublic: m.is_public,
+      // Convert ISO back to browser local format "YYYY-MM-DDTHH:mm" for datetime-local inputs
+      scheduledStart: m.scheduled_start ? new Date(m.scheduled_start).toISOString().slice(0, 16) : '',
+      scheduledEnd: m.scheduled_end ? new Date(m.scheduled_end).toISOString().slice(0, 16) : '',
+      isRecurring: m.is_recurring,
+      recurStartTime: m.recur_start_time ? m.recur_start_time.slice(0, 5) : '',
+      recurEndTime: m.recur_end_time ? m.recur_end_time.slice(0, 5) : ''
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMeetingId(null);
+    setForm(INITIAL_FORM);
+    setShowForm(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title) {
@@ -89,8 +113,6 @@ export default function AdminMeetingsPage() {
     // Helper to format local datetime-local to ISO with timezone
     const toISODate = (val) => {
       if (!val) return null;
-      // datetime-local gives "YYYY-MM-DDTHH:mm" in local time.
-      // We convert it to a real Date object and then to ISO string which includes 'Z' or offset.
       return new Date(val).toISOString();
     };
 
@@ -108,7 +130,12 @@ export default function AdminMeetingsPage() {
     try {
       setSubmitting(true);
       setFormError(null);
-      await apiClient.post('/meetings', payload);
+      if (editingMeetingId) {
+        await apiClient.patch(`/meetings/${editingMeetingId}`, payload);
+        setEditingMeetingId(null);
+      } else {
+        await apiClient.post('/meetings', payload);
+      }
       setForm(INITIAL_FORM);
       setShowForm(false);
       await fetchMeetings();
@@ -116,6 +143,26 @@ export default function AdminMeetingsPage() {
       setFormError(e.response?.data?.message || e.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEndMeeting = async (id) => {
+    if (!window.confirm('Are you sure you want to end this meeting?')) return;
+    try {
+      await apiClient.patch(`/meetings/${id}`, { status: 'ENDED' });
+      await fetchMeetings();
+    } catch (e) {
+      alert(e.response?.data?.message || e.message);
+    }
+  };
+
+  const handleCancelMeeting = async (id) => {
+    if (!window.confirm('Are you sure you want to cancel this meeting?')) return;
+    try {
+      await apiClient.patch(`/meetings/${id}`, { status: 'CANCELLED' });
+      await fetchMeetings();
+    } catch (e) {
+      alert(e.response?.data?.message || e.message);
     }
   };
 
@@ -155,14 +202,14 @@ export default function AdminMeetingsPage() {
     <div className="admin-meetings-page">
       <div className="page-header">
         <h2>Meetings</h2>
-        <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-          <Plus size={16} /> {showForm ? 'Cancel' : 'Schedule Meeting'}
+        <button className="btn btn-primary" onClick={editingMeetingId ? handleCancelEdit : (showForm ? () => setShowForm(false) : () => setShowForm(true))}>
+          <Plus size={16} /> {showForm ? (editingMeetingId ? 'Cancel Edit' : 'Cancel') : 'Schedule Meeting'}
         </button>
       </div>
 
       {showForm && (
         <form className="create-form" onSubmit={handleSubmit} style={{ background: '#f9fafb', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid #e5e7eb' }}>
-          <h3><Video size={16} /> Schedule New Meeting</h3>
+          <h3><Video size={16} /> {editingMeetingId ? 'Edit Meeting' : 'Schedule New Meeting'}</h3>
           <div className="form-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
             <label className="field-full" style={{ flex: 1 }}>
               Title
@@ -263,10 +310,15 @@ export default function AdminMeetingsPage() {
             </div>
           )}
           {formError && <p className="form-error" style={{ color: '#dc2626', fontSize: '14px', marginBottom: '1rem' }}>{formError}</p>}
-          <div className="form-actions">
+          <div className="form-actions" style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create Meeting'}
+              {submitting ? (editingMeetingId ? 'Saving...' : 'Creating...') : (editingMeetingId ? 'Save Changes' : 'Create Meeting')}
             </button>
+            {editingMeetingId && (
+              <button type="button" className="btn btn-ghost" onClick={handleCancelEdit}>
+                Cancel Edit
+              </button>
+            )}
           </div>
         </form>
       )}
@@ -316,12 +368,41 @@ export default function AdminMeetingsPage() {
                         {m.is_recurring ? `${formatRecurTime(m.recur_end_time)} (daily)` : formatDateTime(m.scheduled_end)}
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => navigate(`/meeting/${m.id}`)}
-                        >
-                          <Video size={14} /> Join
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => navigate(`/meeting/${m.id}`)}
+                          >
+                            <Video size={14} /> Join
+                          </button>
+                          {m.status !== 'ENDED' && m.status !== 'CANCELLED' && (
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleEdit(m)}
+                              style={{ border: '1px solid var(--border)' }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {m.status === 'LIVE' && (
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              onClick={() => handleEndMeeting(m.id)}
+                              style={{ color: '#ef4444', border: '1px solid #fee2e2', background: '#fef2f2' }}
+                            >
+                              End
+                            </button>
+                          )}
+                          {(m.status === 'LIVE' || m.status === 'SCHEDULED') && (
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              onClick={() => handleCancelMeeting(m.id)}
+                              style={{ color: '#dc2626', border: '1px solid #fee2e2', background: '#fef2f2' }}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                 ))

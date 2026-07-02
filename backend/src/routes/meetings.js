@@ -42,6 +42,24 @@ const publicJoinSchema = z.object({
   meetingId: z.string().uuid('meetingId must be a valid UUID')
 });
 
+const updateMeetingSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title too long').optional(),
+  batchId: z.string().uuid('batchId must be a valid UUID').nullable().optional(),
+  isPublic: z.boolean().optional(),
+  scheduledStart: z.string().datetime({ offset: true }).nullable().optional(),
+  scheduledEnd: z.string().datetime({ offset: true }).nullable().optional(),
+  isRecurring: z.boolean().optional(),
+  recurStartTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'recurStartTime must be HH:MM').nullable().optional(),
+  recurEndTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'recurEndTime must be HH:MM').nullable().optional(),
+  status: z.enum(['SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED']).optional()
+}).refine(
+  (data) => {
+    if (data.isPublic && data.batchId) return false;
+    return true;
+  },
+  { message: 'Public meetings cannot have a batchId', path: ['batchId'] }
+);
+
 // --- Helpers ---
 
 // Generate a unique Jitsi room name: trainifyer-<6 random hex chars>-<slugified title>
@@ -315,6 +333,87 @@ router.post('/public/join', async (req, res, next) => {
         jitsi_room_name: meeting.jitsi_room_name
       }
     });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message }))
+      });
+    }
+    next(err);
+  }
+});
+
+// --- PATCH /api/meetings/:id ---
+// Update an existing meeting (Admin only).
+router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const body = updateMeetingSchema.parse(req.body);
+
+    // Verify the meeting exists
+    const { rows: existingRows } = await pool.query(
+      `SELECT id, is_recurring, batch_id FROM public.meetings WHERE id = $1`,
+      [id]
+    );
+    if (existingRows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Meeting not found' });
+    }
+
+    // If batchId is being changed, verify the batch exists
+    if (body.batchId) {
+      const { rows: batchRows } = await pool.query(
+        `SELECT id FROM public.batches WHERE id = $1`,
+        [body.batchId]
+      );
+      if (batchRows.length === 0) {
+        return res.status(404).json({ error: 'Not Found', message: 'Batch not found' });
+      }
+    }
+
+    // Build SET clauses dynamically
+    const sets = [];
+    const params = [];
+    let idx = 1;
+
+    const fields = {
+      title: body.title,
+      batch_id: body.batchId !== undefined ? body.batchId : undefined,
+      is_public: body.isPublic,
+      scheduled_start: body.scheduledStart !== undefined ? body.scheduledStart : undefined,
+      scheduled_end: body.scheduledEnd !== undefined ? body.scheduledEnd : undefined,
+      is_recurring: body.isRecurring,
+      recur_start_time: body.recurStartTime !== undefined ? body.recurStartTime : undefined,
+      recur_end_time: body.recurEndTime !== undefined ? body.recurEndTime : undefined,
+      status: body.status,
+      updated_at: 'now()'
+    };
+
+    for (const [col, val] of Object.entries(fields)) {
+      if (val !== undefined) {
+        if (val === 'now()') {
+          sets.push(`${col} = now()`);
+        } else {
+          sets.push(`${col} = $${idx++}`);
+          params.push(val);
+        }
+      }
+    }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'No fields to update' });
+    }
+
+    params.push(id);
+    const updateQuery = `
+      UPDATE public.meetings
+      SET ${sets.join(', ')}
+      WHERE id = $${idx}
+      RETURNING id, title, batch_id, jitsi_room_name, is_public, scheduled_start, scheduled_end, status, is_recurring, recur_start_time, recur_end_time, created_by, created_at, updated_at
+    `;
+
+    const { rows: updatedRows } = await pool.query(updateQuery, params);
+    res.json({ data: updatedRows[0] });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return res.status(400).json({

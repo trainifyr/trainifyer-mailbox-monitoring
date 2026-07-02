@@ -95,6 +95,22 @@ export default function MailboxPage() {
     }
   };
 
+  const handleReply = (msg) => {
+    const date = new Date(msg.created_at).toLocaleString();
+    const quotedBody = msg.body
+      .split('\n')
+      .map(line => `> ${line}`)
+      .join('\n');
+    setComposeForm({
+      receiverEmail: msg.sender_email,
+      subject: msg.subject.startsWith('Re: ') ? msg.subject : `Re: ${msg.subject}`,
+      body: `\n\n--- On ${date}, ${msg.sender_name} wrote: ---\n${quotedBody}`
+    });
+    setComposeSuccess(false);
+    setComposeError(null);
+    setActiveView('compose');
+  };
+
   const handleReceiverEmailChange = async (e) => {
     const val = e.target.value;
     setComposeForm(prev => ({ ...prev, receiverEmail: val }));
@@ -242,6 +258,17 @@ export default function MailboxPage() {
                   <div style={{ padding: '2rem 0', borderTop: '1px solid var(--border)', lineHeight: '1.8', color: 'var(--text-main)', whiteSpace: 'pre-wrap' }}>
                      {selectedMessage.body}
                   </div>
+                   {/* Reply button - only for received messages */}
+                   {selectedMessage.sender_id !== userId && (
+                     <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                       <button
+                         className="btn btn-primary"
+                         onClick={() => handleReply(selectedMessage)}
+                       >
+                         Reply
+                       </button>
+                     </div>
+                   )}
                </div>
             ) : (
                <div className="animate-fade-in">
