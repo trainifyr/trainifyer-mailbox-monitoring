@@ -41,6 +41,9 @@ export default function MailboxPage() {
 
   const [error, setError] = useState(null);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
   const fetchInbox = useCallback(async (page) => {
     try {
       setInboxLoading(true);
@@ -75,6 +78,7 @@ export default function MailboxPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    setSearchQuery(''); // Reset search when switching views
     if (activeView === 'inbox') { setInboxPage(1); fetchInbox(1); }
     if (activeView === 'sent') { setSentPage(1); fetchSent(1); }
   }, [activeView, isAuthenticated, fetchInbox, fetchSent]);
@@ -122,6 +126,18 @@ export default function MailboxPage() {
     }
   };
 
+  // Filter messages based on searchQuery (subject, sender/receiver name, body)
+  const filterMessages = (msgs) => {
+    if (!searchQuery.trim()) return msgs;
+    const q = searchQuery.toLowerCase();
+    return msgs.filter(msg =>
+      msg.subject?.toLowerCase().includes(q) ||
+      msg.sender_name?.toLowerCase().includes(q) ||
+      msg.receiver_name?.toLowerCase().includes(q) ||
+      msg.body?.toLowerCase().includes(q)
+    );
+  };
+
   const formatDate = (iso) => {
     const d = new Date(iso);
     const now = new Date();
@@ -156,7 +172,13 @@ export default function MailboxPage() {
             <h2 style={{ fontSize: '1.125rem', textTransform: 'capitalize' }}>{activeView}</h2>
             <div style={{ position: 'relative' }}>
                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-               <input className="input" placeholder="Search mail..." style={{ width: '200px', padding: '0.4rem 0.75rem 0.4rem 2rem', fontSize: '0.8125rem', borderRadius: '12px' }} />
+               <input
+                 className="input"
+                 placeholder="Search mail..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 style={{ width: '200px', padding: '0.4rem 0.75rem 0.4rem 2rem', fontSize: '0.8125rem', borderRadius: '12px' }}
+               />
             </div>
          </div>
 
@@ -223,13 +245,16 @@ export default function MailboxPage() {
                </div>
             ) : (
                <div className="animate-fade-in">
-                  {(activeView === 'inbox' ? inboxMessages : sentMessages).length === 0 ? (
-                    <div style={{ padding: '6rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                       <Mail size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                       <p>Your {activeView} is empty.</p>
-                    </div>
-                  ) : (
-                    (activeView === 'inbox' ? inboxMessages : sentMessages).map(msg => (
+                  {(() => {
+                    const allMsgs = activeView === 'inbox' ? inboxMessages : sentMessages;
+                    const filtered = filterMessages(allMsgs);
+                    if (filtered.length === 0) return (
+                      <div style={{ padding: '6rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                         <Mail size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                         <p>{searchQuery ? `No results for "${searchQuery}"` : `Your ${activeView} is empty.`}</p>
+                      </div>
+                    );
+                    return filtered.map(msg => (
                       <div key={msg.id} onClick={() => handleOpenMessage(msg)} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '180px 1fr 100px', gap: '2rem', alignItems: 'center', cursor: 'pointer', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary-glow)' : 'transparent', fontWeight: !msg.is_read && activeView === 'inbox' ? 600 : 400 }}>
                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: !msg.is_read && activeView === 'inbox' ? 'var(--primary)' : 'transparent' }} />
@@ -240,8 +265,8 @@ export default function MailboxPage() {
                          </div>
                          <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatDate(msg.created_at)}</div>
                       </div>
-                    ))
-                  )}
+                    ));
+                  })()}
                </div>
             )}
          </div>
