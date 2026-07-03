@@ -1,0 +1,65 @@
+131:            {/* Attendance Log Table */}
+132:            {report?.details && report.details.length > 0 && (
+133:              <div className="card" style={{ padding: '2rem', marginTop: '2rem' }}>
+134:                <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Recent Attendance Logs</h2>
+135:                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>Your session-by-session attendance history.</p>
+136:                <div className="table-container" style={{ border: 'none', borderRadius: 0, padding: 0 }}>
+137:                  <table>
+138:                    <thead>
+139:                      <tr>
+140:                        <th>Session</th>
+141:                        <th>Date</th>
+142:                        <th style={{ textAlign: 'center' }}>Duration</th>
+143:                        <th style={{ textAlign: 'center' }}>Attendance %</th>
+144:                        <th style={{ textAlign: 'right' }}>Status</th>
+145:                      </tr>
+146:                    </thead>
+147:                    <tbody>
+148:                      {report.details.slice(0, 15).map((d) => (
+149:                        <tr key={d.attendance_log_id}>
+150:                          <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
+151:                          <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+152:                            {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '�'}
+153:                          </td>
+154:                          <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
+155:                            {d.total_minutes != null ? ${Math.round(d.total_minutes)}m : '�'}
+156:                          </td>
+157:                          <td style={{ textAlign: 'center', fontWeight: 700 }}>
+158:                            {d.attendance_percentage != null ? ${Math.round(d.attendance_percentage)}% : '�'}
+159:                          </td>
+160:                          <td style={{ textAlign: 'right' }}>
+161:                            <span className={adge } style={{ background: d.status === 'ABSENT' ? '#fee2e2' : '', color: d.status === 'ABSENT' ? '#ef4444' : '' }}>
+162:                              {d.status}
+163:                            </span>
+164:                          </td>
+165:                        </tr>
+166:                      ))}
+167:                    </tbody>
+168:                  </table>
+169:                </div>
+170:              </div>
+171:            )}
+172:           </section>
+173: 
+174:           {/* Sidebar Area */}
+175:           <aside>
+176:              <div style={{ marginBottom: '2rem' }}>
+177:                 <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Quick Actions</h3>
+178:                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+179:                    <Link to="/meetings" className="btn btn-primary" style={{ justifyContent: 'space-between', padding: '1rem 1.25rem' }}>
+180:                       <span>Browse Meetings</span>
+181:                       <Video size={18} />
+182:                    </Link>
+183:                    <Link to="/mailbox" className="btn btn-ghost" style={{ justifyContent: 'space-between', padding: '1rem 1.25rem', border: '1px solid var(--border)' }}>
+184:                       <span>Check Mailbox</span>
+185:                       <Mail size={18} />
+186:                    </Link>
+187:                 </div>
+188:              </div>
+189: 
+190:              <div className="card" style={{ background: 'linear-gradient(to bottom, var(--bg-card), var(--border-light))', padding: '1.5rem' }}>
+191:                 <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Learning Profile</h3>
+192:                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+193:                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+194:                     <User size={24} />
+195:                   </div>

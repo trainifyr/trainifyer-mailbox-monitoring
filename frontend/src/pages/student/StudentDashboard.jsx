@@ -145,26 +145,26 @@ export default function StudentDashboard() {
                      </tr>
                    </thead>
                    <tbody>
-                     {report.details.slice(0, 15).map((d) => (
-                       <tr key={d.attendance_log_id}>
-                         <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
-                         <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                           {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                         </td>
-                         <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
-                           {d.total_minutes != null ? ${Math.round(d.total_minutes)}m : '—'}
-                         </td>
-                         <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                           {d.attendance_percentage != null ? ${Math.round(d.attendance_percentage)}% : '—'}
-                         </td>
-                         <td style={{ textAlign: 'right' }}>
-                           <span className={adge } style={{ background: d.status === 'ABSENT' ? '#fee2e2' : '', color: d.status === 'ABSENT' ? '#ef4444' : '' }}>
-                             {d.status}
-                           </span>
-                         </td>
-                       </tr>
-                     ))}
-                   </tbody>
+                      {report.details.slice(0, 15).map((d) => (
+                        <tr key={d.attendance_log_id}>
+                          <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
+                          <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                            {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'â€”'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
+                            {d.total_minutes != null ? `${Math.round(d.total_minutes)}m` : 'â€”'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 700 }}>
+                            {d.attendance_percentage != null ? `${Math.round(d.attendance_percentage)}%` : 'â€”'}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <span className={`badge ${d.status === 'PRESENT' ? 'badge-student' : d.status === 'PARTIAL' ? 'badge-admin' : ''}`} style={{ background: d.status === 'ABSENT' ? '#fee2e2' : '', color: d.status === 'ABSENT' ? '#ef4444' : '' }}>
+                              {d.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                  </table>
                </div>
              </div>
