@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Plus, ChevronDown, ChevronRight, Users, Settings, Check, Pencil, X } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Users, Settings, Check, Pencil, X, Archive } from 'lucide-react';
 import './BatchesPage.css';
 
 const INITIAL_BATCH_FORM = { name: '' };
@@ -54,11 +54,15 @@ export default function BatchesPage() {
   const [settingsSaving, setSettingsSaving] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const fetchBatches = useCallback(async () => {
+  const [showArchived, setShowArchived] = useState(false);
+
+  const fetchBatches = useCallback(async (includeArchived = false) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get('/batches');
+      const res = await apiClient.get('/batches', {
+        params: { includeArchived }
+      });
       setBatches(res.data.data);
     } catch (e) {
       setError(e.response?.data?.error || e.message);
@@ -67,7 +71,9 @@ export default function BatchesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchBatches(); }, [fetchBatches]);
+  useEffect(() => {
+    fetchBatches(showArchived);
+  }, [fetchBatches, showArchived]);
 
   useEffect(() => {
     if (!notification) return;
@@ -122,7 +128,7 @@ export default function BatchesPage() {
       await apiClient.post('/batches', { name: batchForm.name.trim() });
       setBatchForm(INITIAL_BATCH_FORM);
       setShowForm(false);
-      await fetchBatches();
+      await fetchBatches(showArchived);
     } catch (e) {
       setFormError(e.response?.data?.message || e.message);
     } finally {
@@ -151,7 +157,7 @@ export default function BatchesPage() {
       await apiClient.patch(`/batches/${batchId}`, { name: renameValue.trim() });
       setRenamingBatchId(null);
       setNotification('Batch renamed');
-      await fetchBatches();
+      await fetchBatches(showArchived);
     } catch (err) {
       setNotification('Failed to rename batch');
     } finally {
@@ -163,9 +169,19 @@ export default function BatchesPage() {
     const newStatus = batch.status === 'active' ? 'inactive' : 'active';
     try {
       await apiClient.patch(`/batches/${batch.id}`, { status: newStatus });
-      await fetchBatches();
+      await fetchBatches(showArchived);
     } catch (e) {
       console.error('Failed to update batch status:', e);
+    }
+  };
+
+  const handleToggleArchive = async (batch) => {
+    try {
+      await apiClient.patch(`/batches/${batch.id}/archive`, { isArchived: !batch.is_archived });
+      setNotification(batch.is_archived ? 'Batch restored' : 'Batch archived');
+      await fetchBatches(showArchived);
+    } catch (e) {
+      setNotification('Failed to update batch archiving status');
     }
   };
 
@@ -191,7 +207,7 @@ export default function BatchesPage() {
       await apiClient.post(`/batches/${expandedBatchId}/students`, { studentId: found.id });
       setAssignForm(INITIAL_ASSIGN_FORM);
       await fetchBatchStudents(expandedBatchId);
-      await fetchBatches();
+      await fetchBatches(showArchived);
       setNotification(`${found.full_name} added to batch`);
     } catch (e) {
       setAssignError(e.response?.data?.message || e.message);
@@ -284,11 +300,22 @@ export default function BatchesPage() {
 
       <div className="page-header">
         <h2>Batches</h2>
-        {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-            <Plus size={16} /> {showForm ? 'Cancel' : 'Create Batch'}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-main)' }}>
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            Show Archived Batches
+          </label>
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
+              <Plus size={16} /> {showForm ? 'Cancel' : 'Create Batch'}
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && isAdmin && (
@@ -350,7 +377,10 @@ export default function BatchesPage() {
                           </span>
                         ) : b.name}
                       </td>
-                      <td><span className={`badge badge-${b.status}`}>{b.status}</span></td>
+                      <td>
+                        <span className={`badge badge-${b.status}`} style={{ marginRight: '6px' }}>{b.status}</span>
+                        {b.is_archived && <span className="badge" style={{ background: 'var(--border-light)', color: 'var(--text-muted)' }}>Archived</span>}
+                      </td>
                       <td>{b.student_count}</td>
                       <td>{new Date(b.created_at).toLocaleDateString()}</td>
                       {isAdmin && (
@@ -364,6 +394,14 @@ export default function BatchesPage() {
                             onClick={(e) => { e.stopPropagation(); handleToggleStatus(b); }}
                           >
                             {b.status === 'active' ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            className="btn"
+                            title={b.is_archived ? 'Restore Batch' : 'Archive Batch'}
+                            style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            onClick={(e) => { e.stopPropagation(); handleToggleArchive(b); }}
+                          >
+                            <Archive size={14} style={{ color: b.is_archived ? 'var(--primary)' : 'var(--text-muted)' }} />
                           </button>
                         </td>
                       )}

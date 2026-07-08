@@ -27,10 +27,12 @@ const assignStudentSchema = z.object({
 
 router.get('/', async (req, res, next) => {
   try {
+    const includeArchived = req.query.includeArchived === 'true';
     const { rows } = await pool.query(
-      `SELECT b.id, b.name, b.status, b.created_at, b.updated_at,
+      `SELECT b.id, b.name, b.status, b.is_archived, b.created_at, b.updated_at,
               (SELECT COUNT(*)::int FROM public.student_batches sb WHERE sb.batch_id = b.id) AS student_count
        FROM public.batches b
+       ${includeArchived ? '' : 'WHERE b.is_archived = false'}
        ORDER BY b.created_at DESC`
     );
     res.json({ data: rows });
@@ -219,6 +221,39 @@ router.post('/:id/students', requireRole('ADMIN'), async (req, res, next) => {
       return res.status(409).json({
         error: 'Conflict',
         message: 'Student is already assigned to another batch (single-batch-per-student rule)'
+      });
+    }
+    next(err);
+  }
+});
+
+// --- PATCH /api/batches/:id/archive ---
+// Archive/restore a batch. Admin only.
+const archiveBatchSchema = z.object({
+  isArchived: z.boolean()
+});
+
+router.patch('/:id/archive', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const body   = archiveBatchSchema.parse(req.body);
+
+    const { rows } = await pool.query(
+      `UPDATE public.batches SET is_archived = $1, updated_at = now() WHERE id = $2
+       RETURNING id, name, status, is_archived, created_at, updated_at`,
+      [body.isArchived, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Batch not found' });
+    }
+
+    res.json({ data: rows[0] });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message }))
       });
     }
     next(err);

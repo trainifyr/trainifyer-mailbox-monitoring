@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS public.batches (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name        text NOT NULL,
   status      public.batch_status NOT NULL DEFAULT 'active',
+  is_archived  boolean NOT NULL DEFAULT false,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
