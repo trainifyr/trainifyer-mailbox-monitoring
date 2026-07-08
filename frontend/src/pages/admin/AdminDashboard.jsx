@@ -14,7 +14,8 @@ import {
   AlertTriangle, 
   XCircle,
   ArrowUpRight,
-  Plus
+  Plus,
+  Download
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -37,6 +38,23 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   }, []);
+
+  const handleExportCSV = async () => {
+    try {
+      const res = await apiClient.get('/reports/attendance/csv', {
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Failed to export CSV:', e);
+    }
+  };
 
   useEffect(() => {
     if (isAdmin) fetchReport();
@@ -102,7 +120,16 @@ export default function AdminDashboard() {
             <section>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <h2 style={{ fontSize: '1.5rem' }}>Recent Attendance</h2>
-                  <Link to="/admin/reports" style={{ fontSize: '0.875rem', fontWeight: 600 }}>View All Reports</Link>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button 
+                      className="btn btn-ghost" 
+                      onClick={handleExportCSV} 
+                      style={{ padding: '0.25rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem', fontWeight: 600, height: 'auto', border: '1px solid var(--border)' }}
+                    >
+                      <Download size={14} /> Export CSV
+                    </button>
+                    <Link to="/admin/reports" style={{ fontSize: '0.875rem', fontWeight: 600 }}>View All Reports</Link>
+                  </div>
                </div>
                
                <div className="table-container">

@@ -225,4 +225,150 @@ router.get('/attendance', async (req, res, next) => {
   }
 });
 
+// --- GET /api/reports/attendance/csv ---
+// Returns CSV format of detailed attendance records matching filters.
+router.get('/attendance/csv', async (req, res, next) => {
+  try {
+    const role = req.mockUserRole;
+    const callerUserId = req.mockUserId;
+
+    // Parse filters from query
+    let { userId, batchId, fromDate, toDate, status } = req.query;
+
+    // Validate status filter
+    if (status && !STATUS_FILTERS.includes(status)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: `status must be one of: ${STATUS_FILTERS.join(', ')}`
+      });
+    }
+
+    // --- Role-based access control ---
+    if (role === 'STUDENT') {
+      if (!callerUserId) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Mock user ID is required for student reporting'
+        });
+      }
+      userId = callerUserId;
+      batchId = null;
+    } else if (role !== 'ADMIN') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Attendance reports require authentication (mock role required)'
+      });
+    }
+
+    // --- Build WHERE clause dynamically ---
+    const conditions = [];
+    const params = [];
+    let paramIndex = 0;
+
+    conditions.push(`al.left_at IS NOT NULL`);
+    conditions.push(`al.status IS DISTINCT FROM 'ACTIVE'`);
+
+    if (userId) {
+      paramIndex++;
+      conditions.push(`al.user_id = $${paramIndex}`);
+      params.push(userId);
+    }
+
+    if (batchId) {
+      paramIndex++;
+      conditions.push(`m.batch_id = $${paramIndex}`);
+      params.push(batchId);
+    }
+
+    if (fromDate) {
+      paramIndex++;
+      conditions.push(`al.joined_at >= $${paramIndex}::timestamptz`);
+      params.push(fromDate);
+    }
+
+    if (toDate) {
+      paramIndex++;
+      conditions.push(`(al.left_at <= $${paramIndex}::timestamptz OR al.joined_at <= $${paramIndex}::timestamptz)`);
+      params.push(toDate);
+    }
+
+    if (status) {
+      paramIndex++;
+      conditions.push(`al.status = $${paramIndex}::public.attendance_status`);
+      params.push(status);
+    }
+
+    const whereClause = conditions.length > 0
+      ? 'WHERE ' + conditions.join(' AND ')
+      : '';
+
+    const detailsQuery = `
+      SELECT
+        al.id AS attendance_log_id,
+        m.title AS meeting_title,
+        b.name AS batch_name,
+        u.full_name AS user_name,
+        al.external_name,
+        al.joined_at,
+        al.left_at,
+        al.total_minutes,
+        al.attendance_percentage,
+        al.status
+      FROM public.attendance_logs al
+      JOIN public.meetings m ON m.id = al.meeting_id
+      LEFT JOIN public.batches b ON b.id = m.batch_id
+      LEFT JOIN public.users u ON u.id = al.user_id
+      ${whereClause}
+      ORDER BY al.joined_at DESC
+    `;
+
+    const detailsResult = await pool.query(detailsQuery, params);
+    const rows = detailsResult.rows;
+
+    // Build CSV
+    const headers = [
+      'Student',
+      'Meeting',
+      'Batch',
+      'Joined At',
+      'Left At',
+      'Duration (min)',
+      'Attendance %',
+      'Status'
+    ];
+
+    const escapeCSV = (str) => {
+      if (str == null) return '';
+      const stringified = String(str);
+      if (stringified.includes(',') || stringified.includes('"') || stringified.includes('\n') || stringified.includes('\r')) {
+        return '"' + stringified.replace(/"/g, '""') + '"';
+      }
+      return stringified;
+    };
+
+    let csvContent = headers.join(',') + '\r\n';
+    for (const r of rows) {
+      const studentName = r.user_name || r.external_name || '—';
+      const rowData = [
+        studentName,
+        r.meeting_title,
+        r.batch_name || 'Public',
+        r.joined_at ? new Date(r.joined_at).toISOString() : '—',
+        r.left_at ? new Date(r.left_at).toISOString() : '—',
+        r.total_minutes != null ? Math.round(r.total_minutes) : '—',
+        r.attendance_percentage != null ? Math.round(r.attendance_percentage) : '—',
+        r.status || '—'
+      ];
+      csvContent += rowData.map(escapeCSV).join(',') + '\r\n';
+    }
+
+    const filename = `attendance-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).send(csvContent);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
