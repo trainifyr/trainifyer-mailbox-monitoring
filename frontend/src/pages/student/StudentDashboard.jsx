@@ -22,9 +22,9 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchReport = useCallback(async () => {
+  const fetchReport = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const res = await apiClient.get('/reports/attendance', {
         params: { granularity: 'daily' }
@@ -33,12 +33,16 @@ export default function StudentDashboard() {
     } catch (e) {
       setError(e.response?.data?.error || e.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (isStudent) fetchReport();
+    if (isStudent) {
+      fetchReport();
+      const interval = setInterval(() => fetchReport(true), 30000);
+      return () => clearInterval(interval);
+    }
   }, [fetchReport, isStudent]);
 
   if (!isStudent) {

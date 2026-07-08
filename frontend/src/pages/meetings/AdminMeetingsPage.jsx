@@ -30,16 +30,16 @@ export default function AdminMeetingsPage() {
 
   const [editingMeetingId, setEditingMeetingId] = useState(null);
 
-  const fetchMeetings = useCallback(async () => {
+  const fetchMeetings = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const res = await apiClient.get('/meetings');
       setMeetings(res.data.data);
     } catch (e) {
       setError(e.response?.data?.error || e.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -55,6 +55,12 @@ export default function AdminMeetingsPage() {
   useEffect(() => {
     fetchMeetings();
     fetchBatches();
+
+    const interval = setInterval(() => {
+      fetchMeetings(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [fetchMeetings, fetchBatches]);
 
   const handleChange = (e) => {

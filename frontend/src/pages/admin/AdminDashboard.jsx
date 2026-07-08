@@ -57,7 +57,11 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (isAdmin) fetchReport();
+    if (isAdmin) {
+      fetchReport();
+      const interval = setInterval(fetchReport, 30000);
+      return () => clearInterval(interval);
+    }
   }, [fetchReport, isAdmin]);
 
   if (!isAdmin) {
