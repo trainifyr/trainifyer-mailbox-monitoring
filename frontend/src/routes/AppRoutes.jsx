@@ -6,6 +6,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import AdminRoute from '../components/AdminRoute';
 import StudentRoute from '../components/StudentRoute';
 import LoginPage from '../pages/LoginPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import StudentsPage from '../pages/admin/StudentsPage';
 import BatchesPage from '../pages/admin/BatchesPage';
@@ -33,6 +35,8 @@ export default function AppRoutes() {
         {/* Root smart redirect */}
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Admin-only routes */}
         <Route path="/admin/dashboard" element={

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, Loader, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
@@ -107,7 +107,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+        <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+          <Link to="/forgot-password" style={{ fontSize: '0.8125rem', color: 'var(--primary)', textDecoration: 'none' }}>
+            Forgot password?
+          </Link>
+        </div>
+
+        <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
              <ShieldCheck size={14} /> Secure administrative portal
            </p>

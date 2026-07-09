@@ -80,19 +80,33 @@ export function AuthProvider({ children }) {
     // Session and user will be cleared by onAuthStateChange
   }, []);
 
+  const resetPassword = useCallback(async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    if (error) throw error;
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }, []);
+
   const value = useMemo(
     () => ({
       session,
       user,
       login,
       logout,
+      resetPassword,
+      updatePassword,
       loading,
       isAuthenticated: !!session?.user,
       isAdmin: user?.role === 'ADMIN',
       isStudent: user?.role === 'STUDENT',
       userId: user?.id || null
     }),
-    [session, user, login, logout, loading]
+    [session, user, login, logout, resetPassword, updatePassword, loading]
   );
 
   return (
