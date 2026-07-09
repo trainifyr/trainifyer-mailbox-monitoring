@@ -420,4 +420,46 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
+// --- POST /api/mail/read-all ---
+// Mark all unread inbox messages as read for the current user.
+router.post('/read-all', async (req, res, next) => {
+  try {
+    const userId = req.mockUserId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Mock user ID is required' });
+    }
+
+    const role = await getUserRole(userId);
+    if (!role) {
+      return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    }
+
+    // For students, check mailbox permissions
+    if (role === 'STUDENT') {
+      try {
+        await checkMailboxPermissions(userId);
+      } catch (permErr) {
+        return res.status(permErr.statusCode || 403).json({
+          error: 'Forbidden',
+          message: permErr.message,
+          code: permErr.code
+        });
+      }
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE public.mail_messages
+       SET is_read = true, read_at = now()
+       WHERE receiver_id = $1 AND is_read = false AND deleted_by_receiver = false
+       RETURNING id`,
+      [userId]
+    );
+
+    res.json({ data: { updatedCount: rows.length } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+

@@ -96,6 +96,16 @@ export default function MailboxPage() {
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      await apiClient.post('/mail/read-all');
+      setInboxMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+      setInboxPagination(prev => prev ? { ...prev, unreadCount: 0 } : prev);
+    } catch (e) {
+      console.error('Failed to mark all as read:', e);
+    }
+  };
+
   const handleReply = (msg) => {
     const date = new Date(msg.created_at).toLocaleString();
     const quotedBody = msg.body
@@ -202,7 +212,18 @@ export default function MailboxPage() {
       {/* Main Mail Area */}
       <main style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
          <div style={{ padding: '1.25rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.125rem', textTransform: 'capitalize' }}>{activeView}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <h2 style={{ fontSize: '1.125rem', textTransform: 'capitalize' }}>{activeView}</h2>
+              {activeView === 'inbox' && inboxPagination?.unreadCount > 0 && (
+                <button
+                  className="btn"
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={handleMarkAllAsRead}
+                >
+                  <MailOpen size={14} /> Mark all as read
+                </button>
+              )}
+            </div>
             <div style={{ position: 'relative' }}>
                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                <input
