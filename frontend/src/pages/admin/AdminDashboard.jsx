@@ -98,7 +98,22 @@ export default function AdminDashboard() {
       </header>
 
       {loading ? (
-        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading live data...</div>
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="card" style={{ padding: '1.25rem' }}>
+                <div className="skeleton-block" style={{ width: '35%', marginBottom: '1.25rem', height: '0.85rem' }}></div>
+                <div className="skeleton-block" style={{ width: '60%', height: '1.75rem' }}></div>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div className="skeleton-block" style={{ width: '20%', marginBottom: '1.5rem', height: '1.25rem' }}></div>
+            <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.25rem' }}></div>
+            <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.25rem' }}></div>
+            <div className="skeleton-block" style={{ height: '2.25rem' }}></div>
+          </div>
+        </div>
       ) : error ? (
         <div className="card" style={{ border: '1px solid #fee2e2', background: '#fef2f2', color: '#dc2626' }}>{error}</div>
       ) : (

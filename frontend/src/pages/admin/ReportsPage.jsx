@@ -192,7 +192,26 @@ export default function ReportsPage() {
          </div>
       </div>
 
-      {loading && <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Generating intelligence report...</div>}
+      {loading && (
+        <div style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="card" style={{ padding: '1.25rem' }}>
+                <div className="skeleton-block" style={{ width: '35%', marginBottom: '1.25rem', height: '0.85rem' }}></div>
+                <div className="skeleton-block" style={{ width: '55%', height: '1.75rem' }}></div>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '1.5rem' }}>
+              <div className="skeleton-block" style={{ width: '15%', marginBottom: '1.5rem', height: '1.25rem' }}></div>
+              <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.25rem' }}></div>
+              <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.25rem' }}></div>
+              <div className="skeleton-block" style={{ height: '2.25rem' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {!loading && !error && report && (
         <>

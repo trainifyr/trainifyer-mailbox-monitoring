@@ -70,7 +70,7 @@ export default function MeetingsListPage() {
               const isLive = status === 'LIVE';
 
               return (
-                <div key={m.id} className="card" style={{ 
+                <div key={m.id} className={`card ${isLive ? 'active-laser-glow' : ''}`} style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
                   padding: '2rem',

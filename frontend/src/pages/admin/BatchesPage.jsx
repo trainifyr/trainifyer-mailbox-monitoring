@@ -334,7 +334,14 @@ export default function BatchesPage() {
         </form>
       )}
 
-      {loading && <p className="status-message">Loading batches...</p>}
+      {loading && (
+        <div className="card animate-fade-in" style={{ padding: '1.5rem' }}>
+          <div className="skeleton-block" style={{ width: '15%', marginBottom: '1.5rem', height: '1.25rem' }}></div>
+          <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.5rem' }}></div>
+          <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.5rem' }}></div>
+          <div className="skeleton-block" style={{ height: '2.5rem' }}></div>
+        </div>
+      )}
       {error && <p className="status-message error">{error}</p>}
 
       {!loading && !error && (

@@ -80,7 +80,29 @@ export default function StudentDashboard() {
       </header>
 
       {loading ? (
-        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Synching your stats...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 1.5fr', gap: '2rem' }}>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="card" style={{ padding: '1.5rem' }}>
+                  <div className="skeleton-block" style={{ width: '40%', marginBottom: '1rem', height: '1.25rem' }}></div>
+                  <div className="skeleton-block" style={{ width: '60%', height: '1.75rem' }}></div>
+                </div>
+              ))}
+            </div>
+            <div className="card" style={{ padding: '2rem' }}>
+              <div className="skeleton-block" style={{ width: '25%', marginBottom: '1.5rem', height: '1.25rem' }}></div>
+              <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2.25rem' }}></div>
+              <div className="skeleton-block" style={{ height: '2.25rem' }}></div>
+            </div>
+          </div>
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div className="skeleton-block" style={{ width: '40%', marginBottom: '1.5rem', height: '1.25rem' }}></div>
+            <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2rem' }}></div>
+            <div className="skeleton-block" style={{ marginBottom: '0.75rem', height: '2rem' }}></div>
+            <div className="skeleton-block" style={{ height: '2rem' }}></div>
+          </div>
+        </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '3fr 1.5fr', gap: '2rem' }}>
           
