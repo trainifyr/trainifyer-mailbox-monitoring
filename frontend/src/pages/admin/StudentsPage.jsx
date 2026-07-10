@@ -8,7 +8,6 @@ import {
   X, 
   Check, 
   Trash2, 
-  KeyRound, 
   Mail, 
   User,
   Search,
@@ -119,14 +118,6 @@ export default function StudentsPage() {
     }
   };
 
-  const handleResetPassword = async (studentId) => {
-    try {
-      const res = await apiClient.post(`/users/students/${studentId}/reset-password`);
-      setNotification(`Password reset! Temp password: ${res.data.tempPassword}`);
-    } catch (e) {
-      alert(`Reset failed: ${e.response?.data?.message || e.message}`);
-    }
-  };
 
   const filteredStudents = students.filter(s => 
     s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -248,7 +239,6 @@ export default function StudentsPage() {
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                               <button className="btn btn-ghost" onClick={() => startEdit(s)} style={{ padding: '6px' }} title="Edit Profile"><Pencil size={16} /></button>
-                              <button className="btn btn-ghost" onClick={() => handleResetPassword(s.id)} style={{ padding: '6px', color: '#f59e0b' }} title="Reset Password"><KeyRound size={16} /></button>
                               <button className="btn btn-ghost" onClick={() => handleDelete(s.id, s.full_name)} style={{ padding: '6px', color: '#ef4444' }} title="Delete"><Trash2 size={16} /></button>
                             </div>
                           </td>

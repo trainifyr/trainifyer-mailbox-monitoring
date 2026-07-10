@@ -232,65 +232,6 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
   }
 });
 
-// --- POST /api/users/students/:id/reset-password ---
-// Force-reset a student's password to the default. Admin only.
-
-router.post('/:id/reset-password', requireRole('ADMIN'), async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const TEMP_PASSWORD = 'Trainifyer@2024';
-
-    // Get the student's supabase_user_id and email
-    const { rows } = await pool.query(
-      `SELECT id, email, full_name, supabase_user_id FROM public.users WHERE id = $1 AND role = 'STUDENT'`,
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Not Found', message: 'Student not found' });
-    }
-
-    const student = rows[0];
-    let supabaseUserId = student.supabase_user_id;
-
-    if (supabaseUserId) {
-      // Already linked — just reset the password
-      await supabase.auth.admin.updateUserById(supabaseUserId, {
-        password: TEMP_PASSWORD,
-        email_confirm: true
-      });
-    } else {
-      // Not linked — look up by email or create fresh
-      const { data: { users } } = await supabase.auth.admin.listUsers();
-      const existing = users.find(u => u.email === student.email);
-
-      if (existing) {
-        await supabase.auth.admin.updateUserById(existing.id, {
-          password: TEMP_PASSWORD,
-          email_confirm: true
-        });
-        supabaseUserId = existing.id;
-      } else {
-        const { data: newAuth } = await supabase.auth.admin.createUser({
-          email: student.email,
-          password: TEMP_PASSWORD,
-          email_confirm: true,
-          user_metadata: { full_name: student.full_name }
-        });
-        supabaseUserId = newAuth?.user?.id;
-      }
-
-      // Link the auth ID back to public.users
-      if (supabaseUserId) {
-        await pool.query('UPDATE public.users SET supabase_user_id = $1 WHERE id = $2', [supabaseUserId, id]);
-      }
-    }
-
-    res.json({ message: 'Password reset successfully', tempPassword: TEMP_PASSWORD });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // --- DELETE /api/users/students/:id ---
 // Remove a student profile and their Supabase Auth account. Admin only.
