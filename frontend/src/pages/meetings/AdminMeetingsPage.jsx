@@ -355,7 +355,7 @@ export default function AdminMeetingsPage() {
                 meetings.map((m) => (
                     <tr key={m.id} style={{ borderBottom: '1px solid #eee' }}>
                       <td className="meeting-title" style={{ padding: '12px' }}>
-                        {m.is_recurring && <RefreshCw size={12} style={{ marginRight: '6px', color: '#6366f1', verticalAlign: 'middle' }} />}
+                        {m.is_recurring && <RefreshCw size={12} style={{ marginRight: '6px', color: 'var(--primary)', verticalAlign: 'middle' }} />}
                         {m.title}
                       </td>
                       <td style={{ padding: '12px' }}>

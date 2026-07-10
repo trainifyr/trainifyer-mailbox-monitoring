@@ -108,7 +108,7 @@ export default function Layout() {
           </header>
         )}
 
-        <main className="main-content">
+        <main key={location.pathname} className="main-content page-transition">
           <Outlet />
         </main>
       </div>

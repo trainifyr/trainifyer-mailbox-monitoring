@@ -370,7 +370,7 @@ export default function BatchesPage() {
                               onChange={(e) => setRenameValue(e.target.value)}
                               onKeyDown={(e) => { if (e.key === 'Enter') handleRename(e, b.id); if (e.key === 'Escape') cancelRename(); }}
                               autoFocus
-                              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #4f46e5', fontSize: '0.9rem' }}
+                              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--primary)', fontSize: '0.9rem' }}
                             />
                             <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={(e) => handleRename(e, b.id)} disabled={renameSubmitting}>Save</button>
                             <button className="btn" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={cancelRename}><X size={14} /></button>

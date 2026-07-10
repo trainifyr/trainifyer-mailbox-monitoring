@@ -40,7 +40,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
-  color: #6366f1;
+  color: var(--primary);
 }
 
 .card-header h3 {
@@ -83,8 +83,8 @@
 .badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: var(--primary-glow);
+  color: #34d399;
   border-radius: 100px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -122,9 +122,9 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
   background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 .status-box {
