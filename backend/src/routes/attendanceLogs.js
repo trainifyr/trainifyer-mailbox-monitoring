@@ -309,4 +309,41 @@ router.post('/heartbeat', async (req, res, next) => {
   }
 });
 
+// --- GET /api/meetings/:id/active-participants ---
+// Get list of active participants based on recent heartbeats
+router.get('/active-participants', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT 
+        al.id, 
+        al.user_id, 
+        al.external_name, 
+        al.joined_at, 
+        u.full_name,
+        u.email
+       FROM public.attendance_logs al
+       LEFT JOIN public.users u ON u.id = al.user_id
+       WHERE al.meeting_id = $1 
+         AND al.left_at IS NULL 
+         AND al.last_heartbeat >= now() - interval '90 seconds'
+       ORDER BY al.joined_at ASC`,
+      [id]
+    );
+
+    const data = rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      externalName: r.external_name,
+      joinedAt: r.joined_at,
+      name: r.full_name || r.external_name || 'Anonymous Guest',
+      email: r.email || null
+    }));
+
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
-import { ArrowLeft, Loader, Activity } from 'lucide-react';
+import { ArrowLeft, Loader, Activity, VideoOff, MicOff, Settings } from 'lucide-react';
 import './MeetingRoomPage.css';
 
 const HEARTBEAT_INTERVAL_MS = 60000; 
@@ -26,6 +26,9 @@ export default function MeetingRoomPage() {
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [jitsiLoading, setJitsiLoading] = useState(true);
   const [heartbeatActive, setHeartbeatActive] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
+  const [activeParticipants, setActiveParticipants] = useState([]);
+  const [participantsLoading, setParticipantsLoading] = useState(true);
 
   const sendLeaveLog = useCallback(async () => {
     if (sessionEndedRef.current) return;
@@ -108,8 +111,34 @@ export default function MeetingRoomPage() {
     return () => { cancelled = true; };
   }, [meeting, id, isAuthenticated]);
 
+  // Fetch active participants list
   useEffect(() => {
-    if (consentState !== 'accepted' || !meeting || !jitsiContainerRef.current) return;
+    if (!meeting || !isAuthenticated || hasJoined) return;
+    let cancelled = false;
+    
+    async function fetchActiveParticipants() {
+      try {
+        const res = await apiClient.get(`/meetings/${id}/active-participants`);
+        if (!cancelled) {
+          setActiveParticipants(res.data.data);
+          setParticipantsLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to fetch active participants', e);
+        if (!cancelled) setParticipantsLoading(false);
+      }
+    }
+    
+    fetchActiveParticipants();
+    const interval = setInterval(fetchActiveParticipants, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [id, meeting, isAuthenticated, hasJoined]);
+
+  useEffect(() => {
+    if (consentState !== 'accepted' || !meeting || !jitsiContainerRef.current || !hasJoined) return;
     let cancelled = false;
     async function initJitsi() {
       try {
@@ -164,7 +193,7 @@ export default function MeetingRoomPage() {
       sendLeaveLog();
       if (jitsiApiRef.current) jitsiApiRef.current.dispose();
     };
-  }, [consentState, meeting, userId, isAdmin, sendJoinLog, sendLeaveLog, navigate]);
+  }, [consentState, meeting, userId, isAdmin, sendJoinLog, sendLeaveLog, navigate, hasJoined]);
 
   const handleAccept = async () => {
     try {
@@ -185,6 +214,92 @@ export default function MeetingRoomPage() {
           <h2>{error ? 'Error' : 'Meeting Ended'}</h2>
           <p>{error || 'This session is no longer active.'}</p>
           <button className="btn btn-secondary" onClick={() => navigate(-1)}>Back</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasJoined) {
+    const activeCount = activeParticipants.length;
+    let participantsText = 'No one is in this call yet';
+    if (activeCount === 1) {
+      participantsText = `${activeParticipants[0].name} is in this call`;
+    } else if (activeCount === 2) {
+      participantsText = `${activeParticipants[0].name} and ${activeParticipants[1].name} are in this call`;
+    } else if (activeCount === 3) {
+      participantsText = `${activeParticipants[0].name}, ${activeParticipants[1].name}, and ${activeParticipants[2].name} are in this call`;
+    } else if (activeCount > 3) {
+      const remaining = activeCount - 3;
+      participantsText = `${activeParticipants[0].name}, ${activeParticipants[1].name}, ${activeParticipants[2].name} and ${remaining} more are in this call`;
+    }
+
+    return (
+      <div className="meeting-room-page animate-fade-in">
+        <div className="meeting-room-header">
+          <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
+          <h2>{meeting.title}</h2>
+        </div>
+
+        <div className="lobby-container card">
+          {/* Left Column: Mock camera preview */}
+          <div className="lobby-preview-card animate-fade-in">
+            <div className="lobby-preview-main">
+              <div className="lobby-camera-avatar">
+                {meeting.title.charAt(0).toUpperCase()}
+              </div>
+              <p style={{ margin: 0, fontWeight: 500 }}>Camera is off</p>
+            </div>
+            
+            <div className="lobby-preview-controls">
+              <button className="lobby-btn-control off" title="Microphone is off">
+                <MicOff size={20} />
+              </button>
+              <button className="lobby-btn-control off" title="Camera is off">
+                <VideoOff size={20} />
+              </button>
+              <button className="lobby-btn-control" title="Settings">
+                <Settings size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Pre-join info */}
+          <div className="lobby-info-card">
+            <h1>Ready to join?</h1>
+            <p className="meeting-subtitle">Jitsi Video Conference Room</p>
+
+            <div className="active-participants-wrapper">
+              <div className="active-participants-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {activeCount > 0 && <span className="participants-indicator-pulse" />}
+                {activeCount > 0 ? 'Active in Call' : 'Room is empty'}
+              </div>
+              
+              {activeCount > 0 && (
+                <div className="avatar-stack">
+                  {activeParticipants.slice(0, 3).map((p, idx) => (
+                    <div key={p.id || idx} className="avatar-bubble" title={p.name}>
+                      {p.name.charAt(0).toUpperCase()}
+                    </div>
+                  ))}
+                  {activeCount > 3 && (
+                    <div className="avatar-bubble more">
+                      +{activeCount - 3}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="participants-text" style={{ fontSize: '0.9375rem', marginTop: activeCount > 0 ? '0.5rem' : 0 }}>
+                {participantsLoading ? 'Checking participants...' : participantsText}
+              </div>
+            </div>
+
+            <div className="lobby-actions">
+              <button className="lobby-join-btn" onClick={() => setHasJoined(true)}>
+                Join Meeting
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );

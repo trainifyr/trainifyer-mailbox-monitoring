@@ -122,3 +122,226 @@
   color: #111827;
   font-weight: 700;
 }
+
+/* Pre-join Lobby styles */
+.lobby-container {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .lobby-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
+
+.lobby-preview-card {
+  position: relative;
+  background: var(--bg-sidebar, #1e293b);
+  border-radius: var(--radius-lg, 12px);
+  aspect-ratio: 16/9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--border, #334155);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+}
+
+.lobby-preview-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
+.lobby-camera-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid var(--primary, #10b981);
+  color: var(--primary, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.lobby-preview-controls {
+  position: absolute;
+  bottom: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  z-index: 5;
+}
+
+.lobby-btn-control {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lobby-btn-control:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.lobby-btn-control.off {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.lobby-btn-control.off:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+/* Right column info card */
+.lobby-info-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem;
+  border-radius: var(--radius-lg, 12px);
+}
+
+.lobby-info-card h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0 0 0.5rem 0;
+  text-align: left;
+}
+
+.lobby-info-card .meeting-subtitle {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+/* Active Participants bubbles */
+.active-participants-wrapper {
+  margin-bottom: 2.5rem;
+  text-align: left;
+}
+
+.active-participants-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.avatar-stack {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.avatar-bubble {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-sidebar, #1e293b);
+  border: 2px solid var(--bg-app, #0f172a);
+  color: var(--primary, #10b981);
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -8px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.avatar-bubble:first-child {
+  margin-left: 0;
+}
+
+.avatar-bubble:hover {
+  transform: translateY(-4px);
+  z-index: 10;
+}
+
+.avatar-bubble.more {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary, #10b981);
+  font-size: 0.75rem;
+}
+
+.participants-text {
+  font-size: 0.9375rem;
+  color: var(--text-heading);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+}
+
+.participants-indicator-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary, #10b981);
+  margin-right: 8px;
+  box-shadow: 0 0 8px var(--primary);
+  animation: heartbeat-pulse 2s ease-in-out infinite;
+}
+
+/* Buttons */
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.lobby-join-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.875rem 2.5rem;
+  border-radius: 30px;
+  border: none;
+  background: var(--primary, #10b981);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s ease;
+}
+
+.lobby-join-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.lobby-join-btn:active {
+  transform: translateY(0);
+}
