@@ -123,8 +123,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // fairmeeting.net: clean public server that allows anonymous moderators and iframe embedding
-        const domain = 'fairmeeting.net'; 
+        // meet.ffmuc.net: clean public server that allows anonymous moderators and iframe embedding
+        const domain = 'meet.ffmuc.net'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
