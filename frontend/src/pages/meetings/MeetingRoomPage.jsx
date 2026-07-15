@@ -152,8 +152,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // framatalk.org: confirmed iframe-compatible, public Jitsi instance hosted by Framasoft
-        const domain = 'framatalk.org'; 
+        // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
+        const domain = 'meet.systemli.org'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,

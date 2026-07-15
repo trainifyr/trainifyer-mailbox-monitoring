@@ -15,7 +15,7 @@ export default function loadJitsiScript() {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://framatalk.org/external_api.js';
+    script.src = 'https://meet.systemli.org/external_api.js';
     script.async = true;
     script.onload = () => {
       if (window.JitsiMeetExternalAPI) {
