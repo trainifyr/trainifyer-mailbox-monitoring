@@ -152,8 +152,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // meet.ffmuc.net: clean public server that allows anonymous moderators and iframe embedding
-        const domain = 'meet.ffmuc.net'; 
+        // jitsi.researchit.nl: research-grade public instance that allows anonymous moderators and iframe embedding
+        const domain = 'jitsi.researchit.nl'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,

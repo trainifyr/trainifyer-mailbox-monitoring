@@ -15,7 +15,7 @@ export default function loadJitsiScript() {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://meet.ffmuc.net/external_api.js';
+    script.src = 'https://jitsi.researchit.nl/external_api.js';
     script.async = true;
     script.onload = () => {
       if (window.JitsiMeetExternalAPI) {
