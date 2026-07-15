@@ -152,8 +152,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // fairmeeting.net: confirmed iframe-compatible public Jitsi instance
-        const domain = 'fairmeeting.net'; 
+        // framatalk.org: confirmed iframe-compatible, public Jitsi instance hosted by Framasoft
+        const domain = 'framatalk.org'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
@@ -183,6 +183,13 @@ export default function MeetingRoomPage() {
 
         const jitsiApi = new JitsiAPI(domain, options);
         jitsiApiRef.current = jitsiApi;
+
+        // Ensure display-capture (screen sharing) is allowed on the iframe
+        const iframe = jitsiContainerRef.current?.querySelector('iframe');
+        if (iframe) {
+          iframe.setAttribute('allow', 'camera; microphone; display-capture; fullscreen; autoplay; clipboard-write; clipboard-read');
+        }
+
         setJitsiLoading(false);
         await sendJoinLog();
         jitsiApi.addListener('readyToClose', () => { sendLeaveLog(); navigate(-1); });
