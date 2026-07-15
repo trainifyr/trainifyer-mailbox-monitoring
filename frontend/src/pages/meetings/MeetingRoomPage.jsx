@@ -152,8 +152,8 @@ export default function MeetingRoomPage() {
           if (u) userDisplayName = u.full_name;
         } catch (e) {}
 
-        // jitsi.researchit.nl: research-grade public instance that allows anonymous moderators and iframe embedding
-        const domain = 'jitsi.researchit.nl'; 
+        // fairmeeting.net: confirmed iframe-compatible public Jitsi instance
+        const domain = 'fairmeeting.net'; 
         
         const options = {
           roomName: meeting.jitsi_room_name,
@@ -169,7 +169,10 @@ export default function MeetingRoomPage() {
             disableModeratorIndicator: true,
             enableWelcomePage: false,
             enableLobby: false,
-            requireDisplayName: false
+            requireDisplayName: false,
+            screenSharingEnabled: true,
+            desktopSharingChromeDisabled: false,
+            desktopSharingFirefoxDisabled: false
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
