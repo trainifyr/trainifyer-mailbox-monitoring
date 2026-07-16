@@ -76,6 +76,8 @@ router.get('/attendance', async (req, res, next) => {
     conditions.push(`al.left_at IS NOT NULL`);
     // Exclude ACTIVE status from aggregate summaries
     conditions.push(`al.status IS DISTINCT FROM 'ACTIVE'`);
+    // Exclude admin/instructor users — their logs are only used for real-time lobby presence
+    conditions.push(`NOT EXISTS (SELECT 1 FROM public.users u2 WHERE u2.id = al.user_id AND u2.role = 'ADMIN')`);
 
     if (userId) {
       paramIndex++;
@@ -267,6 +269,8 @@ router.get('/attendance/csv', async (req, res, next) => {
 
     conditions.push(`al.left_at IS NOT NULL`);
     conditions.push(`al.status IS DISTINCT FROM 'ACTIVE'`);
+    // Exclude admin/instructor users — their logs are only used for real-time lobby presence
+    conditions.push(`NOT EXISTS (SELECT 1 FROM public.users u2 WHERE u2.id = al.user_id AND u2.role = 'ADMIN')`);
 
     if (userId) {
       paramIndex++;

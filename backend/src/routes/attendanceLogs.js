@@ -128,10 +128,10 @@ router.post('/join-log', async (req, res, next) => {
       return res.json({ data: updated[0] });
     }
 
-    // Insert new attendance log (with default total_minutes = 0.00)
+    // Insert new attendance log (with default total_minutes = 0.00 and last_heartbeat = now())
     const { rows } = await pool.query(
-      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, total_minutes, status)
-       VALUES ($1, $2, $3, now(), 0.00, 'ACTIVE')
+      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, last_heartbeat, total_minutes, status)
+       VALUES ($1, $2, $3, now(), now(), 0.00, 'ACTIVE')
        RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                  total_minutes, attendance_percentage, status`,
       [id, userId, externalName]

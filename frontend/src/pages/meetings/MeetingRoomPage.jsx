@@ -36,16 +36,13 @@ export default function MeetingRoomPage() {
     if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
     setHeartbeatActive(false);
     
-    // Only send leave-log if tracking was enabled (i.e. if it was a student)
+    // Only send leave-log if we have an active attendance session
     if (!attendanceLogIdRef.current) return;
     
     try { await apiClient.post(`/meetings/${id}/leave-log`); } catch (e) {}
   }, [id]);
 
   const startHeartbeat = useCallback(() => {
-    // Only track heartbeat for students
-    if (isAdmin) return;
-    
     const ping = async () => {
       try {
         await apiClient.post(`/meetings/${id}/heartbeat`);
@@ -56,18 +53,18 @@ export default function MeetingRoomPage() {
     };
     ping();
     heartbeatIntervalRef.current = setInterval(ping, HEARTBEAT_INTERVAL_MS);
-  }, [id, isAdmin]);
+  }, [id]);
 
   const sendJoinLog = useCallback(async () => {
-    // Only track join for students
-    if (isAdmin) return;
-    
     try {
       const res = await apiClient.post(`/meetings/${id}/join-log`);
-      attendanceLogIdRef.current = res.data.data.id;
-      startHeartbeat();
+      // May return null data for public meetings — guard against that
+      if (res.data.data?.id) {
+        attendanceLogIdRef.current = res.data.data.id;
+        startHeartbeat();
+      }
     } catch (e) {}
-  }, [id, isAdmin, startHeartbeat]);
+  }, [id, startHeartbeat]);
 
   useEffect(() => {
     let cancelled = false;
