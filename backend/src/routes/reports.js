@@ -168,6 +168,7 @@ router.get('/attendance', async (req, res, next) => {
         al.id AS attendance_log_id,
         al.meeting_id,
         m.title AS meeting_title,
+        m.batch_id,
         b.name AS batch_name,
         u.full_name AS user_name,
         al.user_id,

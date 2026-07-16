@@ -18,6 +18,8 @@ import MeetingRoomPage from '../pages/meetings/MeetingRoomPage';
 import StudentDashboard from '../pages/student/StudentDashboard';
 import ReportsPage from '../pages/admin/ReportsPage';
 import ProfilePage from '../pages/ProfilePage';
+import StudentAttendancePage from '../pages/admin/StudentAttendancePage';
+import BatchDetailPage from '../pages/admin/BatchDetailPage';
 
 // Smart redirect: sends the user to the correct dashboard based on their role
 function RootRedirect() {
@@ -53,6 +55,12 @@ export default function AppRoutes() {
         } />
         <Route path="/admin/reports" element={
           <AdminRoute><ReportsPage /></AdminRoute>
+        } />
+        <Route path="/admin/students/:id/attendance" element={
+          <AdminRoute><StudentAttendancePage /></AdminRoute>
+        } />
+        <Route path="/admin/batches/:id" element={
+          <AdminRoute><BatchDetailPage /></AdminRoute>
         } />
 
         {/* Student-only routes */}

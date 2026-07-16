@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
+import { Link } from 'react-router-dom';
 import { 
   BarChart3, 
   Clock, 
@@ -285,9 +286,25 @@ export default function ReportsPage() {
                     <tbody>
                       {sortedDetails.map((d) => (
                         <tr key={d.attendance_log_id}>
-                          <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.user_name || d.external_name}</td>
+                          <td>
+                            {d.user_id ? (
+                              <Link to={`/admin/students/${d.user_id}/attendance`} style={{ fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
+                                {d.user_name || d.external_name}
+                              </Link>
+                            ) : (
+                              <span style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.external_name || '—'}</span>
+                            )}
+                          </td>
                           <td style={{ fontSize: '0.875rem' }}>{d.meeting_title}</td>
-                          <td><span className="badge badge-admin" style={{ textTransform: 'none' }}>{d.batch_name || 'Public'}</span></td>
+                          <td>
+                            {d.batch_id ? (
+                              <Link to={`/admin/batches/${d.batch_id}`} style={{ textDecoration: 'none' }}>
+                                <span className="badge badge-admin" style={{ textTransform: 'none', cursor: 'pointer' }}>{d.batch_name || 'Unnamed'}</span>
+                              </Link>
+                            ) : (
+                              <span className="badge badge-admin" style={{ textTransform: 'none' }}>{d.batch_name || 'Public'}</span>
+                            )}
+                          </td>
                           <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
                           <td style={{ textAlign: 'center', fontWeight: 700 }}>{Math.round(d.attendance_percentage)}%</td>
                           <td style={{ textAlign: 'right' }}>

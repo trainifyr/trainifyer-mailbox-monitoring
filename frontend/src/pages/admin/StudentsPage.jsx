@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
 import { 
   Plus, 
@@ -221,7 +222,12 @@ export default function StudentsPage() {
                               {s.full_name.charAt(0)}
                             </div>
                             <div>
-                               <div style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{s.full_name}</div>
+                               <Link
+                                  to={`/admin/students/${s.id}/attendance`}
+                                  style={{ fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}
+                               >
+                                  {s.full_name}
+                               </Link>
                                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={12} /> {s.email}</div>
                             </div>
                           </div>
@@ -231,7 +237,7 @@ export default function StudentsPage() {
                         </td>
                         <td>
                            <div style={{ fontSize: '0.875rem', color: 'var(--text-heading)', fontWeight: 500 }}>
-                              {s.batch_name || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>No Batch</span>}
+                              {s.batch_id ? (<Link to={`/admin/batches/`+s.batch_id} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{s.batch_name}</Link>) : (<span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>No Batch</span>)}
                            </div>
                         </td>
                         <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
