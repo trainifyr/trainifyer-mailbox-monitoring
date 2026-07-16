@@ -81,9 +81,6 @@ export default function Layout() {
         {isAuthenticated ? (
           <header className="top-bar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-               <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  Pages <ChevronRight size={14} /> <span style={{ color: 'var(--text-heading)', fontWeight: 500 }}>{location.pathname.split('/').pop() || 'Home'}</span>
-               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem' }}>
