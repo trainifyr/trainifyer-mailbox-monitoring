@@ -376,4 +376,122 @@ router.get('/attendance/csv', async (req, res, next) => {
   }
 });
 
+// --- GET /api/reports/attendance/student/:id ---
+// Returns a student's full attendance history including meetings they missed (implicit absences).
+// Required: caller must be Admin or student requesting their own report.
+router.get('/attendance/student/:id', async (req, res, next) => {
+  try {
+    const role = req.mockUserRole;
+    const callerUserId = req.mockUserId;
+    const targetUserId = req.params.id;
+
+    // RBAC: Students can only request their own logs
+    if (role === 'STUDENT' && callerUserId !== targetUserId) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Students can only view their own attendance'
+      });
+    }
+
+    // 1. Get student's batch ID
+    const batchRes = await pool.query(
+      `SELECT batch_id FROM public.student_batches WHERE student_id = $1`,
+      [targetUserId]
+    );
+    const batchId = batchRes.rows[0]?.batch_id;
+
+    if (!batchId) {
+      // Student is not enrolled in any batch. Return empty shape.
+      return res.json({
+        data: {
+          summary: {
+            total_sessions: 0,
+            average_percentage: 0,
+            present_count: 0,
+            partial_count: 0,
+            absent_count: 0
+          },
+          details: []
+        }
+      });
+    }
+
+    // 2. Fetch all meetings of that batch that have already started/occurred
+    // Left-join with attendance logs for this student
+    const query = `
+      SELECT 
+        m.id AS meeting_id,
+        m.title AS meeting_title,
+        m.scheduled_start,
+        m.batch_id,
+        (SELECT name FROM public.batches WHERE id = m.batch_id) as batch_name,
+        al.id AS attendance_log_id,
+        al.joined_at,
+        al.left_at,
+        al.total_minutes,
+        al.attendance_percentage,
+        al.status
+      FROM public.meetings m
+      LEFT JOIN public.attendance_logs al 
+        ON al.meeting_id = m.id 
+        AND al.user_id = $1
+      WHERE m.batch_id = $2
+        AND (m.scheduled_start <= NOW() OR m.status IN ('LIVE', 'ENDED'))
+        AND m.status IS DISTINCT FROM 'CANCELLED'
+      ORDER BY COALESCE(m.scheduled_start, m.created_at) DESC
+    `;
+    const { rows } = await pool.query(query, [targetUserId, batchId]);
+
+    // 3. Compute KPI summary metrics
+    let total_sessions = rows.length;
+    let present_count = 0;
+    let partial_count = 0;
+    let absent_count = 0;
+    let sum_percentages = 0;
+
+    const details = rows.map(r => {
+      const status = r.status || 'ABSENT';
+      const percentage = r.attendance_percentage ? parseFloat(r.attendance_percentage) : 0.00;
+      const duration = r.total_minutes ? parseFloat(r.total_minutes) : 0.00;
+
+      if (status === 'PRESENT') present_count++;
+      else if (status === 'PARTIAL') partial_count++;
+      else absent_count++;
+
+      sum_percentages += percentage;
+
+      return {
+        attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}`,
+        meeting_id: r.meeting_id,
+        meeting_title: r.meeting_title,
+        batch_id: r.batch_id,
+        batch_name: r.batch_name,
+        joined_at: r.joined_at || null,
+        left_at: r.left_at || null,
+        total_minutes: duration,
+        attendance_percentage: percentage,
+        status: status
+      };
+    });
+
+    const average_percentage = total_sessions > 0 ? (sum_percentages / total_sessions) : 0;
+
+    res.json({
+      data: {
+        summary: {
+          total_sessions,
+          average_percentage: parseFloat(average_percentage.toFixed(2)),
+          present_count,
+          partial_count,
+          absent_count
+        },
+        details
+      }
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -32,7 +32,7 @@ export default function StudentAttendancePage() {
         setLoading(true);
         const [sRes, rRes] = await Promise.all([
           apiClient.get('/users/students'),
-          apiClient.get('/reports/attendance', { params: { userId: id } })
+          apiClient.get(`/reports/attendance/student/${id}`)
         ]);
         if (cancelled) return;
 
