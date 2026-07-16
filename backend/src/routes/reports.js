@@ -416,29 +416,88 @@ router.get('/attendance/student/:id', async (req, res, next) => {
       });
     }
 
-    // 2. Fetch all meetings of that batch that have already started/occurred
-    // Left-join with attendance logs for this student
+    // 2. Fetch all virtual sessions (scheduled one-offs and active recurring dates)
+    // and LEFT JOIN with the target student's attendance logs on that specific date.
     const query = `
+      WITH batch_sessions AS (
+        -- A. One-off (non-recurring) meetings that have started/ended
+        SELECT 
+          m.id AS meeting_id,
+          m.title AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          COALESCE(m.scheduled_start, m.created_at)::date::text AS session_date,
+          COALESCE(m.scheduled_start, m.created_at) AS session_timestamp
+        FROM public.meetings m
+        WHERE m.batch_id = $2 
+          AND m.is_recurring = false
+          AND (m.scheduled_start <= NOW() OR m.status IN ('LIVE', 'ENDED'))
+          AND m.status IS DISTINCT FROM 'CANCELLED'
+
+        UNION
+
+        -- B. Recurrent meetings: sessions exist on any date when ANY person joined the room
+        SELECT DISTINCT ON (m.id, al_date.session_date)
+          m.id AS meeting_id,
+          m.title AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          al_date.session_date::text AS session_date,
+          al_date.session_date::timestamp WITH TIME ZONE AS session_timestamp
+        FROM public.meetings m
+        JOIN (
+          SELECT DISTINCT meeting_id, DATE(joined_at) AS session_date
+          FROM public.attendance_logs
+        ) al_date ON al_date.meeting_id = m.id
+        WHERE m.batch_id = $2 
+          AND m.is_recurring = true
+          AND m.status IS DISTINCT FROM 'CANCELLED'
+
+        UNION
+
+        -- C. Recurrent meetings that are currently LIVE today (so they show up as ABSENT today until joined)
+        SELECT 
+          m.id AS meeting_id,
+          m.title AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          CURRENT_DATE::text AS session_date,
+          NOW() AS session_timestamp
+        FROM public.meetings m
+        WHERE m.batch_id = $2 
+          AND m.is_recurring = true 
+          AND m.status = 'LIVE'
+          AND m.status IS DISTINCT FROM 'CANCELLED'
+      ),
+      unique_sessions AS (
+        SELECT DISTINCT ON (meeting_id, session_date)
+          meeting_id,
+          meeting_title,
+          batch_id,
+          is_recurring,
+          session_date,
+          session_timestamp
+        FROM batch_sessions
+      )
       SELECT 
-        m.id AS meeting_id,
-        m.title AS meeting_title,
-        m.scheduled_start,
-        m.batch_id,
-        (SELECT name FROM public.batches WHERE id = m.batch_id) as batch_name,
+        us.meeting_id,
+        us.meeting_title,
+        us.batch_id,
+        (SELECT name FROM public.batches WHERE id = us.batch_id) as batch_name,
+        us.session_date,
+        us.session_timestamp,
         al.id AS attendance_log_id,
         al.joined_at,
         al.left_at,
         al.total_minutes,
         al.attendance_percentage,
         al.status
-      FROM public.meetings m
+      FROM unique_sessions us
       LEFT JOIN public.attendance_logs al 
-        ON al.meeting_id = m.id 
+        ON al.meeting_id = us.meeting_id 
         AND al.user_id = $1
-      WHERE m.batch_id = $2
-        AND (m.scheduled_start <= NOW() OR m.status IN ('LIVE', 'ENDED'))
-        AND m.status IS DISTINCT FROM 'CANCELLED'
-      ORDER BY COALESCE(m.scheduled_start, m.created_at) DESC
+        AND DATE(al.joined_at) = us.session_date::date
+      ORDER BY us.session_timestamp DESC
     `;
     const { rows } = await pool.query(query, [targetUserId, batchId]);
 
@@ -461,12 +520,12 @@ router.get('/attendance/student/:id', async (req, res, next) => {
       sum_percentages += percentage;
 
       return {
-        attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}`,
+        attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}-${r.session_date}`,
         meeting_id: r.meeting_id,
         meeting_title: r.meeting_title,
         batch_id: r.batch_id,
         batch_name: r.batch_name,
-        joined_at: r.joined_at || null,
+        joined_at: r.joined_at || r.session_timestamp,
         left_at: r.left_at || null,
         total_minutes: duration,
         attendance_percentage: percentage,
