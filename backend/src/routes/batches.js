@@ -260,4 +260,43 @@ router.patch('/:id/archive', requireRole('ADMIN'), async (req, res, next) => {
   }
 });
 
+// --- DELETE /api/batches/:id/students/:studentId ---
+// Unassign a student from a batch. Admin only.
+router.delete('/:id/students/:studentId', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { id, studentId } = req.params;
+
+    // 1. Verify the batch exists
+    const { rows: batchRows } = await pool.query(
+      `SELECT id FROM public.batches WHERE id = $1`,
+      [id]
+    );
+    if (batchRows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Batch not found' });
+    }
+
+    // 2. Verify the student exists and is currently assigned to this batch
+    const { rows: assignmentRows } = await pool.query(
+      `SELECT id FROM public.student_batches WHERE student_id = $1 AND batch_id = $2`,
+      [studentId, id]
+    );
+    if (assignmentRows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Student is not assigned to this batch'
+      });
+    }
+
+    // 3. Remove the assignment
+    await pool.query(
+      `DELETE FROM public.student_batches WHERE student_id = $1 AND batch_id = $2`,
+      [studentId, id]
+    );
+
+    res.json({ message: 'Student removed from batch successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

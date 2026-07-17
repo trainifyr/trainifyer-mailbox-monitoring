@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/client';
@@ -119,6 +119,16 @@ export default function StudentsPage() {
     }
   };
 
+  const handleUnassign = async (studentId, batchId, studentName, batchName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName} from batch "${batchName}"?`)) return;
+    try {
+      await apiClient.delete(`/batches/${batchId}/students/${studentId}`);
+      setNotification('Student removed from batch');
+      await fetchStudents();
+    } catch (e) {
+      alert(`Removal failed: ${e.response?.data?.message || e.message}`);
+    }
+  };
 
   const filteredStudents = students.filter(s => 
     s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,8 +246,33 @@ export default function StudentsPage() {
                            <span className="badge badge-student">Active</span>
                         </td>
                         <td>
-                           <div style={{ fontSize: '0.875rem', color: 'var(--text-heading)', fontWeight: 500 }}>
-                              {s.batch_id ? (<Link to={`/admin/batches/`+s.batch_id} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{s.batch_name}</Link>) : (<span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>No Batch</span>)}
+                           <div style={{ fontSize: '0.875rem', color: 'var(--text-heading)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {s.batch_id ? (
+                                <>
+                                  <Link to={`/admin/batches/`+s.batch_id} style={{ color: 'var(--primary)', textDecoration: 'none' }}>{s.batch_name}</Link>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => handleUnassign(s.id, s.batch_id, s.full_name, s.batch_name)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#ef4444',
+                                        cursor: 'pointer',
+                                        padding: '2px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '4px'
+                                      }}
+                                      title="Remove from batch"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>No Batch</span>
+                              )}
                            </div>
                         </td>
                         <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{new Date(s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>

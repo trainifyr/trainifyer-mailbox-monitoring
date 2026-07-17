@@ -36,6 +36,16 @@ export default function BatchDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleRemove = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName} from this batch?`)) return;
+    try {
+      await apiClient.delete(`/batches/${id}/students/${studentId}`);
+      load();
+    } catch (e) {
+      alert(e.response?.data?.error || e.message);
+    }
+  };
+
   return (
     <div className="page-container animate-fade-in">
       {/* Header */}
@@ -140,13 +150,22 @@ export default function BatchDetailPage() {
                             {s.assigned_at ? new Date(s.assigned_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                           </td>
                           <td style={{ textAlign: 'right' }}>
-                            <Link
-                              to={`/admin/students/${s.id}/attendance`}
-                              className="btn btn-ghost"
-                              style={{ fontSize: '0.8rem', padding: '4px 10px', border: '1px solid var(--border)' }}
-                            >
-                              View Attendance
-                            </Link>
+                            <div style={{ display: 'inline-flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              <Link
+                                to={`/admin/students/${s.id}/attendance`}
+                                className="btn btn-ghost"
+                                style={{ fontSize: '0.8rem', padding: '4px 10px', border: '1px solid var(--border)' }}
+                              >
+                                View Attendance
+                              </Link>
+                              <button
+                                onClick={() => handleRemove(s.id, s.full_name)}
+                                className="btn btn-ghost"
+                                style={{ fontSize: '0.8rem', padding: '4px 10px', border: '1px solid var(--border)', color: '#ef4444' }}
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
