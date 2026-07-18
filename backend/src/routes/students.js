@@ -237,29 +237,48 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
 // Remove a student profile and their Supabase Auth account. Admin only.
 
 router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
 
     // 1. Find the user first to get the supabase_user_id
-    const { rows } = await pool.query(`SELECT supabase_user_id FROM public.users WHERE id = $1 AND role = 'STUDENT'`, [id]);
-    
+    const { rows } = await client.query(
+      `SELECT supabase_user_id FROM public.users WHERE id = $1 AND role = 'STUDENT'`,
+      [id]
+    );
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Student not found' });
     }
 
     const supabaseUserId = rows[0].supabase_user_id;
 
-    // 2. Delete from Supabase Auth if linked
+    await client.query('BEGIN');
+
+    // 2. Delete all dependent records to avoid FK constraint violations
+    await client.query(
+      'DELETE FROM public.mail_messages WHERE sender_id = $1 OR receiver_id = $1',
+      [id]
+    );
+    await client.query('DELETE FROM public.attendance_logs WHERE user_id = $1', [id]);
+    await client.query('DELETE FROM public.student_batches WHERE student_id = $1', [id]);
+
+    // 3. Delete from public.users
+    await client.query('DELETE FROM public.users WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+
+    // 4. Delete from Supabase Auth if linked (outside transaction — Supabase is external)
     if (supabaseUserId) {
       await supabase.auth.admin.deleteUser(supabaseUserId);
     }
 
-    // 3. Delete from public.users
-    await pool.query('DELETE FROM public.users WHERE id = $1', [id]);
-
     res.json({ message: 'Student deleted successfully' });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     next(err);
+  } finally {
+    client.release();
   }
 });
 
