@@ -11,7 +11,8 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 ### 🛡️ Secure Infrastructure
 *   **Supabase Authentication**: Real-time seat management and secure JWT-based identity.
 *   **Row Level Security (RLS)**: Ironclad database privacy—students only see their own data; Admins see everything.
-*   **Role-Based Access Control (RBAC)**: Dedicated dashbaords and route guards for Admin and Student roles.
+*   **Role-Based Access Control (RBAC)**: Dedicated dashboards and route guards for Admin and Student roles.
+*   **Uptime Monitoring**: `/api/health` and `/api/health/db` endpoints compatible with Uptime Robot for zero-downtime alerting and free-tier keep-alive pings.
 
 ### 📧 Internal Mailbox
 *   **Outlook-Style UI**: Three-panel professional workspace for messaging.
@@ -19,15 +20,23 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 *   **Unified Monitoring**: Administrators can monitor all internal communications for quality assurance.
 
 ### 🎥 Meetings & Jitsi Integration
-*   **Embedded Video**: Seamless Jitsi Meet integration using the `fairmeeting.net` provider.
-    *   *Note: We use this privacy-respecting, high-performance cooperative hosting to bypass mandatory host/admin logins required by the official Jitsi server, ensuring a lag-free, zero-friction experience for iframe embedding.*
+*   **Embedded Video**: Seamless Jitsi Meet integration using the `meet.systemli.org` provider.
+    *   *Note: We use this privacy-respecting, high-performance cooperative hosting to bypass mandatory host/admin logins, ensuring a lag-free, zero-friction experience for iframe embedding.*
+*   **Google Meet-style Lobby**: Pre-join lobby with live participant avatars, camera/mic controls, and a deferred Jitsi iframe — participants only join when ready.
 *   **Privacy Consent**: Mandatory privacy gatekeeper for all participants before entering video rooms.
 *   **Batch Isolation**: Meetings can be restricted to specific cohorts or marked as public.
+*   **Recurring Meetings**: A cron-based scheduler automatically flips recurring meeting status (`SCHEDULED` ↔ `LIVE`) based on configured time windows.
 
 ### 📊 Attendance & Reporting
 *   **Automated Tracking**: Join/Leave logs and 60-second heartbeats ensure precise attendance data.
 *   **Metric Engine**: Automatically computes session duration, percentage, and participation status (Present/Partial/Absent).
 *   **Rich Dashboards**: High-fidelity KPI cards, time-series distributions, and CSV data export for admins.
+*   **Per-Student Daily Attendance Sheet**: Clickable student names open a full day-by-day attendance ledger with implicit absences — if a student missed a session (one-off or recurring), they are automatically marked **Absent** with `0%` attendance for that date.
+
+### 🗂️ Student & Batch Management
+*   **Drill-Down Navigation**: Clickable student and batch names on admin pages navigate to dedicated detail views.
+*   **Batch Detail Page**: Shows all enrolled students, enrolment dates, and provides direct links to individual attendance sheets.
+*   **Batch Assignment Control**: Admins can assign a student to a batch **and remove them** at any time — both from the Batch Detail Page and the Students Directory.
 
 ---
 
@@ -36,10 +45,10 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 | Layer | Component |
 | :--- | :--- |
 | **Frontend** | React 18, Vite, React Router 6, Lucide Icons, Axios |
-| **Backend** | Node.js, Express, Zod (Validation), pg (Pool) |
+| **Backend** | Node.js, Express, Zod (Validation), pg (Pool), node-cron |
 | **Database** | Supabase (PostgreSQL) with RLS enabled |
 | **Auth** | Supabase Auth (JWT HS256) |
-| **Video** | Jitsi External API (Provider: `fairmeeting.net`) |
+| **Video** | Jitsi External API (Provider: `meet.systemli.org`) |
 
 ---
 
