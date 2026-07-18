@@ -255,20 +255,58 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
 
     await client.query('BEGIN');
 
-    // 2. Delete all dependent records to avoid FK constraint violations
+    // 2. Delete all dependent records inside a transaction to avoid FK violations.
+    //    Order matters — handle RESTRICT references first, then SET NULL ones.
+
+    // mail_messages: sender_id/receiver_id are ON DELETE RESTRICT — must delete rows
     await client.query(
-      'DELETE FROM public.mail_messages WHERE sender_id = $1 OR receiver_id = $1',
+      `DELETE FROM public.mail_messages WHERE sender_id = $1 OR receiver_id = $1`,
       [id]
     );
-    await client.query('DELETE FROM public.attendance_logs WHERE user_id = $1', [id]);
-    await client.query('DELETE FROM public.student_batches WHERE student_id = $1', [id]);
 
-    // 3. Delete from public.users
-    await client.query('DELETE FROM public.users WHERE id = $1', [id]);
+    // meetings: created_by is ON DELETE RESTRICT — reassign or delete
+    // We delete meetings created by this student that are not yet started/live
+    // For live/ended meetings we just set created_by to NULL is not allowed (NOT NULL col)
+    // so we delete those meetings too (cascades will handle participants, consents, logs)
+    await client.query(
+      `DELETE FROM public.meetings WHERE created_by = $1`,
+      [id]
+    );
+
+    // attendance_logs: user_id is ON DELETE SET NULL but has identity CHECK
+    // Delete rows where this user has no external_name (would violate check on SET NULL)
+    await client.query(
+      `DELETE FROM public.attendance_logs WHERE user_id = $1 AND external_name IS NULL`,
+      [id]
+    );
+    // For rows that have an external_name, nullify the user_id (safe — passes check)
+    await client.query(
+      `UPDATE public.attendance_logs SET user_id = NULL WHERE user_id = $1`,
+      [id]
+    );
+
+    // meeting_consents: same pattern as attendance_logs
+    await client.query(
+      `DELETE FROM public.meeting_consents WHERE user_id = $1 AND external_name IS NULL`,
+      [id]
+    );
+    await client.query(
+      `UPDATE public.meeting_consents SET user_id = NULL WHERE user_id = $1`,
+      [id]
+    );
+
+    // student_batches: ON DELETE CASCADE — delete directly
+    await client.query(
+      `DELETE FROM public.student_batches WHERE student_id = $1`,
+      [id]
+    );
+
+    // 3. Now safe to delete the user row
+    await client.query(`DELETE FROM public.users WHERE id = $1`, [id]);
 
     await client.query('COMMIT');
 
-    // 4. Delete from Supabase Auth if linked (outside transaction — Supabase is external)
+    // 4. Delete from Supabase Auth outside the transaction (external service)
     if (supabaseUserId) {
       await supabase.auth.admin.deleteUser(supabaseUserId);
     }
