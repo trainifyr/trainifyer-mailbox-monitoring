@@ -293,7 +293,7 @@ export default function MailboxPage() {
 
             {/* Compose Drawer Page (Notion slide sheet panel) */}
             <div className={`slide-sheet ${activeView === 'compose' ? 'active' : ''}`}>
-               <div style={{ padding: '2.5rem' }}>
+               <div style={{ padding: '2.5rem', overflowY: 'auto', flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <h3 style={{ fontSize: '1.25rem' }}>New Message</h3>
                     <button className="btn btn-ghost" onClick={() => { setActiveView(selectedMessage ? 'detail' : 'inbox'); }} style={{ padding: '6px' }} title="Hide Panel"><X size={20} /></button>
@@ -341,7 +341,7 @@ export default function MailboxPage() {
             {/* Message Details Drawer Panel (Notion slide sheet drawer) */}
             <div className={`slide-sheet ${activeView === 'detail' && selectedMessage ? 'active' : ''}`}>
                {selectedMessage && (
-                 <div style={{ padding: '2.5rem' }}>
+                 <div style={{ padding: '2.5rem', overflowY: 'auto', flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                       <button className="btn btn-ghost" onClick={() => { setActiveView(selectedMessage.sender_id === userId ? 'sent' : 'inbox'); setSelectedMessage(null); }} style={{ paddingLeft: 0 }}><ArrowLeft size={18} /> Back</button>
                       <button className="btn btn-ghost" onClick={() => { setActiveView(selectedMessage.sender_id === userId ? 'sent' : 'inbox'); setSelectedMessage(null); }} style={{ padding: '6px' }} title="Hide Panel"><X size={20} /></button>
@@ -349,13 +349,15 @@ export default function MailboxPage() {
                     <div style={{ marginBottom: '2.5rem' }}>
                        <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>{selectedMessage.subject}</h1>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)' }}>{selectedMessage.sender_name.charAt(0)}</div>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)' }}>{(selectedMessage.sender_name || selectedMessage.receiver_name || '?').charAt(0)}</div>
                           <div style={{ flex: 1 }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem' }}>{selectedMessage.sender_name}</span>
+                                <span style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.95rem' }}>{selectedMessage.sender_id === userId ? selectedMessage.receiver_name : selectedMessage.sender_name}</span>
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(selectedMessage.created_at).toLocaleString()}</span>
                              </div>
-                             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>to {selectedMessage.receiver_name} &lt;{selectedMessage.receiver_email}&gt;</div>
+                             <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                               {selectedMessage.sender_id === userId ? `to ${selectedMessage.receiver_name} <${selectedMessage.receiver_email}>` : `from ${selectedMessage.sender_name} <${selectedMessage.sender_email}>`}
+                             </div>
                           </div>
                        </div>
                     </div>
