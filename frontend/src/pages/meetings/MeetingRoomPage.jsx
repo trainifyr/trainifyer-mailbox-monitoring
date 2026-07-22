@@ -117,7 +117,17 @@ export default function MeetingRoomPage() {
       try {
         const res = await apiClient.get(`/meetings/${id}/active-participants`);
         if (!cancelled) {
-          setActiveParticipants(res.data.data);
+          // Deduplicate by name (in case a user joined from multiple tabs)
+          const uniqueParticipants = [];
+          const seenNames = new Set();
+          for (const p of res.data.data) {
+            const name = p.name || 'Anonymous';
+            if (!seenNames.has(name)) {
+              seenNames.add(name);
+              uniqueParticipants.push(p);
+            }
+          }
+          setActiveParticipants(uniqueParticipants);
           setParticipantsLoading(false);
         }
       } catch (e) {
@@ -248,25 +258,11 @@ export default function MeetingRoomPage() {
         </div>
 
         <div className="lobby-container card">
-          {/* Left Column: Mock camera preview */}
           <div className="lobby-preview-card animate-fade-in">
             <div className="lobby-preview-main">
               <div className="lobby-camera-avatar">
                 {meeting.title.charAt(0).toUpperCase()}
               </div>
-              <p style={{ margin: 0, fontWeight: 500 }}>Camera is off</p>
-            </div>
-            
-            <div className="lobby-preview-controls">
-              <button className="lobby-btn-control off" title="Microphone is off">
-                <MicOff size={20} />
-              </button>
-              <button className="lobby-btn-control off" title="Camera is off">
-                <VideoOff size={20} />
-              </button>
-              <button className="lobby-btn-control" title="Settings">
-                <Settings size={20} />
-              </button>
             </div>
           </div>
 
