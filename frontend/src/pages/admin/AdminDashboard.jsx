@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
+import { supabase } from '../../lib/supabaseClient';
 import { 
   Users, 
   Layers, 
@@ -15,7 +16,8 @@ import {
   XCircle,
   ArrowUpRight,
   Plus,
-  Download
+  Download,
+  Radio
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -23,6 +25,7 @@ export default function AdminDashboard() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [liveCount, setLiveCount] = useState(0);
 
   const fetchReport = useCallback(async () => {
     try {
@@ -56,6 +59,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // Initial fetch + polling fallback every 30s
   useEffect(() => {
     if (isAdmin) {
       fetchReport();
@@ -63,6 +67,35 @@ export default function AdminDashboard() {
       return () => clearInterval(interval);
     }
   }, [fetchReport, isAdmin]);
+
+  // Real-time: subscribe to attendance_logs changes
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    // Fetch current live count immediately
+    const fetchLive = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('attendance_logs')
+          .select('id', { count: 'exact' })
+          .eq('status', 'ACTIVE');
+        if (!error) setLiveCount(data?.length ?? 0);
+      } catch (_) {}
+    };
+    fetchLive();
+
+    // Subscribe to any INSERT or UPDATE on attendance_logs
+    const channel = supabase
+      .channel('attendance-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, () => {
+        // Re-fetch the full report and live count on any change
+        fetchReport();
+        fetchLive();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin, fetchReport]);
 
   if (!isAdmin) {
     return (
@@ -77,10 +110,11 @@ export default function AdminDashboard() {
   const { summary, details } = report || {};
 
   const kpis = [
-    { label: 'Total Sessions', value: summary?.total_sessions ?? '0', icon: Video, color: 'var(--primary)' },
-    { label: 'Total Minutes', value: summary ? `${Math.round(summary.total_minutes)}m` : '0m', icon: Clock, color: '#10b981' },
-    { label: 'Avg Attendance', value: summary ? `${Math.round(summary.average_percentage)}%` : '0%', icon: BarChart3, color: '#f59e0b' },
-    { label: 'Present Today', value: summary?.present_count ?? '0', icon: CheckCircle, color: '#10b981' },
+    { label: 'Total Sessions',     value: summary?.total_sessions ?? '0',                        icon: Video,       color: 'var(--primary)' },
+    { label: 'Total Minutes',      value: summary ? `${Math.round(summary.total_minutes)}m` : '0m', icon: Clock,       color: '#10b981' },
+    { label: 'Avg Attendance',     value: summary ? `${Math.round(summary.average_percentage)}%` : '0%', icon: BarChart3,   color: '#f59e0b' },
+    { label: 'Present',            value: summary?.present_count  ?? '0',                        icon: CheckCircle, color: '#10b981' },
+    { label: 'Live Participants',  value: liveCount,                                               icon: Radio,       color: '#ef4444' },
   ];
 
   return (

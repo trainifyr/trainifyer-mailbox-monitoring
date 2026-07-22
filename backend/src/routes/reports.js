@@ -20,208 +20,285 @@ const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ABSENT'];
 //   granularity  - Bucket size: daily | weekly | monthly (default: daily)
 //   status       - Filter by attendance status: PRESENT | PARTIAL | ABSENT
 
+// --- GET /api/reports/attendance ---
+// Returns aggregated attendance metrics scoped to the caller's role.
+// Now uses CTE to generate implicit ABSENT rows for batch students who never joined.
+//
+// Query params:
+//   userId       - Filter by student UUID (forced for STUDENT role)
+//   batchId      - Filter by batch UUID (ADMIN only)
+//   fromDate     - Inclusive start date (YYYY-MM-DD)
+//   toDate       - Inclusive end date (YYYY-MM-DD)
+//   granularity  - Bucket size: daily | weekly | monthly (default: daily)
+//   status       - Filter by attendance status: PRESENT | PARTIAL | ABSENT
+
 router.get('/attendance', async (req, res, next) => {
   try {
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
 
-    // Parse filters from query
     let { userId, batchId, fromDate, toDate, granularity, status } = req.query;
 
-    // Validate granularity
     if (granularity && !GRANULARITIES.includes(granularity)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: `granularity must be one of: ${GRANULARITIES.join(', ')}`
-      });
+      return res.status(400).json({ error: 'Bad Request', message: `granularity must be one of: ${GRANULARITIES.join(', ')}` });
     }
     if (!granularity) granularity = 'daily';
 
-    // Validate status filter
     if (status && !STATUS_FILTERS.includes(status)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: `status must be one of: ${STATUS_FILTERS.join(', ')}`
-      });
+      return res.status(400).json({ error: 'Bad Request', message: `status must be one of: ${STATUS_FILTERS.join(', ')}` });
     }
 
-    // --- Role-based access control ---
     if (role === 'STUDENT') {
-      // Student: force userId to their own ID; ignore batchId
       if (!callerUserId) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'Mock user ID is required for student reporting'
-        });
+        return res.status(401).json({ error: 'Unauthorized', message: 'Mock user ID is required for student reporting' });
       }
       userId = callerUserId;
       batchId = null;
-    } else if (role === 'ADMIN') {
-      // Admin: can query any filter; userId and batchId are optional
-      // If no userId or batchId is provided, Admin sees all data.
-    } else {
-      // Anonymous: not allowed — attendance reports require authentication
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Attendance reports require authentication (mock role required)'
-      });
+    } else if (role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Attendance reports require authentication (mock role required)' });
     }
 
-    // --- Build WHERE clause dynamically ---
-    const conditions = [];
     const params = [];
-    let paramIndex = 0;
+    let p = 0;
 
-    // Only include completed attendance logs (left_at IS NOT NULL) in reports
-    conditions.push(`al.left_at IS NOT NULL`);
-    // Exclude ACTIVE status from aggregate summaries
-    conditions.push(`al.status IS DISTINCT FROM 'ACTIVE'`);
-    // Exclude admin/instructor users — their logs are only used for real-time lobby presence
-    conditions.push(`NOT EXISTS (SELECT 1 FROM public.users u2 WHERE u2.id = al.user_id AND u2.role = 'ADMIN')`);
+    // Optional filter params
+    const userFilter    = userId   ? (params.push(userId),   `$${++p}`) : null;
+    const batchFilter   = batchId  ? (params.push(batchId),  `$${++p}`) : null;
+    const fromFilter    = fromDate ? (params.push(fromDate), `$${++p}`) : null;
+    const toFilter      = toDate   ? (params.push(toDate),   `$${++p}`) : null;
+    const statusFilter  = status   ? (params.push(status),   `$${++p}`) : null;
 
-    if (userId) {
-      paramIndex++;
-      conditions.push(`al.user_id = $${paramIndex}`);
-      params.push(userId);
-    }
+    // --- CTE: Generate every expected (student, meeting, session_date) triple ---
+    // Part A: One-off meetings → one session per meeting
+    // Part B: Recurring meetings today or LIVE → one session per day with anyone joined + today
+    // Then cross-join with all batch students to get expected rows.
+    // Finally LEFT JOIN actual attendance_logs to see who actually joined.
+    const cteQuery = `
+      WITH
 
-    if (batchId) {
-      paramIndex++;
-      conditions.push(`m.batch_id = $${paramIndex}`);
-      params.push(batchId);
-    }
+      -- Step 1: Produce all meeting sessions (one-off: single row; recurring: one row per day it was live)
+      meeting_sessions AS (
+        -- Non-recurring meetings that have occurred or are currently live
+        SELECT
+          m.id            AS meeting_id,
+          m.title         AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          COALESCE(m.scheduled_start, m.created_at)::date AS session_date,
+          COALESCE(m.scheduled_start, m.created_at)      AS session_timestamp
+        FROM public.meetings m
+        WHERE m.is_recurring = false
+          AND m.status IS DISTINCT FROM 'CANCELLED'
+          AND (m.scheduled_start <= NOW() OR m.status IN ('LIVE', 'ENDED'))
 
-    if (fromDate) {
-      paramIndex++;
-      conditions.push(`al.joined_at >= $${paramIndex}::timestamptz`);
-      params.push(fromDate);
-    }
+        UNION
 
-    if (toDate) {
-      paramIndex++;
-      // Handle sessions that started before or on toDate
-      conditions.push(`(al.left_at <= $${paramIndex}::timestamptz OR al.joined_at <= $${paramIndex}::timestamptz)`);
-      params.push(toDate);
-    }
+        -- Recurring meetings: one row per date on which ANY participant joined
+        SELECT DISTINCT ON (m.id, DATE(al.joined_at))
+          m.id            AS meeting_id,
+          m.title         AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          DATE(al.joined_at)        AS session_date,
+          DATE(al.joined_at)::timestamptz AS session_timestamp
+        FROM public.meetings m
+        JOIN public.attendance_logs al ON al.meeting_id = m.id
+        WHERE m.is_recurring = true
+          AND m.status IS DISTINCT FROM 'CANCELLED'
 
-    if (status) {
-      paramIndex++;
-      conditions.push(`al.status = $${paramIndex}::public.attendance_status`);
-      params.push(status);
-    }
+        UNION
 
-    const whereClause = conditions.length > 0
-      ? 'WHERE ' + conditions.join(' AND ')
-      : '';
+        -- Recurring meetings that are LIVE today (so today shows up even if nobody joined yet)
+        SELECT
+          m.id            AS meeting_id,
+          m.title         AS meeting_title,
+          m.batch_id,
+          m.is_recurring,
+          CURRENT_DATE           AS session_date,
+          NOW()                  AS session_timestamp
+        FROM public.meetings m
+        WHERE m.is_recurring = true
+          AND m.status = 'LIVE'
+      ),
 
-    // --- 1. Summary (top-level KPIs) ---
-    const summaryQuery = `
-      SELECT
-        COUNT(DISTINCT al.meeting_id)::int AS total_meetings,
-        COUNT(al.id)::int AS total_sessions,
-        COALESCE(SUM(al.total_minutes), 0) AS total_minutes,
-        COALESCE(AVG(al.attendance_percentage), 0) AS average_percentage,
-        COUNT(al.id) FILTER (WHERE al.status = 'PRESENT')::int AS present_count,
-        COUNT(al.id) FILTER (WHERE al.status = 'PARTIAL')::int AS partial_count,
-        COUNT(al.id) FILTER (WHERE al.status = 'ABSENT')::int AS absent_count
-      FROM public.attendance_logs al
-      JOIN public.meetings m ON m.id = al.meeting_id
-      ${whereClause}
+      -- Step 2: Deduplicate sessions
+      unique_sessions AS (
+        SELECT DISTINCT ON (meeting_id, session_date)
+          meeting_id, meeting_title, batch_id, is_recurring, session_date, session_timestamp
+        FROM meeting_sessions
+      ),
+
+      -- Step 3: All batch students (or target student if student role)
+      batch_students AS (
+        SELECT
+          sb.student_id AS user_id,
+          sb.batch_id,
+          u.full_name
+        FROM public.student_batches sb
+        JOIN public.users u ON u.id = sb.student_id
+        WHERE u.role = 'STUDENT'
+          ${userFilter  ? `AND sb.student_id = ${userFilter}`  : ''}
+          ${batchFilter ? `AND sb.batch_id    = ${batchFilter}` : ''}
+      ),
+
+      -- Step 4: Expected attendance = every (student, session) combination
+      expected AS (
+        SELECT
+          s.meeting_id,
+          s.meeting_title,
+          s.batch_id,
+          s.session_date,
+          s.session_timestamp,
+          bs.user_id,
+          bs.full_name
+        FROM unique_sessions s
+        JOIN batch_students bs ON bs.batch_id = s.batch_id
+        ${fromFilter ? `WHERE s.session_date >= ${fromFilter}::date` : ''}
+        ${toFilter   ? (fromFilter ? `AND` : `WHERE`) + ` s.session_date <= ${toFilter}::date` : ''}
+      ),
+
+      -- Step 5: Actual attendance logs per (user, meeting, date)
+      actual AS (
+        SELECT
+          al.meeting_id,
+          al.user_id,
+          DATE(al.joined_at) AS log_date,
+          MIN(al.joined_at)  AS joined_at,
+          MAX(al.left_at)    AS left_at,
+          SUM(al.total_minutes) AS total_minutes,
+          AVG(al.attendance_percentage)::numeric(6,2) AS attendance_percentage,
+          -- If any session segment is ACTIVE it's still live; otherwise use best segment status
+          MAX(al.status::text)::public.attendance_status AS raw_status
+        FROM public.attendance_logs al
+        WHERE al.user_id IS NOT NULL
+        GROUP BY al.meeting_id, al.user_id, DATE(al.joined_at)
+      ),
+
+      -- Step 6: Compute resolved status (PRESENT / PARTIAL / ABSENT) for every expected row
+      resolved AS (
+        SELECT
+          e.meeting_id,
+          e.meeting_title,
+          e.batch_id,
+          e.session_date,
+          e.session_timestamp,
+          e.user_id,
+          e.full_name,
+          a.joined_at,
+          a.left_at,
+          COALESCE(a.total_minutes, 0)          AS total_minutes,
+          COALESCE(a.attendance_percentage, 0)   AS attendance_percentage,
+          CASE
+            WHEN a.user_id IS NULL                          THEN 'ABSENT'
+            WHEN a.raw_status = 'ACTIVE'                    THEN 'ACTIVE'
+            WHEN COALESCE(a.attendance_percentage, 0) >= 90 THEN 'PRESENT'
+            ELSE                                                 'PARTIAL'
+          END AS status
+        FROM expected e
+        LEFT JOIN actual a
+          ON a.meeting_id = e.meeting_id
+         AND a.user_id    = e.user_id
+         AND a.log_date   = e.session_date
+      )
+
+      SELECT *
+      FROM resolved
+      WHERE status IS DISTINCT FROM 'ACTIVE'
+        ${statusFilter ? `AND status = ${statusFilter}` : ''}
     `;
 
-    const summaryResult = await pool.query(summaryQuery, params);
-    const summary = summaryResult.rows[0];
+    const allRows = (await pool.query(cteQuery, params)).rows;
 
-    // --- 2. Time series (bucketed by granularity) ---
-    let dateTrunc;
-    if (granularity === 'weekly') {
-      dateTrunc = "date_trunc('week', al.joined_at)";
-    } else if (granularity === 'monthly') {
-      dateTrunc = "date_trunc('month', al.joined_at)";
-    } else {
-      dateTrunc = "date_trunc('day', al.joined_at)";
+    // --- Summary ---
+    let total_meetings  = new Set();
+    let total_sessions  = 0;
+    let total_minutes   = 0;
+    let sum_pct         = 0;
+    let present_count   = 0;
+    let partial_count   = 0;
+    let absent_count    = 0;
+    for (const r of allRows) {
+      total_meetings.add(r.meeting_id);
+      total_sessions++;
+      total_minutes += parseFloat(r.total_minutes) || 0;
+      sum_pct       += parseFloat(r.attendance_percentage) || 0;
+      if (r.status === 'PRESENT')  present_count++;
+      else if (r.status === 'PARTIAL') partial_count++;
+      else absent_count++;
+    }
+    const average_percentage = total_sessions > 0 ? sum_pct / total_sessions : 0;
+
+    // --- Time series ---
+    const bucketFn = row => {
+      const d = new Date(row.session_timestamp || row.session_date);
+      if (granularity === 'monthly') return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+      if (granularity === 'weekly') {
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(d.setDate(diff));
+        return mon.toISOString().slice(0, 10);
+      }
+      return (row.session_date instanceof Date ? row.session_date : new Date(row.session_date)).toISOString().slice(0, 10);
+    };
+
+    const buckets = {};
+    for (const r of allRows) {
+      const period = bucketFn(r);
+      if (!buckets[period]) buckets[period] = { period, meetings: new Set(), sessions: 0, total_minutes: 0, sum_pct: 0, present_count: 0, partial_count: 0, absent_count: 0 };
+      const b = buckets[period];
+      b.meetings.add(r.meeting_id);
+      b.sessions++;
+      b.total_minutes += parseFloat(r.total_minutes) || 0;
+      b.sum_pct       += parseFloat(r.attendance_percentage) || 0;
+      if (r.status === 'PRESENT')  b.present_count++;
+      else if (r.status === 'PARTIAL') b.partial_count++;
+      else b.absent_count++;
     }
 
-    const seriesQuery = `
-      SELECT
-        ${dateTrunc}::date AS period,
-        COUNT(DISTINCT al.meeting_id)::int AS meetings,
-        COUNT(al.id)::int AS sessions,
-        COALESCE(SUM(al.total_minutes), 0) AS total_minutes,
-        COALESCE(AVG(al.attendance_percentage), 0) AS average_percentage,
-        COUNT(al.id) FILTER (WHERE al.status = 'PRESENT')::int AS present_count,
-        COUNT(al.id) FILTER (WHERE al.status = 'PARTIAL')::int AS partial_count,
-        COUNT(al.id) FILTER (WHERE al.status = 'ABSENT')::int AS absent_count
-      FROM public.attendance_logs al
-      JOIN public.meetings m ON m.id = al.meeting_id
-      ${whereClause}
-      GROUP BY period
-      ORDER BY period ASC
-    `;
+    const series = Object.values(buckets)
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .map(b => ({
+        period: b.period,
+        meetings: b.meetings.size,
+        sessions: b.sessions,
+        total_minutes: parseFloat(b.total_minutes.toFixed(2)),
+        average_percentage: b.sessions > 0 ? parseFloat((b.sum_pct / b.sessions).toFixed(2)) : 0,
+        present_count: b.present_count,
+        partial_count: b.partial_count,
+        absent_count: b.absent_count
+      }));
 
-    const seriesResult = await pool.query(seriesQuery, params);
-    const series = seriesResult.rows;
+    // --- Details (limit 500) ---
+    const details = allRows.slice(0, 500).map(r => ({
+      attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}-${r.session_date}`,
+      meeting_id:         r.meeting_id,
+      meeting_title:      r.meeting_title,
+      batch_id:           r.batch_id,
+      user_id:            r.user_id,
+      user_name:          r.full_name,
+      session_date:       r.session_date,
+      joined_at:          r.joined_at || null,
+      left_at:            r.left_at   || null,
+      total_minutes:      parseFloat(r.total_minutes)          || 0,
+      attendance_percentage: parseFloat(r.attendance_percentage) || 0,
+      status:             r.status
+    }));
 
-    // --- 3. Details (individual rows for table display) ---
-    const detailsQuery = `
-      SELECT
-        al.id AS attendance_log_id,
-        al.meeting_id,
-        m.title AS meeting_title,
-        m.batch_id,
-        b.name AS batch_name,
-        u.full_name AS user_name,
-        al.user_id,
-        al.external_name,
-        al.joined_at,
-        al.left_at,
-        al.total_minutes,
-        al.attendance_percentage,
-        al.status,
-        al.last_heartbeat
-      FROM public.attendance_logs al
-      JOIN public.meetings m ON m.id = al.meeting_id
-      LEFT JOIN public.batches b ON b.id = m.batch_id
-      LEFT JOIN public.users u ON u.id = al.user_id
-      ${whereClause}
-      ORDER BY al.joined_at DESC
-      LIMIT 500
-    `;
-
-    const detailsResult = await pool.query(detailsQuery, params);
-    const details = detailsResult.rows;
-
-    // --- Response ---
     res.json({
       data: {
         summary: {
-          total_meetings: parseInt(summary.total_meetings) || 0,
-          total_sessions: parseInt(summary.total_sessions) || 0,
-          total_minutes: parseFloat(summary.total_minutes) || 0,
-          average_percentage: parseFloat(summary.average_percentage) || 0,
-          present_count: parseInt(summary.present_count) || 0,
-          partial_count: parseInt(summary.partial_count) || 0,
-          absent_count: parseInt(summary.absent_count) || 0
+          total_meetings:       total_meetings.size,
+          total_sessions,
+          total_minutes:        parseFloat(total_minutes.toFixed(2)),
+          average_percentage:   parseFloat(average_percentage.toFixed(2)),
+          present_count,
+          partial_count,
+          absent_count
         },
-        series: series.map(s => ({
-          ...s,
-          total_minutes: parseFloat(s.total_minutes) || 0,
-          average_percentage: parseFloat(s.average_percentage) || 0
-        })),
-        details: details.map(d => ({
-          ...d,
-          total_minutes: parseFloat(d.total_minutes) || 0,
-          attendance_percentage: parseFloat(d.attendance_percentage) || 0
-        }))
+        series,
+        details
       },
-      filters: {
-        userId: userId || null,
-        batchId: batchId || null,
-        fromDate: fromDate || null,
-        toDate: toDate || null,
-        granularity,
-        status: status || null
-      }
+      filters: { userId: userId || null, batchId: batchId || null, fromDate: fromDate || null, toDate: toDate || null, granularity, status: status || null }
     });
   } catch (err) {
     next(err);
