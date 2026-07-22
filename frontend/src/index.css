@@ -3,26 +3,26 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Outfit', sans-serif;
 
-  /* Colors - Light Mode (Slate/Emerald) */
+  /* Colors - Dark Mode Forced */
   --primary: #10b981;
   --primary-hover: #059669;
   --primary-glow: rgba(16, 185, 129, 0.15);
   
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-sidebar: #0f172a;
+  --bg-app: #020617;
+  --bg-card: #0f172a;
+  --bg-sidebar: #020617;
   
-  --text-main: #334155;
-  --text-heading: #0f172a;
+  --text-main: #94a3b8;
+  --text-heading: #f8fafc;
   --text-muted: #64748b;
   --text-on-dark: #f8fafc;
 
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
+  --border: #1e293b;
+  --border-light: #0f172a;
   
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
@@ -36,21 +36,6 @@
   font-weight: 400;
   color: var(--text-main);
   background-color: var(--bg-app);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-app: #020617;
-    --bg-card: #0f172a;
-    --bg-sidebar: #020617;
-    --text-main: #94a3b8;
-    --text-heading: #f8fafc;
-    --text-muted: #64748b;
-    --border: #1e293b;
-    --border-light: #0f172a;
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-  }
 }
 
 /* --- Reset & Global --- */
@@ -107,10 +92,10 @@ ul {
 
 /* Cards - Premium Glassmorphism styling */
 .card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
@@ -121,13 +106,6 @@ ul {
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(16, 185, 129, 0.08);
   border-color: rgba(16, 185, 129, 0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  .card {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
 }
 
 /* Buttons */
