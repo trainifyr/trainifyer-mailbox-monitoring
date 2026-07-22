@@ -156,6 +156,7 @@ router.get('/attendance', async (req, res, next) => {
         JOIN public.users u ON u.id = al.user_id
         WHERE al.user_id IS NOT NULL 
           AND m.batch_id IS NOT NULL
+          AND u.role = 'STUDENT'
           ${userFilter  ? `AND al.user_id = ${userFilter}`  : ''}
           ${batchFilter ? `AND m.batch_id = ${batchFilter}` : ''}
       ),
