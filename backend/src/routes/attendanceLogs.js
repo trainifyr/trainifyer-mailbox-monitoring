@@ -31,11 +31,14 @@ function requireIdentity(req, res) {
 }
 
 // Compute attendance status from percentage.
-function computeAttendanceStatus(percentage) {
-  if (percentage === null || percentage === undefined) return null;
+// If percentage is null but the student did join (log exists), default to PARTIAL.
+function computeAttendanceStatus(percentage, studentActuallyJoined = false) {
+  if (percentage === null || percentage === undefined) {
+    return studentActuallyJoined ? 'PARTIAL' : null;
+  }
   if (percentage >= THRESHOLD_PRESENT * 100) return 'PRESENT';
   if (percentage >= THRESHOLD_PARTIAL * 100) return 'PARTIAL';
-  return 'ABSENT';
+  return 'PARTIAL'; // if they joined but < 30%, still counts as PARTIAL not ABSENT (ABSENT = didn't join at all)
 }
 
 // --- POST /api/meetings/:id/join-log ---
@@ -128,6 +131,53 @@ router.post('/join-log', async (req, res, next) => {
       return res.json({ data: updated[0] });
     }
 
+    // Auto-finalize stale ACTIVE logs (left without calling leave-log, heartbeat > 10 min old)
+    // This cleans up orphaned sessions from browser crashes or disconnects
+    if (userId) {
+      const { rows: stale } = await pool.query(
+        `SELECT al.id, al.joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+         FROM public.attendance_logs al
+         JOIN public.meetings m ON m.id = al.meeting_id
+         WHERE al.meeting_id = $1 AND al.user_id = $2 AND al.left_at IS NULL
+           AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '10 minutes')`,
+        [id, userId]
+      );
+      for (const staleLog of stale) {
+        const now2 = new Date();
+        const joinedAt2 = new Date(staleLog.joined_at);
+        const staleMinutes = Math.max(0, Math.round(((now2 - joinedAt2) / 60000) * 100) / 100);
+        const priorMin2 = parseFloat(staleLog.total_minutes) || 0;
+        const totalMin2 = priorMin2 + staleMinutes;
+        let stalePct = null;
+        let staleStatus = 'PARTIAL';
+        if (staleLog.scheduled_start && staleLog.scheduled_end) {
+          const durMs = new Date(staleLog.scheduled_end) - new Date(staleLog.scheduled_start);
+          if (durMs > 0) {
+            stalePct = Math.min(100, Math.round((totalMin2 * 60000 / durMs) * 100 * 100) / 100);
+            staleStatus = stalePct >= THRESHOLD_PRESENT * 100 ? 'PRESENT' : 'PARTIAL';
+          }
+        } else {
+          // No scheduled_end: use 75% threshold based on recur window (recur_start_time → recur_end_time)
+          const { rows: recurRows } = await pool.query(
+            `SELECT recur_start_time, recur_end_time FROM public.meetings WHERE id = $1`, [id]
+          );
+          if (recurRows[0]?.recur_start_time && recurRows[0]?.recur_end_time) {
+            const [sh, sm] = recurRows[0].recur_start_time.split(':').map(Number);
+            const [eh, em] = recurRows[0].recur_end_time.split(':').map(Number);
+            const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
+            if (recurDurMin > 0) {
+              stalePct = Math.min(100, Math.round((totalMin2 / recurDurMin) * 100 * 100) / 100);
+              staleStatus = stalePct >= THRESHOLD_PRESENT * 100 ? 'PRESENT' : 'PARTIAL';
+            }
+          }
+        }
+        await pool.query(
+          `UPDATE public.attendance_logs SET left_at = now(), total_minutes = $1, attendance_percentage = $2, status = $3::public.attendance_status WHERE id = $4`,
+          [totalMin2, stalePct, staleStatus, staleLog.id]
+        );
+      }
+    }
+
     // Insert new attendance log (with default total_minutes = 0.00 and last_heartbeat = now())
     const { rows } = await pool.query(
       `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, last_heartbeat, total_minutes, status)
@@ -218,20 +268,33 @@ router.post('/leave-log', async (req, res, next) => {
     const totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
 
     let attendancePercentage = null;
-    let status = null;
+    let status = 'PARTIAL'; // default: joined but no scheduled_end → PARTIAL
 
-    // Compute percentage if meeting has scheduled start and end
     if (attendanceRow.scheduled_start && attendanceRow.scheduled_end) {
+      // One-off meeting with defined duration
       const scheduledStart = new Date(attendanceRow.scheduled_start);
       const scheduledEnd = new Date(attendanceRow.scheduled_end);
       const meetingDurationMs = scheduledEnd - scheduledStart;
-
       if (meetingDurationMs > 0) {
-        const totalMinutesMs = totalMinutes * 60000;
-        attendancePercentage = Math.round((totalMinutesMs / meetingDurationMs) * 100 * 100) / 100;
+        attendancePercentage = Math.round((totalMinutes * 60000 / meetingDurationMs) * 100 * 100) / 100;
         if (attendancePercentage > 100) attendancePercentage = 100;
-        status = computeAttendanceStatus(attendancePercentage);
+        status = computeAttendanceStatus(attendancePercentage, true);
       }
+    } else {
+      // Recurring meeting (or meeting without scheduled_end): use recur time window to compute %
+      const { rows: recurRows } = await pool.query(
+        `SELECT recur_start_time, recur_end_time FROM public.meetings WHERE id = $1`, [id]
+      );
+      if (recurRows[0]?.recur_start_time && recurRows[0]?.recur_end_time) {
+        const [sh, sm] = recurRows[0].recur_start_time.split(':').map(Number);
+        const [eh, em] = recurRows[0].recur_end_time.split(':').map(Number);
+        const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
+        if (recurDurMin > 0) {
+          attendancePercentage = Math.min(100, Math.round((totalMinutes / recurDurMin) * 100 * 100) / 100);
+          status = computeAttendanceStatus(attendancePercentage, true);
+        }
+      }
+      // If no recur config, percentage stays null but status is always PARTIAL (did show up)
     }
 
     // Update the attendance log

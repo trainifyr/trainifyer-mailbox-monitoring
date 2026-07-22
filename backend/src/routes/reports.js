@@ -586,13 +586,25 @@ router.get('/attendance/student/:id', async (req, res, next) => {
     let sum_percentages = 0;
 
     const details = rows.map(r => {
-      const status = r.status || 'ABSENT';
       const percentage = r.attendance_percentage ? parseFloat(r.attendance_percentage) : 0.00;
       const duration = r.total_minutes ? parseFloat(r.total_minutes) : 0.00;
+      
+      let status = 'ABSENT';
+      const hasLog = r.attendance_log_id && !String(r.attendance_log_id).startsWith('implicit-');
+      
+      if (hasLog) {
+        if (r.status === 'ACTIVE') {
+          status = 'ACTIVE';
+        } else if (percentage >= 90) {
+          status = 'PRESENT';
+        } else {
+          status = 'PARTIAL'; // if they have a log, they joined (even if 0 minutes), so they are not ABSENT.
+        }
+      }
 
       if (status === 'PRESENT') present_count++;
       else if (status === 'PARTIAL') partial_count++;
-      else absent_count++;
+      else if (status === 'ABSENT') absent_count++;
 
       sum_percentages += percentage;
 
