@@ -133,8 +133,10 @@ router.get('/attendance', async (req, res, next) => {
         SELECT
           sb.student_id AS user_id,
           sb.batch_id,
+          b.name AS batch_name,
           u.full_name
         FROM public.student_batches sb
+        JOIN public.batches b ON b.id = sb.batch_id
         JOIN public.users u ON u.id = sb.student_id
         WHERE u.role = 'STUDENT'
           ${userFilter  ? `AND sb.student_id = ${userFilter}`  : ''}
@@ -147,6 +149,7 @@ router.get('/attendance', async (req, res, next) => {
           s.meeting_id,
           s.meeting_title,
           s.batch_id,
+          bs.batch_name,
           s.session_date,
           s.session_timestamp,
           bs.user_id,
@@ -180,6 +183,7 @@ router.get('/attendance', async (req, res, next) => {
           e.meeting_id,
           e.meeting_title,
           e.batch_id,
+          e.batch_name,
           e.session_date,
           e.session_timestamp,
           e.user_id,
@@ -274,6 +278,7 @@ router.get('/attendance', async (req, res, next) => {
       meeting_id:         r.meeting_id,
       meeting_title:      r.meeting_title,
       batch_id:           r.batch_id,
+      batch_name:         r.batch_name,
       user_id:            r.user_id,
       user_name:          r.full_name,
       session_date:       r.session_date,

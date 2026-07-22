@@ -13,6 +13,16 @@ function StatusBadge({ status }) {
   return <span className="badge">{status || '—'}</span>;
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${dd}/${mm}/${yy}, ${time}`;
+}
+
 export default function StudentAttendancePage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -152,13 +162,13 @@ export default function StudentAttendancePage() {
                             )}
                           </td>
                           <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                            {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                            {formatDate(d.joined_at)}
                           </td>
                           <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
                             {d.total_minutes ? `${Math.round(d.total_minutes)} min` : '—'}
                           </td>
                           <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                            {d.attendance_percentage != null ? `${Math.round(d.attendance_percentage)}%` : '—'}
+                            {d.status === 'ABSENT' || d.attendance_percentage == null ? '—' : `${Math.round(d.attendance_percentage)}%`}
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <StatusBadge status={d.status} />
