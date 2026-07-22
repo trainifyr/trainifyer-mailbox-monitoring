@@ -258,11 +258,7 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res, next) => {
     // 2. Delete all dependent records inside a transaction to avoid FK violations.
     //    Order matters — handle RESTRICT references first, then SET NULL ones.
 
-    // mail_messages: sender_id/receiver_id are ON DELETE RESTRICT — must delete rows
-    await client.query(
-      `DELETE FROM public.mail_messages WHERE sender_id = $1 OR receiver_id = $1`,
-      [id]
-    );
+    // mail_messages: schema updated to ON DELETE SET NULL (automatically handles sender/receiver)
 
     // meetings: created_by is ON DELETE RESTRICT — reassign or delete
     // We delete meetings created by this student that are not yet started/live

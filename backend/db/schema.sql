@@ -83,8 +83,8 @@ CREATE TABLE IF NOT EXISTS public.batch_settings (
 -- 6. mail_messages (database-only mailbox; no attachments per ASSUMPTIONS.md §2)
 CREATE TABLE IF NOT EXISTS public.mail_messages (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  sender_id    uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
-  receiver_id  uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
+  sender_id    uuid NULL REFERENCES public.users(id) ON DELETE SET NULL,
+  receiver_id  uuid NULL REFERENCES public.users(id) ON DELETE SET NULL,
   subject      text NOT NULL,
   body         text NOT NULL,
   is_read            boolean NOT NULL DEFAULT false,

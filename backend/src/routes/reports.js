@@ -128,7 +128,7 @@ router.get('/attendance', async (req, res, next) => {
         FROM meeting_sessions
       ),
 
-      -- Step 3: All batch students (or target student if student role)
+      -- Step 3: All batch students (currently enrolled) PLUS any student who historically attended
       batch_students AS (
         SELECT
           sb.student_id AS user_id,
@@ -141,6 +141,23 @@ router.get('/attendance', async (req, res, next) => {
         WHERE u.role = 'STUDENT'
           ${userFilter  ? `AND sb.student_id = ${userFilter}`  : ''}
           ${batchFilter ? `AND sb.batch_id    = ${batchFilter}` : ''}
+          
+        UNION
+        
+        -- Also include any student who attended a meeting in this batch historically
+        SELECT DISTINCT
+          al.user_id,
+          m.batch_id,
+          b.name AS batch_name,
+          u.full_name
+        FROM public.attendance_logs al
+        JOIN public.meetings m ON m.id = al.meeting_id
+        JOIN public.batches b ON b.id = m.batch_id
+        JOIN public.users u ON u.id = al.user_id
+        WHERE al.user_id IS NOT NULL 
+          AND m.batch_id IS NOT NULL
+          ${userFilter  ? `AND al.user_id = ${userFilter}`  : ''}
+          ${batchFilter ? `AND m.batch_id = ${batchFilter}` : ''}
       ),
 
       -- Step 4: Expected attendance = every (student, session) combination
