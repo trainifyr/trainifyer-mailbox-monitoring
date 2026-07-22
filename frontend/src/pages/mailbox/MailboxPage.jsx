@@ -292,7 +292,7 @@ export default function MailboxPage() {
             </div>
 
             {/* Compose Drawer Page (Notion slide sheet panel) */}
-            <div className={`slide-sheet ${activeView === 'compose' ? 'open' : ''}`}>
+            <div className={`slide-sheet ${activeView === 'compose' ? 'active' : ''}`}>
                <div style={{ padding: '2.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <h3 style={{ fontSize: '1.25rem' }}>New Message</h3>
@@ -339,7 +339,7 @@ export default function MailboxPage() {
             </div>
 
             {/* Message Details Drawer Panel (Notion slide sheet drawer) */}
-            <div className={`slide-sheet ${activeView === 'detail' && selectedMessage ? 'open' : ''}`}>
+            <div className={`slide-sheet ${activeView === 'detail' && selectedMessage ? 'active' : ''}`}>
                {selectedMessage && (
                  <div style={{ padding: '2.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
