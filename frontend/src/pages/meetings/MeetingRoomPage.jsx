@@ -205,7 +205,11 @@ export default function MeetingRoomPage() {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
             TOOLBAR_ALWAYS_VISIBLE: false,
-            TILE_VIEW_MAX_COLUMNS: 4
+            TILE_VIEW_MAX_COLUMNS: 4,
+            MOBILE_APP_PROMO: false,
+            SHOW_CHROME_EXTENSION_BANNER: false,
+            GENERATE_ROOMNAMES_ON_WELCOME_PAGE: false,
+            DEFAULT_BACKGROUND: '#000000'
           }
         };
 
@@ -336,18 +340,7 @@ export default function MeetingRoomPage() {
         <h2>{meeting.title}</h2>
         {heartbeatActive && <span className="heartbeat-indicator"><Activity size={14} /><span className="heartbeat-dot" /></span>}
       </div>
-      <div className="jitsi-wrapper" style={{ 
-        flex: 1, 
-        position: 'relative', 
-        background: '#000', 
-        borderRadius: '12px', 
-        overflow: 'hidden', 
-        minHeight: '400px',
-        maxHeight: '75vh',
-        aspectRatio: '16/9',
-        margin: '0 auto',
-        width: '100%'
-      }}>
+      <div className="jitsi-wrapper">
         {/* Consent overlay — blocks Jitsi until accepted (Students only) */}
         {consentState === 'needed' && !isAdmin && (
           <PrivacyConsentOverlay onAccept={handleAccept} onDecline={() => navigate(-1)} submitting={consentSubmitting} />
