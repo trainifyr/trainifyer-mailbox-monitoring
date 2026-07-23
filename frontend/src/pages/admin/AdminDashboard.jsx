@@ -28,8 +28,9 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       setError(null);
+      const today = new Date().toISOString().slice(0, 10);
       const res = await apiClient.get('/reports/attendance', {
-        params: { granularity: 'daily' }
+        params: { granularity: 'daily', fromDate: today, toDate: today }
       });
       setReport(res.data.data);
     } catch (e) {

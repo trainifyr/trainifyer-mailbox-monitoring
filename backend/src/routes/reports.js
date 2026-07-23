@@ -302,8 +302,8 @@ router.get('/attendance', async (req, res, next) => {
       session_date:       r.session_date,
       joined_at:          r.joined_at || null,
       left_at:            r.left_at   || null,
-      total_minutes:      parseFloat(r.total_minutes)          || 0,
-      attendance_percentage: parseFloat(r.attendance_percentage) || 0,
+      total_minutes:      r.total_minutes !== null ? parseFloat(r.total_minutes) : null,
+      attendance_percentage: r.attendance_percentage !== null ? parseFloat(r.attendance_percentage) : null,
       status:             r.status
     }));
 
@@ -609,16 +609,18 @@ router.get('/attendance/student/:id', async (req, res, next) => {
     let sum_percentages = 0;
 
     const details = rows.map(r => {
-      const percentage = r.attendance_percentage ? parseFloat(r.attendance_percentage) : 0.00;
-      const duration = r.total_minutes ? parseFloat(r.total_minutes) : 0.00;
+      const percentage = r.attendance_percentage !== null ? parseFloat(r.attendance_percentage) : null;
+      const duration = r.total_minutes !== null ? parseFloat(r.total_minutes) : null;
       
       let status = 'ABSENT';
       const hasLog = r.attendance_log_id && !String(r.attendance_log_id).startsWith('implicit-');
       
       if (hasLog) {
-        if (r.status === 'ACTIVE') {
+        const isPastDay = new Date(r.session_date).toISOString().slice(0, 10) < new Date().toISOString().slice(0, 10);
+        
+        if (r.status === 'ACTIVE' && !isPastDay) {
           status = 'ACTIVE';
-        } else if (percentage >= 90) {
+        } else if (percentage !== null && percentage >= 90) {
           status = 'PRESENT';
         } else {
           status = 'PARTIAL'; // if they have a log, they joined (even if 0 minutes), so they are not ABSENT.
