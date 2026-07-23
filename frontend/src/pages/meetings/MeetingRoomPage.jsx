@@ -12,7 +12,7 @@ const HEARTBEAT_INTERVAL_MS = 60000;
 export default function MeetingRoomPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, userId, isAdmin } = useAuth();
+  const { isAuthenticated, userId, isAdmin, user } = useAuth();
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
@@ -152,12 +152,17 @@ export default function MeetingRoomPage() {
         const JitsiAPI = await loadJitsiScript();
         if (cancelled) return;
 
-        let userDisplayName = isAdmin ? 'Instructor' : 'Student';
-        try {
-          const res = await apiClient.get('/users/students');
-          const u = res.data.data.find((s) => s.id === userId);
-          if (u) userDisplayName = u.full_name;
-        } catch (e) {}
+        // For admins, use the name from AuthContext directly
+        if (isAdmin) {
+          userDisplayName = user?.full_name || 'Admin';
+        } else {
+          // For students, fetch their name from the users list
+          try {
+            const res = await apiClient.get('/users/students');
+            const u = res.data.data.find((s) => s.id === userId);
+            if (u) userDisplayName = u.full_name;
+          } catch (e) {}
+        }
 
         // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
         const domain = 'meet.systemli.org'; 
