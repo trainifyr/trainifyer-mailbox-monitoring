@@ -152,6 +152,8 @@ export default function MeetingRoomPage() {
         const JitsiAPI = await loadJitsiScript();
         if (cancelled) return;
 
+        let userDisplayName = 'Student';
+
         // For admins, use the name from AuthContext directly
         if (isAdmin) {
           userDisplayName = user?.full_name || 'Admin';
@@ -231,6 +233,7 @@ export default function MeetingRoomPage() {
         await sendJoinLog();
         jitsiApi.addListener('readyToClose', () => { sendLeaveLog(); navigate(-1); });
       } catch (e) {
+        console.error('Failed to initialize Jitsi meeting room:', e);
         if (!cancelled) setJitsiLoading(false);
       }
     }
