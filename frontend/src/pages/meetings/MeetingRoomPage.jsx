@@ -192,10 +192,14 @@ export default function MeetingRoomPage() {
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
             
-            // Restrict moderator buttons if the user is a student
+            disable1On1Mode: true,
+            hideConferenceSubject: true, // We have our own title bar
+            hideConferenceTimer: true,
+            
+            // Restrict moderator buttons if the user is a student (Removed 'tileview' to lock layout)
             toolbarButtons: isAdmin
-              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'fullscreen'],
+              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
+              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'hangup', 'fullscreen'],
             
             // Mute/Kick overrides
             remoteVideoMenu: {
@@ -211,6 +215,12 @@ export default function MeetingRoomPage() {
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_BRAND_WATERMARK: false,
+            SHOW_POWERED_BY: false,
+            HIDE_INVITE_MORE_HEADER: true,
+            CONNECTION_INDICATOR_DISABLED: true,
+            VIDEO_QUALITY_LABEL_DISABLED: true,
+            DISABLE_DOMINANT_SPEAKER_INDICATOR: true,
             TOOLBAR_ALWAYS_VISIBLE: false,
             TILE_VIEW_MAX_COLUMNS: 4,
             MOBILE_APP_PROMO: false,
@@ -231,6 +241,12 @@ export default function MeetingRoomPage() {
 
         setJitsiLoading(false);
         await sendJoinLog();
+        
+        // Force Google Meet style grid view immediately upon entering the call
+        jitsiApi.addListener('videoConferenceJoined', () => {
+          jitsiApi.executeCommand('setTileView', true);
+        });
+
         jitsiApi.addListener('readyToClose', () => { sendLeaveLog(); navigate(-1); });
       } catch (e) {
         console.error('Failed to initialize Jitsi meeting room:', e);
