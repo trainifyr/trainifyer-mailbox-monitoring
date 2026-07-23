@@ -186,7 +186,13 @@ router.get('/attendance', async (req, res, next) => {
           DATE(al.joined_at) AS log_date,
           MIN(al.joined_at)  AS joined_at,
           MAX(al.left_at)    AS left_at,
-          SUM(al.total_minutes) AS total_minutes,
+          SUM(
+            al.total_minutes + 
+            CASE 
+              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (NOW() - al.joined_at))/60.0 
+              ELSE 0 
+            END
+          ) AS total_minutes,
           AVG(al.attendance_percentage)::numeric(6,2) AS attendance_percentage,
           -- If any session segment is ACTIVE it's still live; otherwise use best segment status
           MAX(al.status::text)::public.attendance_status AS raw_status
@@ -225,7 +231,7 @@ router.get('/attendance', async (req, res, next) => {
 
       SELECT *
       FROM resolved
-      WHERE status IS DISTINCT FROM 'ACTIVE'
+      WHERE 1=1
         ${statusFilter ? `AND status = ${statusFilter}` : ''}
     `;
 
@@ -245,8 +251,8 @@ router.get('/attendance', async (req, res, next) => {
       total_minutes += parseFloat(r.total_minutes) || 0;
       sum_pct       += parseFloat(r.attendance_percentage) || 0;
       if (r.status === 'PRESENT')  present_count++;
-      else if (r.status === 'PARTIAL') partial_count++;
-      else absent_count++;
+      else if (r.status === 'PARTIAL' || r.status === 'ACTIVE') partial_count++;
+      else if (r.status === 'ABSENT') absent_count++;
     }
     const average_percentage = total_sessions > 0 ? sum_pct / total_sessions : 0;
 
@@ -273,8 +279,8 @@ router.get('/attendance', async (req, res, next) => {
       b.total_minutes += parseFloat(r.total_minutes) || 0;
       b.sum_pct       += parseFloat(r.attendance_percentage) || 0;
       if (r.status === 'PRESENT')  b.present_count++;
-      else if (r.status === 'PARTIAL') b.partial_count++;
-      else b.absent_count++;
+      else if (r.status === 'PARTIAL' || r.status === 'ACTIVE') b.partial_count++;
+      else if (r.status === 'ABSENT') b.absent_count++;
     }
 
     const series = Object.values(buckets)
@@ -300,7 +306,7 @@ router.get('/attendance', async (req, res, next) => {
       user_id:            r.user_id,
       user_name:          r.full_name,
       session_date:       r.session_date,
-      joined_at:          r.joined_at || null,
+      joined_at:          r.joined_at || r.session_timestamp || null,
       left_at:            r.left_at   || null,
       total_minutes:      r.total_minutes !== null ? parseFloat(r.total_minutes) : null,
       attendance_percentage: r.attendance_percentage !== null ? parseFloat(r.attendance_percentage) : null,
@@ -368,8 +374,6 @@ router.get('/attendance/csv', async (req, res, next) => {
     const params = [];
     let paramIndex = 0;
 
-    conditions.push(`al.left_at IS NOT NULL`);
-    conditions.push(`al.status IS DISTINCT FROM 'ACTIVE'`);
     // Exclude admin/instructor users — their logs are only used for real-time lobby presence
     conditions.push(`NOT EXISTS (SELECT 1 FROM public.users u2 WHERE u2.id = al.user_id AND u2.role = 'ADMIN')`);
 
