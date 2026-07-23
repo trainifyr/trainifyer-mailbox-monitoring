@@ -181,6 +181,7 @@ export default function MeetingRoomPage() {
             screenSharingEnabled: true,
             disableDeepLinking: true,
             disableProfile: true,
+            disableSpeakerStats: true,
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
             
