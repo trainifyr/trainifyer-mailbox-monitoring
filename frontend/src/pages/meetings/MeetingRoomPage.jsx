@@ -192,7 +192,6 @@ export default function MeetingRoomPage() {
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
             
-            disable1On1Mode: true,
             hideConferenceSubject: true, // We have our own title bar
             hideConferenceTimer: true,
             
