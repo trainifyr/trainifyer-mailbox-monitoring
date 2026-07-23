@@ -172,19 +172,39 @@ export default function MeetingRoomPage() {
           configOverwrite: {
             defaultLanguage: 'en',
             startWithAudioMuted: true,
+            startWithVideoMuted: true,
             prejoinPageEnabled: false,
             disableModeratorIndicator: true,
             enableWelcomePage: false,
             enableLobby: false,
             requireDisplayName: false,
             screenSharingEnabled: true,
-            desktopSharingChromeDisabled: false,
-            desktopSharingFirefoxDisabled: false
+            disableDeepLinking: true,
+            disableProfile: true,
+            // Google Meet gallery feel
+            disableLocalVideoFlip: true,
+            
+            // Restrict moderator buttons if the user is a student
+            toolbarButtons: isAdmin
+              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
+              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'fullscreen'],
+            
+            // Mute/Kick overrides
+            remoteVideoMenu: {
+              disableKick: !isAdmin,
+              disableGrantModerator: true
+            },
+            participantsPane: {
+              hideModeratorSettingsTab: !isAdmin,
+              hideMoreActionsButton: !isAdmin,
+              hideMuteAllButton: !isAdmin
+            }
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
-            TOOLBAR_ALWAYS_VISIBLE: true
+            TOOLBAR_ALWAYS_VISIBLE: true,
+            TILE_VIEW_MAX_COLUMNS: 4
           }
         };
 
