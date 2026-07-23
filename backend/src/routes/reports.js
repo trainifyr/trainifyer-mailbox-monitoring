@@ -189,7 +189,7 @@ router.get('/attendance', async (req, res, next) => {
           SUM(
             al.total_minutes + 
             CASE 
-              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (NOW() - al.joined_at))/60.0 
+              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (COALESCE(al.last_heartbeat, al.joined_at) - al.joined_at))/60.0 
               ELSE 0 
             END
           ) AS total_minutes,
