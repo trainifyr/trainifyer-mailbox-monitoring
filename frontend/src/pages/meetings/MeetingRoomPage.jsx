@@ -196,10 +196,10 @@ export default function MeetingRoomPage() {
             hideConferenceSubject: true, // We have our own title bar
             hideConferenceTimer: true,
             
-            // Restrict moderator buttons if the user is a student (Removed 'tileview' to lock layout)
+            // Restrict moderator buttons if the user is a student
             toolbarButtons: isAdmin
-              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'hangup', 'fullscreen'],
+              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
+              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'fullscreen'],
             
             // Mute/Kick overrides
             remoteVideoMenu: {
