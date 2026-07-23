@@ -204,7 +204,7 @@ export default function MeetingRoomPage() {
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
-            TOOLBAR_ALWAYS_VISIBLE: true,
+            TOOLBAR_ALWAYS_VISIBLE: false,
             TILE_VIEW_MAX_COLUMNS: 4
           }
         };
