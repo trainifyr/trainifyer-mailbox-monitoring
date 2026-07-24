@@ -58,7 +58,9 @@ router.post('/join-log', async (req, res, next) => {
 
     // Verify the meeting exists
     const { rows: meetingRows } = await pool.query(
-      `SELECT id, status, is_public, batch_id, is_recurring FROM public.meetings WHERE id = $1`,
+      `SELECT id, status, is_public, batch_id, is_recurring,
+              scheduled_end, recur_end_time, recur_start_time
+       FROM public.meetings WHERE id = $1`,
       [id]
     );
     if (meetingRows.length === 0) {
@@ -77,6 +79,32 @@ router.post('/join-log', async (req, res, next) => {
         error: 'Gone',
         message: `This meeting has been ${meeting.status.toLowerCase()} and cannot be joined`
       });
+    }
+
+    // --- Time-window guard: block new joins after meeting end time ---
+    const now = new Date();
+    if (!req.user?.isAdmin) { // Admins can always join
+      if (!meeting.is_recurring && meeting.scheduled_end) {
+        // One-off meeting: block after scheduled_end
+        if (now > new Date(meeting.scheduled_end)) {
+          return res.status(403).json({
+            error: 'Forbidden',
+            message: 'This meeting has already ended. New joins are not allowed.'
+          });
+        }
+      } else if (meeting.is_recurring && meeting.recur_end_time) {
+        // Recurring meeting: block after recur_end_time for today
+        const [endH, endM] = meeting.recur_end_time.split(':').map(Number);
+        const todayEnd = new Date();
+        todayEnd.setHours(endH, endM, 0, 0);
+        if (now > todayEnd) {
+          const [startH, startM] = (meeting.recur_start_time || '00:00').split(':').map(Number);
+          return res.status(403).json({
+            error: 'Forbidden',
+            message: `Today's session has ended. You can rejoin tomorrow from ${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}.`
+          });
+        }
+      }
     }
 
     // For recurring meetings: look up existing row scoped to TODAY only (fresh record each day).

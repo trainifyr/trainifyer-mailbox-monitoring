@@ -298,6 +298,30 @@ export default function MeetingRoomPage() {
       participantsText = `${activeParticipants[0].name}, ${activeParticipants[1].name}, ${activeParticipants[2].name} and ${remaining} more are in this call`;
     }
 
+    // Block students from joining after the meeting's end time
+    const now = new Date();
+    let isSessionEnded = false;
+    let sessionEndedMsg = 'This session has already ended for today.';
+    if (!isAdmin) {
+      if (meeting.is_recurring && meeting.recur_end_time) {
+        const [endH, endM] = meeting.recur_end_time.split(':').map(Number);
+        const todayEnd = new Date();
+        todayEnd.setHours(endH, endM, 0, 0);
+        if (now > todayEnd) {
+          isSessionEnded = true;
+          if (meeting.recur_start_time) {
+            const [sh, sm] = meeting.recur_start_time.split(':').map(Number);
+            sessionEndedMsg = `Today's session has ended. See you tomorrow from ${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}.`;
+          }
+        }
+      } else if (!meeting.is_recurring && meeting.scheduled_end) {
+        if (now > new Date(meeting.scheduled_end)) {
+          isSessionEnded = true;
+          sessionEndedMsg = 'This meeting has already ended.';
+        }
+      }
+    }
+
     return (
       <div className="meeting-room-page animate-fade-in">
         <div className="meeting-room-header">
@@ -346,9 +370,16 @@ export default function MeetingRoomPage() {
             </div>
 
             <div className="lobby-actions">
-              <button className="lobby-join-btn" onClick={() => setHasJoined(true)}>
-                Join Meeting
-              </button>
+              {isSessionEnded ? (
+                <div className="session-ended-notice">
+                  <span>🔒</span>
+                  <p>{sessionEndedMsg}</p>
+                </div>
+              ) : (
+                <button className="lobby-join-btn" onClick={() => setHasJoined(true)}>
+                  Join Meeting
+                </button>
+              )}
             </div>
           </div>
         </div>
