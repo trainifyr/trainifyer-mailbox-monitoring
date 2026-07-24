@@ -198,7 +198,7 @@ export default function MeetingRoomPage() {
             // Restrict moderator buttons if the user is a student
             toolbarButtons: isAdmin
               ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'fullscreen'],
+              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'settings', 'fullscreen'],
             
             // Mute/Kick overrides
             remoteVideoMenu: {
@@ -209,13 +209,22 @@ export default function MeetingRoomPage() {
               hideModeratorSettingsTab: !isAdmin,
               hideMoreActionsButton: !isAdmin,
               hideMuteAllButton: !isAdmin
-            }
+            },
+            breakoutRooms: {
+              hideAddRoomButton: true
+            },
+            customLogoUrl: '',
+            dynamicBrandingUrl: ''
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
             SHOW_BRAND_WATERMARK: false,
             SHOW_POWERED_BY: false,
+            DEFAULT_LOGO_URL: '',
+            DEFAULT_WELCOME_PAGE_LOGO_URL: '',
+            JITSI_WATERMARK_LINK: '',
+            BRAND_WATERMARK_LINK: '',
             HIDE_INVITE_MORE_HEADER: true,
             CONNECTION_INDICATOR_DISABLED: true,
             VIDEO_QUALITY_LABEL_DISABLED: true,
