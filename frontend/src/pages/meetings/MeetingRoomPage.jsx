@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
+import { supabase } from '../../lib/supabaseClient';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
 import { ArrowLeft, Loader, Activity, VideoOff, MicOff, Settings } from 'lucide-react';
@@ -18,6 +19,13 @@ export default function MeetingRoomPage() {
   const heartbeatIntervalRef = useRef(null);
   const sessionEndedRef = useRef(false);
   const attendanceLogIdRef = useRef(null);
+  const defaultAuthTokenRef = useRef(null); // synchronous token access for beforeunload
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) defaultAuthTokenRef.current = session.access_token;
+    });
+  }, []);
 
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,8 +48,27 @@ export default function MeetingRoomPage() {
     // Only send leave-log if we have an active attendance session
     if (!attendanceLogIdRef.current) return;
     
-    try { await apiClient.post(`/meetings/${id}/leave-log`); } catch (e) {}
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      fetch(`${apiUrl}/meetings/${id}/leave-log`, {
+        method: 'POST',
+        keepalive: true,
+        headers: defaultAuthTokenRef.current ? { 'Authorization': `Bearer ${defaultAuthTokenRef.current}` } : {}
+      });
+    } catch (e) {
+      console.error('Failed to dispatch keepalive leave log:', e);
+    }
   }, [id]);
+
+  useEffect(() => {
+    const handleUnload = () => sendLeaveLog();
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('unload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('unload', handleUnload);
+    };
+  }, [sendLeaveLog]);
 
   const startHeartbeat = useCallback(() => {
     const ping = async () => {
@@ -253,9 +280,6 @@ export default function MeetingRoomPage() {
         await sendJoinLog();
         
         // Force Google Meet style grid view immediately upon entering the call
-        jitsiApi.addListener('videoConferenceJoined', () => {
-          jitsiApi.executeCommand('setTileView', true);
-        });
 
         jitsiApi.addListener('videoConferenceJoined', () => {
           setIsInConference(true);
