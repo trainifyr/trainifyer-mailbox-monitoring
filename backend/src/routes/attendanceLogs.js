@@ -83,7 +83,8 @@ router.post('/join-log', async (req, res, next) => {
 
     // --- Time-window guard: block new joins after meeting end time ---
     const now = new Date();
-    if (!req.user?.isAdmin) { // Admins can always join
+    const callerIsAdmin = req.user?.role === 'ADMIN';
+    if (!callerIsAdmin) { // Admins can always join
       if (!meeting.is_recurring && meeting.scheduled_end) {
         // One-off meeting: block after scheduled_end
         if (now > new Date(meeting.scheduled_end)) {
@@ -293,7 +294,7 @@ router.post('/leave-log', async (req, res, next) => {
     
     // Add current session minutes to existing accumulated total_minutes
     const priorMinutes = parseFloat(attendanceRow.total_minutes) || 0;
-    const totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
+    let totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
 
     let attendancePercentage = null;
     let status = 'PARTIAL'; // default: joined but no scheduled_end → PARTIAL
@@ -304,7 +305,10 @@ router.post('/leave-log', async (req, res, next) => {
       const scheduledEnd = new Date(attendanceRow.scheduled_end);
       const meetingDurationMs = scheduledEnd - scheduledStart;
       if (meetingDurationMs > 0) {
-        attendancePercentage = Math.round((totalMinutes * 60000 / meetingDurationMs) * 100 * 100) / 100;
+        const meetingDurationMin = meetingDurationMs / 60000;
+        // Cap minutes at the actual meeting duration
+        totalMinutes = Math.min(totalMinutes, meetingDurationMin);
+        attendancePercentage = Math.round((totalMinutes / meetingDurationMin) * 100 * 100) / 100;
         if (attendancePercentage > 100) attendancePercentage = 100;
         status = computeAttendanceStatus(attendancePercentage, true);
       }
@@ -318,6 +322,8 @@ router.post('/leave-log', async (req, res, next) => {
         const [eh, em] = recurRows[0].recur_end_time.split(':').map(Number);
         const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
         if (recurDurMin > 0) {
+          // Cap minutes at the actual meeting duration
+          totalMinutes = Math.min(totalMinutes, recurDurMin);
           attendancePercentage = Math.min(100, Math.round((totalMinutes / recurDurMin) * 100 * 100) / 100);
           status = computeAttendanceStatus(attendancePercentage, true);
         }

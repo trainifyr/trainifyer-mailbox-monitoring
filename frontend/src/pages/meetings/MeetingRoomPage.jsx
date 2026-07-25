@@ -406,7 +406,7 @@ export default function MeetingRoomPage() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /></span>}
-          <button className="btn btn-leave-meeting" onClick={() => navigate(-1)}>Leave Meeting</button>
+          <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
         </div>
       </div>
       <div className="jitsi-wrapper">
