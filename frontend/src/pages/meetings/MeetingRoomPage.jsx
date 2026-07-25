@@ -27,6 +27,7 @@ export default function MeetingRoomPage() {
   const [jitsiLoading, setJitsiLoading] = useState(true);
   const [heartbeatActive, setHeartbeatActive] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const [isInConference, setIsInConference] = useState(false); // true only after Jitsi pre-join complete
   const [activeParticipants, setActiveParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(true);
 
@@ -256,7 +257,11 @@ export default function MeetingRoomPage() {
           jitsiApi.executeCommand('setTileView', true);
         });
 
-        jitsiApi.addListener('readyToClose', () => { sendLeaveLog(); navigate(-1); });
+        jitsiApi.addListener('videoConferenceJoined', () => {
+          setIsInConference(true);
+          jitsiApi.executeCommand('setTileView', true);
+        });
+        jitsiApi.addListener('readyToClose', () => { setIsInConference(false); sendLeaveLog(); navigate(-1); });
       } catch (e) {
         console.error('Failed to initialize Jitsi meeting room:', e);
         if (!cancelled) setJitsiLoading(false);
@@ -406,7 +411,7 @@ export default function MeetingRoomPage() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /></span>}
-          {!isAdmin && !jitsiLoading && (
+          {!isAdmin && isInConference && (
             <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
           )}
         </div>
