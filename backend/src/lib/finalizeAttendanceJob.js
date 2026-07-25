@@ -25,45 +25,76 @@ function startFinalizeAttendanceJob() {
           al.id,
           al.joined_at,
           al.total_minutes,
+          al.last_heartbeat,
           m.scheduled_start,
           m.scheduled_end,
+          m.is_recurring,
+          m.recur_start_time,
+          m.recur_end_time,
           m.id AS meeting_id
         FROM public.attendance_logs al
         JOIN public.meetings m ON m.id = al.meeting_id
         WHERE al.status = 'ACTIVE'
           AND al.left_at IS NULL
-          AND m.scheduled_end IS NOT NULL
-          AND m.scheduled_end < NOW()
+          AND (
+            (m.is_recurring = false AND m.scheduled_end IS NOT NULL AND m.scheduled_end < NOW())
+            OR (m.is_recurring = true AND m.recur_end_time IS NOT NULL AND (CURRENT_DATE + m.recur_end_time::time) < NOW())
+            OR (al.last_heartbeat IS NULL OR al.last_heartbeat < NOW() - interval '5 minutes')
+          )
       `);
 
       if (staleLogs.length === 0) return;
 
       console.log(`[AUTO-FINALIZE] Found ${staleLogs.length} stale ACTIVE log(s) to finalize.`);
 
-      for (const log of staleLogs) {
-        // Use scheduled_end as the effective leave time (not "now")
-        const leftAt = new Date(log.scheduled_end);
-        const joinedAt = new Date(log.joined_at);
+      const now = new Date();
 
+      for (const log of staleLogs) {
+        // Determine the fairest left_at time
+        let leftAt;
+        if (log.last_heartbeat && new Date(log.last_heartbeat) < new Date(now.getTime() - 5 * 60000)) {
+          leftAt = new Date(log.last_heartbeat);
+        } else if (log.is_recurring) {
+          const [h, m] = log.recur_end_time.split(':').map(Number);
+          leftAt = new Date();
+          leftAt.setHours(h, m, 0, 0);
+        } else if (log.scheduled_end) {
+          leftAt = new Date(log.scheduled_end);
+        } else {
+          leftAt = log.last_heartbeat ? new Date(log.last_heartbeat) : new Date(log.joined_at);
+        }
+
+        const joinedAt = new Date(log.joined_at);
         const sessionMs = leftAt - joinedAt;
-        const sessionMinutes = sessionMs / 60000;
+        const sessionMinutes = Math.max(0, sessionMs / 60000);
 
         const priorMinutes = parseFloat(log.total_minutes) || 0;
-        const totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
+        let totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
 
         let attendancePercentage = null;
         let status = 'PARTIAL'; // default: joined but no way to compute percentage
 
-        if (log.scheduled_start && log.scheduled_end) {
+        if (log.is_recurring && log.recur_start_time && log.recur_end_time) {
+          const [sh, sm] = log.recur_start_time.split(':').map(Number);
+          const [eh, em] = log.recur_end_time.split(':').map(Number);
+          const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
+          
+          if (recurDurMin > 0) {
+            totalMinutes = Math.min(totalMinutes, recurDurMin); // Cap at max duration
+            attendancePercentage = Math.min(100, Math.round((totalMinutes / recurDurMin) * 100 * 100) / 100);
+            status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
+          }
+        } else if (log.scheduled_start && log.scheduled_end) {
           const scheduledStart = new Date(log.scheduled_start);
           const scheduledEnd = new Date(log.scheduled_end);
           const meetingDurationMs = scheduledEnd - scheduledStart;
 
           if (meetingDurationMs > 0) {
-            attendancePercentage =
-              Math.round((totalMinutes * 60000 / meetingDurationMs) * 100 * 100) / 100;
+            const meetingDurationMin = meetingDurationMs / 60000;
+            totalMinutes = Math.min(totalMinutes, meetingDurationMin); // Cap at max duration
+            attendancePercentage = Math.round((totalMinutes / meetingDurationMin) * 100 * 100) / 100;
             if (attendancePercentage > 100) attendancePercentage = 100;
-            status = attendancePercentage >= THRESHOLD_PRESENT * 100 ? 'PRESENT' : 'PARTIAL';
+            status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
           }
         }
 
