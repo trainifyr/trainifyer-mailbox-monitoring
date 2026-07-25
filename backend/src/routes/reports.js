@@ -224,7 +224,7 @@ router.get('/attendance', async (req, res, next) => {
           CASE
             WHEN a.user_id IS NULL                          THEN 'ABSENT'
             WHEN a.raw_status = 'ACTIVE'                    THEN 'ACTIVE'
-            WHEN COALESCE(a.attendance_percentage, 0) >= 90 THEN 'PRESENT'
+            WHEN COALESCE(a.attendance_percentage, 0) >= 75 THEN 'PRESENT'
             ELSE                                                 'PARTIAL'
           END AS status
         FROM expected e
