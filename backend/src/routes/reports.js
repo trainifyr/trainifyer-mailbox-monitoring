@@ -195,7 +195,12 @@ router.get('/attendance', async (req, res, next) => {
           ) AS total_minutes,
           AVG(al.attendance_percentage)::numeric(6,2) AS attendance_percentage,
           -- If any session segment is ACTIVE it's still live; otherwise use best segment status
-          MAX(al.status::text)::public.attendance_status AS raw_status
+          (CASE 
+            WHEN COUNT(CASE WHEN al.status = 'ACTIVE' THEN 1 END) > 0 THEN 'ACTIVE'
+            WHEN COUNT(CASE WHEN al.status = 'PRESENT' THEN 1 END) > 0 THEN 'PRESENT'
+            WHEN COUNT(CASE WHEN al.status = 'PARTIAL' THEN 1 END) > 0 THEN 'PARTIAL'
+            ELSE 'ABSENT'
+          END)::public.attendance_status AS raw_status
         FROM public.attendance_logs al
         WHERE al.user_id IS NOT NULL
         GROUP BY al.meeting_id, al.user_id, DATE(al.joined_at)
