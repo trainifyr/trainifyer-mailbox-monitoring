@@ -277,13 +277,14 @@ export default function MeetingRoomPage() {
         }
 
         setJitsiLoading(false);
-        await sendJoinLog();
         
         // Force Google Meet style grid view immediately upon entering the call
-
-        jitsiApi.addListener('videoConferenceJoined', () => {
+        jitsiApi.addListener('videoConferenceJoined', async () => {
           setIsInConference(true);
           jitsiApi.executeCommand('setTileView', true);
+          if (!attendanceLogIdRef.current) {
+            await sendJoinLog();
+          }
         });
         jitsiApi.addListener('readyToClose', () => { setIsInConference(false); sendLeaveLog(); navigate(-1); });
       } catch (e) {
