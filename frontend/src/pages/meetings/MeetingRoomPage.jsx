@@ -196,9 +196,10 @@ export default function MeetingRoomPage() {
             hideConferenceTimer: true,
             
             // Restrict moderator buttons if the user is a student
+            // For security, students MUST NOT have 'hangup' in their toolbar, to prevent phantom "End meeting for all"
             toolbarButtons: isAdmin
               ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'settings', 'fullscreen'],
+              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'],
             
             // Mute/Kick overrides
             remoteVideoMenu: {
@@ -399,9 +400,14 @@ export default function MeetingRoomPage() {
   return (
     <div className="meeting-room-page">
       <div className="meeting-room-header">
-        <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
-        <h2>{meeting.title}</h2>
-        {heartbeatActive && <span className="heartbeat-indicator"><Activity size={14} /><span className="heartbeat-dot" /></span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
+          <h2>{meeting.title}</h2>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /></span>}
+          <button className="btn btn-leave-meeting" onClick={() => navigate(-1)}>Leave Meeting</button>
+        </div>
       </div>
       <div className="jitsi-wrapper">
         {/* Consent overlay — blocks Jitsi until accepted (Students only) */}

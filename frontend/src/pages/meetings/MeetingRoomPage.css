@@ -361,6 +361,29 @@
 }
 
 /* Shown in the lobby when the session time has passed */
+/* Custom secure Leave button in the header (used when native hangup is removed for students) */
+.btn-leave-meeting {
+  padding: 0.45rem 1.1rem;
+  border-radius: 20px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-leave-meeting:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-leave-meeting:active {
+  transform: translateY(0);
+}
+
+/* Shown in the lobby when the session time has passed */
 .session-ended-notice {
   display: flex;
   flex-direction: column;
