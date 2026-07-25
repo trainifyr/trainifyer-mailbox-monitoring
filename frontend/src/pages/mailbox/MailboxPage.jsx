@@ -40,7 +40,7 @@ export default function MailboxPage() {
   const [userSuggestions, setUserSuggestions] = useState([]);
 
   // Compose Message state
-  const [composeForm, setComposeForm] = useState({ receiverEmail: '', subject: '', body: '' });
+  const [composeForm, setComposeForm] = useState({ receiverEmail: '', receiverId: null, subject: '', body: '' });
   const [composeSending, setComposeSending] = useState(false);
   const [composeSuccess, setComposeSuccess] = useState(false);
   const [composeError, setComposeError] = useState(null);
@@ -74,12 +74,16 @@ export default function MailboxPage() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchInbox(inboxPage);
+      const interval = setInterval(() => fetchInbox(inboxPage), 15000);
+      return () => clearInterval(interval);
     }
   }, [fetchInbox, inboxPage, isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchSent(sentPage);
+      const interval = setInterval(() => fetchSent(sentPage), 15000);
+      return () => clearInterval(interval);
     }
   }, [fetchSent, sentPage, isAuthenticated]);
 
@@ -142,7 +146,7 @@ export default function MailboxPage() {
 
   const handleReceiverEmailChange = async (e) => {
     const val = e.target.value;
-    setComposeForm(prev => ({ ...prev, receiverEmail: val }));
+    setComposeForm(prev => ({ ...prev, receiverEmail: val, receiverId: null })); // clear id if they type manually
     if (val.length < 2) { setUserSuggestions([]); return; }
     try {
       setSuggestionsLoading(true);
@@ -155,15 +159,17 @@ export default function MailboxPage() {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    if (!composeForm.receiverId) {
+      setComposeError('Please select a recipient from the dropdown suggestions.');
+      return;
+    }
     try {
       setComposeSending(true);
       setComposeError(null);
-      const res = await apiClient.get('/users/students/directory');
-      const found = res.data.data.find(u => u.email.toLowerCase() === composeForm.receiverEmail.trim().toLowerCase());
-      if (!found) { setComposeError(`No user found with email "${composeForm.receiverEmail}".`); return; }
-      await apiClient.post('/mail/send', { receiverId: found.id, subject: composeForm.subject, body: composeForm.body });
+      await apiClient.post('/mail/send', { receiverId: composeForm.receiverId, subject: composeForm.subject, body: composeForm.body });
       setComposeSuccess(true);
-      setComposeForm({ receiverEmail: '', subject: '', body: '' });
+      setComposeForm({ receiverEmail: '', receiverId: null, subject: '', body: '' });
+      fetchSent(sentPage); // refresh immediately
     } catch (e) {
       setComposeError(e.response?.data?.message || e.message);
     } finally {
@@ -314,7 +320,7 @@ export default function MailboxPage() {
                              {userSuggestions.length > 0 && (
                                <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: '4px', padding: '4px' }}>
                                  {userSuggestions.map(u => (
-                                   <div key={u.id} onClick={() => setComposeForm(p => ({...p, receiverEmail: u.email}))} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={e => e.target.style.background = 'var(--border-light)'} onMouseLeave={e => e.target.style.background = 'transparent'}>
+                                   <div key={u.id} onClick={() => setComposeForm(p => ({...p, receiverEmail: `${u.full_name} <${u.email}>`, receiverId: u.id}))} onMouseDown={(e) => e.preventDefault()} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '6px' }} onMouseEnter={e => e.target.style.background = 'var(--border-light)'} onMouseLeave={e => e.target.style.background = 'transparent'}>
                                       <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{u.full_name}</div>
                                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
                                    </div>

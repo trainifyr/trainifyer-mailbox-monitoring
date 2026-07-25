@@ -175,7 +175,7 @@ export default function StudentDashboard() {
                         <tr key={d.attendance_log_id}>
                           <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
                           <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                            {d.joined_at ? new Date(d.joined_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                            {d.joined_at ? new Date(d.joined_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '—'}
                           </td>
                           <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
                             {d.total_minutes != null ? `${Math.round(d.total_minutes)}m` : '—'}
