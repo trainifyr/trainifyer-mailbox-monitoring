@@ -217,6 +217,15 @@ export default function MeetingRoomPage() {
             disableDeepLinking: true,
             disableProfile: true,
             disableSpeakerStats: true,
+            
+            // Limit bandwidth payload to stop public instances from dropping connection
+            resolution: 360,
+            constraints: {
+              video: {
+                height: { ideal: 360, max: 360, min: 180 }
+              }
+            },
+            
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
             
@@ -286,7 +295,21 @@ export default function MeetingRoomPage() {
             await sendJoinLog();
           }
         });
-        jitsiApi.addListener('readyToClose', () => { setIsInConference(false); sendLeaveLog(); navigate(-1); });
+
+        // Intercept silent kicks or packet-loss drops and silently resurrect the connection
+        jitsiApi.addListener('readyToClose', () => { 
+          setIsInConference(false); 
+          if (sessionEndedRef.current) {
+            navigate(-1);
+          } else {
+            console.warn('[Network] Jitsi unexpectedly dropped. Attempting auto-reconnect in 3s...');
+            setJitsiLoading(true);
+            jitsiApiRef.current?.dispose();
+            setTimeout(() => {
+              if (!cancelled) initJitsi();
+            }, 3000);
+          }
+        });
       } catch (e) {
         console.error('Failed to initialize Jitsi meeting room:', e);
         if (!cancelled) setJitsiLoading(false);
