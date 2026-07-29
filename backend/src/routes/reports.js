@@ -238,6 +238,7 @@ router.get('/attendance', async (req, res, next) => {
       FROM resolved
       WHERE 1=1
         ${statusFilter ? `AND status = ${statusFilter}` : ''}
+      ORDER BY session_timestamp DESC, meeting_title ASC
     `;
 
     const allRows = (await pool.query(cteQuery, params)).rows;
