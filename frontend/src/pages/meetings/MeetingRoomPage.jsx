@@ -155,6 +155,7 @@ export default function MeetingRoomPage() {
               uniqueParticipants.push(p);
             }
           }
+          uniqueParticipants.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
           setActiveParticipants(uniqueParticipants);
           setParticipantsLoading(false);
         }

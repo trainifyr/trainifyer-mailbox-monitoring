@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../api/client';
 import { 
   LogOut, 
   User, 
@@ -17,6 +18,23 @@ export default function Layout() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [hasUnreadMail, setHasUnreadMail] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    const fetchUnread = async () => {
+      try {
+        const res = await apiClient.get('/mail/inbox', { params: { limit: 10 } });
+        if (!cancelled && res.data.data) {
+          setHasUnreadMail(res.data.data.some((m) => !m.is_read));
+        }
+      } catch (e) {}
+    };
+    fetchUnread();
+    const int = setInterval(fetchUnread, 30000);
+    return () => { cancelled = true; clearInterval(int); };
+  }, [isAuthenticated, location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -29,9 +47,17 @@ export default function Layout() {
 
   const isActive = (path) => location.pathname === path;
 
-  const NavLink = ({ to, icon: Icon, children }) => (
+  const NavLink = ({ to, icon: Icon, children, hasBadge }) => (
     <Link to={to} className={`nav-link ${isActive(to) ? 'active' : ''}`}>
-      <Icon size={18} />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={18} />
+        {hasBadge && (
+          <div style={{ 
+            position: 'absolute', top: '-4px', right: '-4px', width: '8px', height: '8px', 
+            background: 'var(--danger, #ef4444)', borderRadius: '50%', border: '2px solid var(--surface-light, #1e293b)' 
+          }} />
+        )}
+      </div>
       <span>{children}</span>
     </Link>
   );
@@ -68,7 +94,7 @@ export default function Layout() {
             )}
 
             <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Communication</div>
-            <NavLink to="/mailbox" icon={Mail}>Mailbox</NavLink>
+            <NavLink to="/mailbox" icon={Mail} hasBadge={hasUnreadMail}>Mailbox</NavLink>
           </nav>
 
           <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
