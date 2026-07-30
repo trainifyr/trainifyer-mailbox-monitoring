@@ -21,8 +21,12 @@ function startRecurringMeetingScheduler() {
       if (recurringMeetings.length === 0) return;
 
       const now = new Date();
-      // Current time as HH:MM:SS for comparison with time columns
-      const currentTime = now.toTimeString().slice(0, 8); // e.g. "09:32:00"
+      // Use IST (Asia/Kolkata) — the server (Render) runs UTC but stored times are IST
+      const currentTime = now.toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Kolkata',
+        hour12: false,
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }); // e.g. "10:32:00" in IST
 
       for (const meeting of recurringMeetings) {
         const start = meeting.recur_start_time; // e.g. "09:00:00"
