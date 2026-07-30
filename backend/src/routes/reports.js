@@ -598,17 +598,37 @@ router.get('/attendance/student/:id', async (req, res, next) => {
         (SELECT name FROM public.batches WHERE id = us.batch_id) as batch_name,
         us.session_date,
         us.session_timestamp,
-        al.id AS attendance_log_id,
-        al.joined_at,
-        al.left_at,
-        al.total_minutes,
-        al.attendance_percentage,
-        al.status
+        agg.attendance_log_id,
+        agg.joined_at,
+        agg.left_at,
+        agg.total_minutes,
+        agg.attendance_percentage,
+        agg.raw_status AS status
       FROM unique_sessions us
-      LEFT JOIN public.attendance_logs al 
-        ON al.meeting_id = us.meeting_id 
-        AND al.user_id = $1
-        AND DATE(al.joined_at) = us.session_date::date
+      LEFT JOIN (
+        SELECT
+          al.meeting_id,
+          al.user_id,
+          DATE(al.joined_at) AS log_date,
+          MIN(al.id) AS attendance_log_id,
+          MIN(al.joined_at) AS joined_at,
+          MAX(al.left_at) AS left_at,
+          SUM(al.total_minutes) AS total_minutes,
+          -- Take MAX percentage so interim low rows never drag the figure below 75%
+          MAX(al.attendance_percentage) AS attendance_percentage,
+          -- Resolve best status across all segments
+          (CASE
+            WHEN COUNT(CASE WHEN al.status = 'ACTIVE'  THEN 1 END) > 0 THEN 'ACTIVE'
+            WHEN COUNT(CASE WHEN al.status = 'PRESENT' THEN 1 END) > 0 THEN 'PRESENT'
+            WHEN COUNT(CASE WHEN al.status = 'PARTIAL' THEN 1 END) > 0 THEN 'PARTIAL'
+            ELSE 'ABSENT'
+          END) AS raw_status
+        FROM public.attendance_logs al
+        WHERE al.user_id = $1
+        GROUP BY al.meeting_id, al.user_id, DATE(al.joined_at)
+      ) agg
+        ON agg.meeting_id = us.meeting_id
+        AND agg.log_date = us.session_date::date
       ORDER BY us.session_timestamp DESC
     `;
     const { rows } = await pool.query(query, [targetUserId, batchId]);
@@ -632,10 +652,10 @@ router.get('/attendance/student/:id', async (req, res, next) => {
         
         if (r.status === 'ACTIVE' && !isPastDay) {
           status = 'ACTIVE';
-        } else if (percentage !== null && percentage >= 90) {
+        } else if (percentage !== null && percentage >= 75) {
           status = 'PRESENT';
         } else {
-          status = 'PARTIAL'; // if they have a log, they joined (even if 0 minutes), so they are not ABSENT.
+          status = 'PARTIAL'; // joined but below threshold
         }
       }
 
