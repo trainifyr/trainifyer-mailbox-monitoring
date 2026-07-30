@@ -102,10 +102,15 @@ router.get('/', async (req, res, next) => {
                 m.is_recurring, m.recur_start_time, m.recur_end_time,
                 m.created_by, m.created_at, m.updated_at,
                 creator.full_name AS created_by_name,
-                b.name AS batch_name
+                b.name AS batch_name,
+                COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
+                COALESCE(bs.require_camera, false) AS require_camera,
+                COALESCE(bs.require_microphone, true) AS require_microphone,
+                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
          FROM public.meetings m
          LEFT JOIN public.users creator ON creator.id = m.created_by
          LEFT JOIN public.batches b ON b.id = m.batch_id
+         LEFT JOIN public.batch_settings bs ON bs.batch_id = m.batch_id
          ORDER BY m.scheduled_start ASC NULLS LAST, m.created_at DESC`
       );
       rows = result.rows;
@@ -119,10 +124,15 @@ router.get('/', async (req, res, next) => {
           `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
                   m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
                   creator.full_name AS created_by_name,
-                  b.name AS batch_name
+                  b.name AS batch_name,
+                  COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
+                  COALESCE(bs.require_camera, false) AS require_camera,
+                  COALESCE(bs.require_microphone, true) AS require_microphone,
+                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
            FROM public.meetings m
            LEFT JOIN public.users creator ON creator.id = m.created_by
            LEFT JOIN public.batches b ON b.id = m.batch_id
+           LEFT JOIN public.batch_settings bs ON bs.batch_id = m.batch_id
            WHERE m.is_public = true
            ORDER BY m.scheduled_start ASC NULLS LAST, m.created_at DESC`
         );
@@ -132,10 +142,15 @@ router.get('/', async (req, res, next) => {
           `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
                   m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
                   creator.full_name AS created_by_name,
-                  b.name AS batch_name
+                  b.name AS batch_name,
+                  COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
+                  COALESCE(bs.require_camera, false) AS require_camera,
+                  COALESCE(bs.require_microphone, true) AS require_microphone,
+                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
            FROM public.meetings m
            LEFT JOIN public.users creator ON creator.id = m.created_by
            LEFT JOIN public.batches b ON b.id = m.batch_id
+           LEFT JOIN public.batch_settings bs ON bs.batch_id = m.batch_id
            WHERE m.is_public = true OR m.batch_id = ANY($1::uuid[])
            ORDER BY m.scheduled_start ASC NULLS LAST, m.created_at DESC`,
           [batchIds]
@@ -148,10 +163,15 @@ router.get('/', async (req, res, next) => {
         `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
                 m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
                 creator.full_name AS created_by_name,
-                b.name AS batch_name
+                b.name AS batch_name,
+                COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
+                COALESCE(bs.require_camera, false) AS require_camera,
+                COALESCE(bs.require_microphone, true) AS require_microphone,
+                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
          FROM public.meetings m
          LEFT JOIN public.users creator ON creator.id = m.created_by
          LEFT JOIN public.batches b ON b.id = m.batch_id
+         LEFT JOIN public.batch_settings bs ON bs.batch_id = m.batch_id
          WHERE m.is_public = true
          ORDER BY m.scheduled_start ASC NULLS LAST, m.created_at DESC`
       );

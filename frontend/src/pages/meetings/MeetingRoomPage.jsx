@@ -207,7 +207,7 @@ export default function MeetingRoomPage() {
           configOverwrite: {
             defaultLanguage: 'en',
             startWithAudioMuted: true,
-            startWithVideoMuted: true,
+            startWithVideoMuted: meeting.require_camera ? false : true,
             prejoinPageEnabled: false,
             disableModeratorIndicator: true,
             enableWelcomePage: false,
@@ -382,6 +382,12 @@ export default function MeetingRoomPage() {
           isSessionEnded = true;
           sessionEndedMsg = 'This meeting has already ended.';
         }
+      }
+
+      // Hook up meeting_join_enabled for students
+      if (meeting.meeting_join_enabled === false) {
+        isSessionEnded = true;
+        sessionEndedMsg = 'Your batch administrator has disabled meeting joins at this time.';
       }
     }
 
