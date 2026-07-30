@@ -241,7 +241,7 @@ export default function StudentsPage() {
                           </div>
                         </td>
                         <td>
-                           <span className="badge badge-student">Active</span>
+                           <span className="badge badge-student">Enrolled</span>
                         </td>
                         <td>
                            <div style={{ fontSize: '0.875rem', color: 'var(--text-heading)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

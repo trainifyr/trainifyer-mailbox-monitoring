@@ -190,27 +190,9 @@ export default function AdminDashboard() {
                </div>
             </section>
 
-            {/* Quick Stats / Secondary info */}
+            {/* Quick Links */}
             <section>
-               <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Batch Distribution</h2>
-               <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-                  <div style={{ marginBottom: '1.5rem' }}>
-                     <div style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-heading)' }}>{summary?.present_count ?? 0}</div>
-                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Total Active Students Today</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', height: '8px', background: 'var(--border-light)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ flex: summary?.present_count ?? 0, background: '#10b981' }}></div>
-                    <div style={{ flex: summary?.partial_count ?? 0, background: '#f59e0b' }}></div>
-                    <div style={{ flex: summary?.absent_count ?? 0, background: '#ef4444' }}></div>
-                  </div>
-                  <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
-                    <div style={{ color: '#10b981' }}>● Present</div>
-                    <div style={{ color: '#f59e0b' }}>● Partial</div>
-                    <div style={{ color: '#ef4444' }}>● Absent</div>
-                  </div>
-               </div>
-
-               <div style={{ marginTop: '2rem' }}>
+               <div>
                   <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Quick Links</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <Link to="/admin/students" className="btn btn-ghost" style={{ justifyContent: 'flex-start', border: '1px solid var(--border)' }}><Users size={18} /> Manage Student Roster</Link>

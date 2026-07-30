@@ -610,7 +610,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           al.meeting_id,
           al.user_id,
           DATE(al.joined_at) AS log_date,
-          MIN(al.id) AS attendance_log_id,
+          MIN(al.id::text)::uuid AS attendance_log_id,
           MIN(al.joined_at) AS joined_at,
           MAX(al.left_at) AS left_at,
           SUM(al.total_minutes) AS total_minutes,
