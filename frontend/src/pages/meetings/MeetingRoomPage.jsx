@@ -206,7 +206,7 @@ export default function MeetingRoomPage() {
           userInfo: { displayName: userDisplayName },
           configOverwrite: {
             defaultLanguage: 'en',
-            startWithAudioMuted: true,
+            startWithAudioMuted: meeting.require_microphone ? false : true,
             startWithVideoMuted: meeting.require_camera ? false : true,
             prejoinPageEnabled: false,
             disableModeratorIndicator: true,
@@ -236,7 +236,7 @@ export default function MeetingRoomPage() {
             // For security, students MUST NOT have 'hangup' in their toolbar, to prevent phantom "End meeting for all"
             toolbarButtons: isAdmin
               ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'],
+              : ['microphone', 'camera', meeting.require_screen_share === 'OFF' ? null : 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'].filter(Boolean),
             
             // Mute/Kick overrides
             remoteVideoMenu: {

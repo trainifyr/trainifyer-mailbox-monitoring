@@ -220,7 +220,14 @@ export default function BatchesPage() {
   const handleToggleSetting = async (field, currentValue) => {
     try {
       setSettingsSaving(field);
-      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, { [field]: !currentValue });
+      
+      let payloadValue = !currentValue;
+      if (field === 'require_screen_share') {
+        const isCurrentlyOn = currentValue === 'OPTIONAL' || currentValue === 'REQUIRED';
+        payloadValue = isCurrentlyOn ? 'OFF' : 'OPTIONAL';
+      }
+
+      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, { [field]: payloadValue });
       setSettings(res.data.data);
       setNotification('Settings saved');
     } catch (e) {
@@ -230,63 +237,41 @@ export default function BatchesPage() {
     }
   };
 
-  const handleScreenShareChange = async (e) => {
-    try {
-      setSettingsSaving('require_screen_share');
-      const res = await apiClient.patch(`/batches/${expandedBatchId}/settings`, { require_screen_share: e.target.value });
-      setSettings(res.data.data);
-      setNotification('Settings saved');
-    } catch (e) {
-      console.error('Failed to update screen share setting:', e);
-    } finally {
-      setSettingsSaving(null);
-    }
-  };
+
 
   const renderSettingsPanel = () => {
     if (settingsLoading) return <p className="status-message">Loading settings...</p>;
     if (!settings) return <p className="status-message">Settings not available.</p>;
 
-    const booleanFields = ['mailbox_enabled', 'student_to_student_messaging', 'meeting_join_enabled', 'require_camera', 'require_microphone'];
+    const booleanFields = ['mailbox_enabled', 'student_to_student_messaging', 'meeting_join_enabled', 'require_camera', 'require_microphone', 'require_screen_share'];
 
     return (
       <div className="settings-panel">
         <h4 className="section-title"><Settings size={16} /> Batch Settings</h4>
         <div className="settings-grid">
-          {booleanFields.map((field) => (
-            <div key={field} className="setting-row">
-              <div className="setting-info">
-                <span className="setting-label">{SETTINGS_LABELS[field]}</span>
-                <span className="setting-desc">{SETTINGS_DESCRIPTIONS[field]}</span>
+          {booleanFields.map((field) => {
+            const isToggleOn = field === 'require_screen_share' 
+              ? (settings[field] === 'OPTIONAL' || settings[field] === 'REQUIRED') 
+              : settings[field];
+            
+            return (
+              <div key={field} className="setting-row">
+                <div className="setting-info">
+                  <span className="setting-label">{SETTINGS_LABELS[field]}</span>
+                  <span className="setting-desc">{SETTINGS_DESCRIPTIONS[field]}</span>
+                </div>
+                <div className="setting-control">
+                  {isAdmin ? (
+                    <button className={`toggle-switch ${isToggleOn ? 'active' : ''}`} onClick={() => handleToggleSetting(field, settings[field])} disabled={settingsSaving === field}>
+                      <span className="toggle-knob" />
+                    </button>
+                  ) : (
+                    <span className={`toggle-readonly ${isToggleOn ? 'on' : 'off'}`}>{isToggleOn ? 'ON' : 'OFF'}</span>
+                  )}
+                </div>
               </div>
-              <div className="setting-control">
-                {isAdmin ? (
-                  <button className={`toggle-switch ${settings[field] ? 'active' : ''}`} onClick={() => handleToggleSetting(field, settings[field])} disabled={settingsSaving === field}>
-                    <span className="toggle-knob" />
-                  </button>
-                ) : (
-                  <span className={`toggle-readonly ${settings[field] ? 'on' : 'off'}`}>{settings[field] ? 'ON' : 'OFF'}</span>
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">{SETTINGS_LABELS.require_screen_share}</span>
-              <span className="setting-desc">{SETTINGS_DESCRIPTIONS.require_screen_share}</span>
-            </div>
-            <div className="setting-control">
-              {isAdmin ? (
-                <select className="setting-select" value={settings.require_screen_share} onChange={handleScreenShareChange} disabled={settingsSaving === 'require_screen_share'}>
-                  <option value="OPTIONAL">Optional</option>
-                  <option value="REQUIRED">Required</option>
-                  <option value="OFF">Off</option>
-                </select>
-              ) : (
-                <span className="toggle-readonly on">{settings.require_screen_share}</span>
-              )}
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
     );
