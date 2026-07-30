@@ -11,8 +11,7 @@ import {
   Trash2, 
   Mail, 
   User,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 
 const INITIAL_FORM = { email: '', fullName: '' };
@@ -190,7 +189,7 @@ export default function StudentsPage() {
 
       {/* Table Actions */}
       <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--border-light)' }}>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', background: 'var(--border-light)' }}>
            <div style={{ position: 'relative' }}>
               <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input 
@@ -202,7 +201,6 @@ export default function StudentsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
            </div>
-           <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', background: 'var(--bg-card)' }}><Filter size={16} /> Filters</button>
         </div>
 
         {loading ? (
