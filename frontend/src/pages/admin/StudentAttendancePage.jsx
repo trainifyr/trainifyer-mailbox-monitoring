@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { ArrowLeft, Clock, CheckCircle, AlertTriangle, XCircle, User, Mail, Loader } from 'lucide-react';
+import AttendanceCalendar from '../../components/AttendanceCalendar';
 
 function StatusBadge({ status }) {
   if (status === 'PRESENT') return <span className="badge badge-student">Present</span>;
@@ -85,8 +86,9 @@ export default function StudentAttendancePage() {
       )}
 
       {!loading && !error && student && (
-        <>
-          {/* Student identity card */}
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            {/* Student identity card */}
           <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <div style={{
               width: '56px', height: '56px', borderRadius: '50%',
@@ -181,7 +183,14 @@ export default function StudentAttendancePage() {
               )}
             </div>
           </section>
-        </>
+          </div>
+
+          {/* Right sidebar */}
+          <div style={{ width: '300px', flexShrink: 0, overflow: 'hidden', position: 'sticky', top: '1rem' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Monthly Attendance</div>
+            <AttendanceCalendar details={details} />
+          </div>
+        </div>
       )}
     </div>
   );

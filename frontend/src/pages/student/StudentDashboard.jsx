@@ -15,6 +15,7 @@ import {
   User,
   ExternalLink
 } from 'lucide-react';
+import AttendanceCalendar from '../../components/AttendanceCalendar';
 
 export default function StudentDashboard() {
   const { isStudent, user } = useAuth();
@@ -198,7 +199,12 @@ export default function StudentDashboard() {
           </section>
 
           {/* Sidebar Area */}
-          <aside>
+          <aside style={{ minWidth: 0, overflow: 'hidden' }}>
+             <div style={{ marginBottom: '2rem' }}>
+               <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Monthly Attendance</h3>
+               <AttendanceCalendar details={report?.details} />
+             </div>
+
              <div style={{ marginBottom: '2rem' }}>
                 <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Quick Actions</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
