@@ -14,7 +14,10 @@ export default function AttendanceCalendar({ details }) {
       if (!d.status) return;
       const rawDate = d.session_date || d.joined_at;
       if (!rawDate) return;
-      const dateStr = rawDate.split('T')[0];
+      
+      const dObj = new Date(rawDate);
+      const dateStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+      
       const existingRank = map[dateStr] ? rank[map[dateStr]] : 0;
       const currentRank = rank[d.status] || 0;
       
@@ -79,13 +82,13 @@ export default function AttendanceCalendar({ details }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.25rem', marginBottom: '0.5rem', textAlign: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 32px)', gap: '0.25rem', justifyContent: 'center', marginBottom: '0.5rem', textAlign: 'center' }}>
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
           <div key={i} style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>{day}</div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 32px)', gap: '0.25rem', justifyContent: 'center' }}>
         {gridCells.slice(0, 42).map((cell, idx) => {
           const status = cell.isCurrentMonth ? groupedStatus[cell.dateStr] : null;
           const isToday = cell.isCurrentMonth && cell.dateStr === todayStr;
@@ -94,8 +97,7 @@ export default function AttendanceCalendar({ details }) {
             <div 
               key={idx}
               style={{
-                width: '100%', maxWidth: '36px', aspectRatio: '1', margin: '0 auto',
-                display: 'flex', flexDirection: 'column',
+                width: '32px', height: '32px', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', position: 'relative',
                 opacity: cell.isCurrentMonth ? 1 : 0.2,
                 borderRadius: '6px',
