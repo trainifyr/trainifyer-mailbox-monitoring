@@ -699,4 +699,26 @@ router.get('/attendance/student/:id', async (req, res, next) => {
   }
 });
 
+router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res, next) => {
+  try {
+    const { userId, meetingId, date } = req.params;
+    const role = req.mockUserRole;
+    const callerUserId = req.mockUserId;
+    if (role === 'STUDENT' && callerUserId !== userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Students can only view their own logs' });
+    }
+    const { rows } = await pool.query(
+      `SELECT ae.id, ae.event_type, ae.event_at,
+              al.joined_at AS log_joined_at, al.left_at AS log_left_at,
+              al.total_minutes, al.attendance_percentage, al.status
+       FROM public.attendance_events ae
+       JOIN public.attendance_logs al ON al.id = ae.attendance_log_id
+       WHERE al.meeting_id = $1 AND al.user_id = $2 AND DATE(al.joined_at) = $3::date
+       ORDER BY ae.event_at ASC`,
+      [meetingId, userId, date]
+    );
+    res.json({ data: rows });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
