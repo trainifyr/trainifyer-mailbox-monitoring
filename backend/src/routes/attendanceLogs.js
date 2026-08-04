@@ -157,6 +157,10 @@ router.post('/join-log', async (req, res, next) => {
                    total_minutes, attendance_percentage, status`,
         [existingRow.id]
       );
+      await pool.query(
+        `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
+        [updated[0].id]
+      );
       return res.json({ data: updated[0] });
     }
 
@@ -168,7 +172,7 @@ router.post('/join-log', async (req, res, next) => {
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.user_id = $2 AND al.left_at IS NULL
-           AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '10 minutes')`,
+           AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`,
         [id, userId]
       );
       for (const staleLog of stale) {
@@ -201,6 +205,11 @@ router.post('/join-log', async (req, res, next) => {
           }
         }
         await pool.query(
+          `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
+          [staleLog.id]
+        );
+
+        await pool.query(
           `UPDATE public.attendance_logs SET left_at = now(), total_minutes = $1, attendance_percentage = $2, status = $3::public.attendance_status WHERE id = $4`,
           [totalMin2, stalePct, staleStatus, staleLog.id]
         );
@@ -214,6 +223,11 @@ router.post('/join-log', async (req, res, next) => {
        RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                  total_minutes, attendance_percentage, status`,
       [id, userId, externalName]
+    );
+
+    await pool.query(
+      `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
+      [rows[0].id]
     );
 
     res.status(201).json({ data: rows[0] });
@@ -330,6 +344,11 @@ router.post('/leave-log', async (req, res, next) => {
       }
       // If no recur config, percentage stays null but status is always PARTIAL (did show up)
     }
+
+    await pool.query(
+      `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
+      [attendanceRow.id]
+    );
 
     // Update the attendance log
     const { rows } = await pool.query(

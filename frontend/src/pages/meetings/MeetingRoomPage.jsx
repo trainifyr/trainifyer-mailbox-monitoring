@@ -50,11 +50,9 @@ export default function MeetingRoomPage() {
     
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      fetch(`${apiUrl}/meetings/${id}/leave-log`, {
-        method: 'POST',
-        keepalive: true,
-        headers: defaultAuthTokenRef.current ? { 'Authorization': `Bearer ${defaultAuthTokenRef.current}` } : {}
-      });
+      const token = defaultAuthTokenRef.current;
+      const url = token ? `${apiUrl}/meetings/${id}/leave-log?token=${token}` : `${apiUrl}/meetings/${id}/leave-log`;
+      navigator.sendBeacon(url);
     } catch (e) {
       console.error('Failed to dispatch keepalive leave log:', e);
     }
@@ -297,20 +295,20 @@ export default function MeetingRoomPage() {
           }
         });
 
+        const handleUnexpectedDrop = () => {
+          if (sessionEndedRef.current) return; // Expected leave via React button
+          setIsInConference(false);
+          console.warn('[Network] Jitsi unexpectedly dropped. Attempting auto-reconnect in 3s...');
+          setJitsiLoading(true);
+          jitsiApiRef.current?.dispose();
+          setTimeout(() => {
+            if (!cancelled) initJitsi();
+          }, 3000);
+        };
+
         // Intercept silent kicks or packet-loss drops and silently resurrect the connection
-        jitsiApi.addListener('readyToClose', () => { 
-          setIsInConference(false); 
-          if (sessionEndedRef.current) {
-            navigate(-1);
-          } else {
-            console.warn('[Network] Jitsi unexpectedly dropped. Attempting auto-reconnect in 3s...');
-            setJitsiLoading(true);
-            jitsiApiRef.current?.dispose();
-            setTimeout(() => {
-              if (!cancelled) initJitsi();
-            }, 3000);
-          }
-        });
+        jitsiApi.addListener('readyToClose', handleUnexpectedDrop);
+        jitsiApi.addListener('videoConferenceLeft', handleUnexpectedDrop);
       } catch (e) {
         console.error('Failed to initialize Jitsi meeting room:', e);
         if (!cancelled) setJitsiLoading(false);

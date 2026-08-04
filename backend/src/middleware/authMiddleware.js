@@ -26,10 +26,11 @@ function getPool() {
 async function authMiddleware(req, res, next) {
   try {
     const authHeader = req.header('Authorization');
+    const queryToken = req.query.token;
 
     // --- Strategy 1: JWT Bearer token via Supabase Admin SDK ---
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
+    if (authHeader?.startsWith('Bearer ') || queryToken) {
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : queryToken;
 
       try {
         // Let Supabase verify the token — no need to handle secret/algorithm manually

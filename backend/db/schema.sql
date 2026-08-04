@@ -223,3 +223,15 @@ ALTER TABLE public.meetings              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_participants  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_consents      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance_logs       ENABLE ROW LEVEL SECURITY;
+
+-- 11b. attendance_events
+--      Granular JOIN/LEAVE event log per attendance_log row.
+--      Event_at is set by the server so it cannot be spoofed via the API.
+CREATE TABLE IF NOT EXISTS public.attendance_events (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  attendance_log_id uuid NOT NULL REFERENCES public.attendance_logs(id) ON DELETE CASCADE,
+  event_type        text NOT NULL CHECK (event_type IN ('JOIN', 'LEAVE')),
+  event_at          timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_events_log_id ON public.attendance_events(attendance_log_id);
+ALTER TABLE public.attendance_events ENABLE ROW LEVEL SECURITY;

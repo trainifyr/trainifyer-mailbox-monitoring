@@ -120,7 +120,8 @@ export default function MailboxPage() {
       .map(line => `> ${line}`)
       .join('\n');
     setComposeForm({
-      receiverEmail: msg.sender_email,
+      receiverEmail: `${msg.sender_name} <${msg.sender_email}>`,
+      receiverId: msg.sender_id,
       subject: msg.subject.startsWith('Re: ') ? msg.subject : `Re: ${msg.subject}`,
       body: `\n\n--- On ${date}, ${msg.sender_name} wrote: ---\n${quotedBody}`
     });
