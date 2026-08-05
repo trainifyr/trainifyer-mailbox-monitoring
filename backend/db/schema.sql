@@ -230,6 +230,7 @@ ALTER TABLE public.attendance_logs       ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.attendance_events (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   attendance_log_id uuid NOT NULL REFERENCES public.attendance_logs(id) ON DELETE CASCADE,
+  user_id           uuid REFERENCES public.users(id) ON DELETE CASCADE,
   event_type        text NOT NULL CHECK (event_type IN ('JOIN', 'LEAVE')),
   event_at          timestamptz NOT NULL DEFAULT now()
 );

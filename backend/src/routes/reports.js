@@ -668,6 +668,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
       return {
         attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}-${r.session_date}`,
         meeting_id: r.meeting_id,
+        session_date: r.session_date,
         meeting_title: r.meeting_title,
         batch_id: r.batch_id,
         batch_name: r.batch_name,

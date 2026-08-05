@@ -158,8 +158,8 @@ router.post('/join-log', async (req, res, next) => {
         [existingRow.id]
       );
       await pool.query(
-        `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
-        [updated[0].id]
+        `INSERT INTO public.attendance_events (attendance_log_id, user_id, event_type) VALUES ($1, $2, 'JOIN')`,
+        [updated[0].id, userId]
       );
       return res.json({ data: updated[0] });
     }
@@ -205,8 +205,8 @@ router.post('/join-log', async (req, res, next) => {
           }
         }
         await pool.query(
-          `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
-          [staleLog.id]
+          `INSERT INTO public.attendance_events (attendance_log_id, user_id, event_type) VALUES ($1, $2, 'LEAVE')`,
+          [staleLog.id, userId]
         );
 
         await pool.query(
@@ -226,8 +226,8 @@ router.post('/join-log', async (req, res, next) => {
     );
 
     await pool.query(
-      `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
-      [rows[0].id]
+      `INSERT INTO public.attendance_events (attendance_log_id, user_id, event_type) VALUES ($1, $2, 'JOIN')`,
+      [rows[0].id, userId]
     );
 
     res.status(201).json({ data: rows[0] });
@@ -346,8 +346,8 @@ router.post('/leave-log', async (req, res, next) => {
     }
 
     await pool.query(
-      `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
-      [attendanceRow.id]
+      `INSERT INTO public.attendance_events (attendance_log_id, user_id, event_type) VALUES ($1, $2, 'LEAVE')`,
+      [attendanceRow.id, userId]
     );
 
     // Update the attendance log
