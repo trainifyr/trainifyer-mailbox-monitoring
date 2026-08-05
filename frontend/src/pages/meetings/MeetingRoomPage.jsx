@@ -52,7 +52,8 @@ export default function MeetingRoomPage() {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
       const token = defaultAuthTokenRef.current;
       const url = token ? `${apiUrl}/meetings/${id}/leave-log?token=${token}` : `${apiUrl}/meetings/${id}/leave-log`;
-      navigator.sendBeacon(url);
+      // Send as text/plain to avoid CORS preflight which gets aborted on tab close
+      navigator.sendBeacon(url, new Blob([''], { type: 'text/plain' }));
     } catch (e) {
       console.error('Failed to dispatch keepalive leave log:', e);
     }
