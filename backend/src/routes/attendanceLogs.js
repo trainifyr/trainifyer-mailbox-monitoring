@@ -144,17 +144,18 @@ router.post('/join-log', async (req, res, next) => {
         return res.json({ data: existingRow });
       }
 
-      // If it was previously disconnected, reactivate it!
+      // If it was previously disconnected, reactivate the SAME row — update only last_joined_at
+      // so total_minutes correctly accumulates across sessions (morning + afternoon = single row)
       const { rows: updated } = await pool.query(
         `UPDATE public.attendance_logs
-         SET joined_at = now(),
+         SET last_joined_at = now(),
              left_at = NULL,
              status = 'ACTIVE'::public.attendance_status,
              last_heartbeat = now(),
              updated_at = now()
          WHERE id = $1
          RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
-                   total_minutes, attendance_percentage, status`,
+                   last_joined_at, total_minutes, attendance_percentage, status`,
         [existingRow.id]
       );
       await pool.query(
@@ -177,8 +178,9 @@ router.post('/join-log', async (req, res, next) => {
       );
       for (const staleLog of stale) {
         const now2 = new Date();
-        const joinedAt2 = new Date(staleLog.joined_at);
-        const staleMinutes = Math.max(0, Math.round(((now2 - joinedAt2) / 60000) * 100) / 100);
+        // Use last_joined_at (segment start) instead of joined_at to get delta for this segment only
+        const segmentStart = staleLog.last_joined_at ? new Date(staleLog.last_joined_at) : new Date(staleLog.joined_at);
+        const staleMinutes = Math.max(0, Math.round(((now2 - segmentStart) / 60000) * 100) / 100);
         const priorMin2 = parseFloat(staleLog.total_minutes) || 0;
         const totalMin2 = priorMin2 + staleMinutes;
         let stalePct = null;
@@ -216,12 +218,12 @@ router.post('/join-log', async (req, res, next) => {
       }
     }
 
-    // Insert new attendance log (with default total_minutes = 0.00 and last_heartbeat = now())
+    // Insert new attendance log — joined_at and last_joined_at are both set to now()
     const { rows } = await pool.query(
-      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, last_heartbeat, total_minutes, status)
-       VALUES ($1, $2, $3, now(), now(), 0.00, 'ACTIVE')
+      `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, last_joined_at, last_heartbeat, total_minutes, status)
+       VALUES ($1, $2, $3, now(), now(), now(), 0.00, 'ACTIVE')
        RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
-                 total_minutes, attendance_percentage, status`,
+                 last_joined_at, total_minutes, attendance_percentage, status`,
       [id, userId, externalName]
     );
 
@@ -269,7 +271,7 @@ router.post('/leave-log', async (req, res, next) => {
     let attendanceRow;
     if (userId) {
       const { rows } = await pool.query(
-        `SELECT al.id, al.joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+        `SELECT al.id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.user_id = $2 AND al.left_at IS NULL
@@ -285,7 +287,7 @@ router.post('/leave-log', async (req, res, next) => {
       attendanceRow = rows[0];
     } else {
       const { rows } = await pool.query(
-        `SELECT al.id, al.joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+        `SELECT al.id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.external_name = $2 AND al.left_at IS NULL
@@ -302,9 +304,11 @@ router.post('/leave-log', async (req, res, next) => {
     }
 
     const now = new Date();
-    const joinedAt = new Date(attendanceRow.joined_at);
-    const diffMs = now - joinedAt;
-    const sessionMinutes = diffMs / 60000;
+    // Use last_joined_at (current segment start) so we accumulate correctly across rejoins
+    const segmentStart = attendanceRow.last_joined_at
+      ? new Date(attendanceRow.last_joined_at)
+      : new Date(attendanceRow.joined_at);
+    const sessionMinutes = (now - segmentStart) / 60000;
     
     // Add current session minutes to existing accumulated total_minutes
     const priorMinutes = parseFloat(attendanceRow.total_minutes) || 0;
