@@ -723,11 +723,9 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
       return res.json({ data: rows });
     }
 
-    // Proxy Attendance Fallback:
-    // If no granular events exist, but a manual attendance_logs entry exists for this day,
-    // construct synthetic JOIN and LEAVE events. This makes manual database inserts (from a phone) 
-    // seamlessly render authentic timelines without needing to micromanage the attendance_events table.
-    const { rows: fallbackLogs } = await pool.query(
+    // Fallback: if no granular event rows exist for this log yet,
+    // reconstruct the timeline from the parent attendance_logs record directly.
+    const { rows: parentLogs } = await pool.query(
       `SELECT id, joined_at, left_at, total_minutes, attendance_percentage, status 
        FROM public.attendance_logs 
        WHERE meeting_id = $1 AND user_id = $2 AND DATE(joined_at) = $3::date
@@ -735,11 +733,11 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
       [meetingId, userId, date]
     );
 
-    const syntheticEvents = [];
-    fallbackLogs.forEach((fl, idx) => {
+    const derivedEvents = [];
+    parentLogs.forEach((fl) => {
       if (fl.joined_at) {
-        syntheticEvents.push({
-          id: `fake-join-${fl.id}`,
+        derivedEvents.push({
+          id: `derived-join-${fl.id}`,
           event_type: 'JOIN',
           event_at: fl.joined_at,
           log_joined_at: fl.joined_at,
@@ -750,8 +748,8 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
         });
       }
       if (fl.left_at) {
-        syntheticEvents.push({
-          id: `fake-leave-${fl.id}`,
+        derivedEvents.push({
+          id: `derived-leave-${fl.id}`,
           event_type: 'LEAVE',
           event_at: fl.left_at,
           log_joined_at: fl.joined_at,
@@ -763,7 +761,7 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
       }
     });
 
-    res.json({ data: syntheticEvents });
+    res.json({ data: derivedEvents });
   } catch (err) { next(err); }
 });
 
