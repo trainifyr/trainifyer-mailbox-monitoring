@@ -177,7 +177,7 @@ router.get('/attendance', async (req, res, next) => {
           al.meeting_id,
           al.user_id,
           DATE(al.joined_at) AS log_date,
-          MIN(al.joined_at)  AS joined_at,
+          MAX(COALESCE(al.last_joined_at, al.joined_at)) AS joined_at,
           MAX(al.left_at)    AS left_at,
           SUM(
             al.total_minutes + 
@@ -607,7 +607,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           al.user_id,
           DATE(al.joined_at) AS log_date,
           MIN(al.id::text)::uuid AS attendance_log_id,
-          MIN(al.joined_at) AS joined_at,
+          MAX(COALESCE(al.last_joined_at, al.joined_at)) AS joined_at,
           MAX(al.left_at) AS left_at,
           SUM(
             al.total_minutes + 
