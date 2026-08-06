@@ -71,13 +71,22 @@ export default function MeetingRoomPage() {
   }, [id]);
 
   useEffect(() => {
-    // Use beacon only on tab close — proper fetch is used for all other leaves
+    // Use beacon only on tab close or backgrounding — proper fetch is used for all other explicit leaves
     const handleUnload = () => sendLeaveLog(true);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') sendLeaveLog(true);
+    };
+
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('unload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibility);
+    
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('unload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [sendLeaveLog]);
 
