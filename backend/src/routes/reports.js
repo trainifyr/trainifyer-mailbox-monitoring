@@ -718,7 +718,52 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
        ORDER BY ae.event_at ASC`,
       [meetingId, userId, date]
     );
-    res.json({ data: rows });
+
+    if (rows.length > 0) {
+      return res.json({ data: rows });
+    }
+
+    // Proxy Attendance Fallback:
+    // If no granular events exist, but a manual attendance_logs entry exists for this day,
+    // construct synthetic JOIN and LEAVE events. This makes manual database inserts (from a phone) 
+    // seamlessly render authentic timelines without needing to micromanage the attendance_events table.
+    const { rows: fallbackLogs } = await pool.query(
+      `SELECT id, joined_at, left_at, total_minutes, attendance_percentage, status 
+       FROM public.attendance_logs 
+       WHERE meeting_id = $1 AND user_id = $2 AND DATE(joined_at) = $3::date
+       ORDER BY joined_at ASC`,
+      [meetingId, userId, date]
+    );
+
+    const syntheticEvents = [];
+    fallbackLogs.forEach((fl, idx) => {
+      if (fl.joined_at) {
+        syntheticEvents.push({
+          id: `fake-join-${fl.id}`,
+          event_type: 'JOIN',
+          event_at: fl.joined_at,
+          log_joined_at: fl.joined_at,
+          log_left_at: fl.left_at,
+          total_minutes: fl.total_minutes,
+          attendance_percentage: fl.attendance_percentage,
+          status: fl.status
+        });
+      }
+      if (fl.left_at) {
+        syntheticEvents.push({
+          id: `fake-leave-${fl.id}`,
+          event_type: 'LEAVE',
+          event_at: fl.left_at,
+          log_joined_at: fl.joined_at,
+          log_left_at: fl.left_at,
+          total_minutes: fl.total_minutes,
+          attendance_percentage: fl.attendance_percentage,
+          status: fl.status
+        });
+      }
+    });
+
+    res.json({ data: syntheticEvents });
   } catch (err) { next(err); }
 });
 
