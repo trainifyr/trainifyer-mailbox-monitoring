@@ -9,12 +9,12 @@ const THRESHOLD_PRESENT = 0.75;
 async function sweepStaleSessions(meetingId = null) {
   try {
     const query = meetingId 
-      ? `SELECT al.id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+      ? `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.left_at IS NULL
            AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`
-      : `SELECT al.id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+      : `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.left_at IS NULL
@@ -41,7 +41,7 @@ async function sweepStaleSessions(meetingId = null) {
       } else {
         // No scheduled_end: use recur window
         const { rows: recurRows } = await pool.query(
-          `SELECT recur_start_time, recur_end_time FROM public.meetings WHERE id = $1`, [meetingId]
+          `SELECT recur_start_time, recur_end_time FROM public.meetings WHERE id = $1`, [staleLog.meeting_id]
         );
         if (recurRows[0]?.recur_start_time && recurRows[0]?.recur_end_time) {
           const [sh, sm] = recurRows[0].recur_start_time.split(':').map(Number);
