@@ -182,7 +182,7 @@ router.get('/attendance', async (req, res, next) => {
           SUM(
             al.total_minutes + 
             CASE 
-              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (COALESCE(al.last_heartbeat, al.joined_at) - al.joined_at))/60.0 
+              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (COALESCE(al.last_heartbeat, COALESCE(al.last_joined_at, al.joined_at)) - COALESCE(al.last_joined_at, al.joined_at)))/60.0 
               ELSE 0 
             END
           ) AS total_minutes,
@@ -609,7 +609,13 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           MIN(al.id::text)::uuid AS attendance_log_id,
           MIN(al.joined_at) AS joined_at,
           MAX(al.left_at) AS left_at,
-          SUM(al.total_minutes) AS total_minutes,
+          SUM(
+            al.total_minutes + 
+            CASE 
+              WHEN al.status = 'ACTIVE' THEN EXTRACT(EPOCH FROM (COALESCE(al.last_heartbeat, COALESCE(al.last_joined_at, al.joined_at)) - COALESCE(al.last_joined_at, al.joined_at)))/60.0 
+              ELSE 0 
+            END
+          ) AS total_minutes,
           -- Take MAX percentage so interim low rows never drag the figure below 75%
           MAX(al.attendance_percentage) AS attendance_percentage,
           -- Resolve best status across all segments
