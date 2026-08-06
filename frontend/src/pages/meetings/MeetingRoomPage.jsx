@@ -39,28 +39,40 @@ export default function MeetingRoomPage() {
   const [activeParticipants, setActiveParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(true);
 
-  const sendLeaveLog = useCallback(async () => {
+  // sendLeaveLog: call this whenever a user leaves.
+  // useBeacon=true is for tab-close (beforeunload) where fetch is killed by the browser.
+  // useBeacon=false (default) is for button clicks and programmatic leaves where we can await.
+  const sendLeaveLog = useCallback(async (useBeacon = false) => {
     if (sessionEndedRef.current) return;
     sessionEndedRef.current = true;
     if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
     setHeartbeatActive(false);
-    
-    // Only send leave-log if we have an active attendance session
     if (!attendanceLogIdRef.current) return;
-    
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
       const token = defaultAuthTokenRef.current;
-      const url = token ? `${apiUrl}/meetings/${id}/leave-log?token=${token}` : `${apiUrl}/meetings/${id}/leave-log`;
-      // Send as text/plain to avoid CORS preflight which gets aborted on tab close
-      navigator.sendBeacon(url, new Blob([''], { type: 'text/plain' }));
+      if (useBeacon) {
+        const url = token ? `${apiUrl}/meetings/${id}/leave-log?token=${token}` : `${apiUrl}/meetings/${id}/leave-log`;
+        // text/plain avoids CORS preflight which the browser kills on tab close
+        navigator.sendBeacon(url, new Blob([''], { type: 'text/plain' }));
+      } else {
+        await fetch(`${apiUrl}/meetings/${id}/leave-log`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          keepalive: true,
+        });
+      }
     } catch (e) {
-      console.error('Failed to dispatch keepalive leave log:', e);
+      console.error('Failed to send leave log:', e);
     }
   }, [id]);
 
   useEffect(() => {
-    const handleUnload = () => sendLeaveLog();
+    // Use beacon only on tab close — proper fetch is used for all other leaves
+    const handleUnload = () => sendLeaveLog(true);
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('unload', handleUnload);
     return () => {
@@ -296,10 +308,23 @@ export default function MeetingRoomPage() {
           }
         });
 
-        const handleUnexpectedDrop = () => {
-          if (sessionEndedRef.current) return; // Expected leave via React button
+        const handleUnexpectedDrop = async () => {
+          if (sessionEndedRef.current) return;
           setIsInConference(false);
-          console.warn('[Network] Jitsi unexpectedly dropped. Attempting auto-reconnect in 3s...');
+          // Log the LEAVE before attempting reconnect so the timeline is accurate
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+          const token = defaultAuthTokenRef.current;
+          if (attendanceLogIdRef.current && token) {
+            try {
+              await fetch(`${apiUrl}/meetings/${id}/leave-log`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                keepalive: true,
+              });
+            } catch {}
+          }
+          // Reset so the reconnected session creates a fresh JOIN log entry
+          attendanceLogIdRef.current = null;
           setJitsiLoading(true);
           jitsiApiRef.current?.dispose();
           setTimeout(() => {

@@ -719,49 +719,7 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
       [meetingId, userId, date]
     );
 
-    if (rows.length > 0) {
-      return res.json({ data: rows });
-    }
-
-    // Fallback: if no granular event rows exist for this log yet,
-    // reconstruct the timeline from the parent attendance_logs record directly.
-    const { rows: parentLogs } = await pool.query(
-      `SELECT id, joined_at, left_at, total_minutes, attendance_percentage, status 
-       FROM public.attendance_logs 
-       WHERE meeting_id = $1 AND user_id = $2 AND DATE(joined_at) = $3::date
-       ORDER BY joined_at ASC`,
-      [meetingId, userId, date]
-    );
-
-    const derivedEvents = [];
-    parentLogs.forEach((fl) => {
-      if (fl.joined_at) {
-        derivedEvents.push({
-          id: `derived-join-${fl.id}`,
-          event_type: 'JOIN',
-          event_at: fl.joined_at,
-          log_joined_at: fl.joined_at,
-          log_left_at: fl.left_at,
-          total_minutes: fl.total_minutes,
-          attendance_percentage: fl.attendance_percentage,
-          status: fl.status
-        });
-      }
-      if (fl.left_at) {
-        derivedEvents.push({
-          id: `derived-leave-${fl.id}`,
-          event_type: 'LEAVE',
-          event_at: fl.left_at,
-          log_joined_at: fl.joined_at,
-          log_left_at: fl.left_at,
-          total_minutes: fl.total_minutes,
-          attendance_percentage: fl.attendance_percentage,
-          status: fl.status
-        });
-      }
-    });
-
-    res.json({ data: derivedEvents });
+    res.json({ data: rows });
   } catch (err) { next(err); }
 });
 
