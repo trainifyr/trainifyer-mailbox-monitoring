@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const pool = require('../lib/pgPool');
+const { sweepStaleSessions } = require('../lib/attendanceSweeper');
 
 const router = Router();
 
@@ -8,17 +9,6 @@ const GRANULARITIES = ['daily', 'weekly', 'monthly'];
 
 // --- Valid status filter values ---
 const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ABSENT'];
-
-// --- GET /api/reports/attendance ---
-// Returns aggregated attendance metrics scoped to the caller's role.
-//
-// Query params:
-//   userId       - Filter by student UUID (forced for STUDENT role)
-//   batchId      - Filter by batch UUID (ADMIN only)
-//   fromDate     - Inclusive start date (YYYY-MM-DD)
-//   toDate       - Inclusive end date (YYYY-MM-DD)
-//   granularity  - Bucket size: daily | weekly | monthly (default: daily)
-//   status       - Filter by attendance status: PRESENT | PARTIAL | ABSENT
 
 // --- GET /api/reports/attendance ---
 // Returns aggregated attendance metrics scoped to the caller's role.
@@ -34,6 +24,9 @@ const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ABSENT'];
 
 router.get('/attendance', async (req, res, next) => {
   try {
+    // Ensure sessions are finalized before reporting
+    await sweepStaleSessions();
+
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
 
@@ -493,6 +486,9 @@ router.get('/attendance/csv', async (req, res, next) => {
 // Required: caller must be Admin or student requesting their own report.
 router.get('/attendance/student/:id', async (req, res, next) => {
   try {
+    // Ensure sessions are finalized before reporting
+    await sweepStaleSessions();
+
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
     const targetUserId = req.params.id;
@@ -708,6 +704,10 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
     if (role === 'STUDENT' && callerUserId !== userId) {
       return res.status(403).json({ error: 'Forbidden', message: 'Students can only view their own logs' });
     }
+
+    // Ensure session is finalized before querying event logs
+    await sweepStaleSessions(meetingId);
+
     const { rows } = await pool.query(
       `SELECT ae.id, ae.event_type, ae.event_at,
               al.joined_at AS log_joined_at, al.left_at AS log_left_at,
