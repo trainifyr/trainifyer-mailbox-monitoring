@@ -3,6 +3,7 @@ const { z } = require('zod');
 const crypto = require('crypto');
 const pool = require('../lib/pgPool');
 const requireRole = require('../lib/requireRole');
+const { sweepStaleSessions } = require('../lib/attendanceSweeper');
 
 const router = Router();
 
@@ -433,6 +434,14 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
     `;
 
     const { rows: updatedRows } = await pool.query(updateQuery, params);
+
+    // When Admin ends or cancels the meeting, immediately finalize ALL active
+    // attendance sessions regardless of heartbeat — prevents students from keeping
+    // their timer running after the session is officially over.
+    if (body.status === 'ENDED' || body.status === 'CANCELLED') {
+      await sweepStaleSessions(id, true); // forceAll=true bypasses heartbeat check
+    }
+
     res.json({ data: updatedRows[0] });
   } catch (err) {
     if (err instanceof z.ZodError) {

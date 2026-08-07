@@ -6,19 +6,21 @@ const THRESHOLD_PRESENT = 0.75;
  * Finds all active attendance sessions for a meeting that haven't received a heartbeat in >5 minutes,
  * auto-finalizes them (sets left_at = now), recalculates duration, and inserts a LEAVE event.
  */
-async function sweepStaleSessions(meetingId = null) {
+async function sweepStaleSessions(meetingId = null, forceAll = false) {
   try {
+    const timeCondition = forceAll ? '' : `AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`;
+    
     const query = meetingId 
       ? `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.left_at IS NULL
-           AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`
+           ${timeCondition}`
       : `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.left_at IS NULL
-           AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`;
+           ${timeCondition}`;
     
     const { rows: stale } = meetingId ? await pool.query(query, [meetingId]) : await pool.query(query);
 
