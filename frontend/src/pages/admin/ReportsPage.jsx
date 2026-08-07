@@ -188,6 +188,7 @@ export default function ReportsPage() {
                <label className="label" style={{ fontSize: '0.7rem' }}>Status</label>
                <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                  <option value="">All Statuses</option>
+                 <option value="ACTIVE">Active</option>
                  <option value="PRESENT">Present</option>
                  <option value="PARTIAL">Partial</option>
                  <option value="ABSENT">Absent</option>

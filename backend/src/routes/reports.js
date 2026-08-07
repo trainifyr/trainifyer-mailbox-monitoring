@@ -8,7 +8,7 @@ const router = Router();
 const GRANULARITIES = ['daily', 'weekly', 'monthly'];
 
 // --- Valid status filter values ---
-const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ABSENT'];
+const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ACTIVE', 'ABSENT'];
 
 // --- GET /api/reports/attendance ---
 // Returns aggregated attendance metrics scoped to the caller's role.
