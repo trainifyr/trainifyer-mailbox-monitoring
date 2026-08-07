@@ -7,7 +7,8 @@ import AttendanceCalendar from '../../components/AttendanceCalendar';
 
 function StatusBadge({ status }) {
   if (status === 'PRESENT') return <span className="badge badge-student">Present</span>;
-  if (status === 'PARTIAL') return <span className="badge badge-admin">Partial</span>;
+  if (status === 'PARTIAL') return <span className="badge badge-partial">Partial</span>;
+  if (status === 'ACTIVE')  return <span className="badge badge-active">Active</span>;
   if (status === 'ABSENT') return (
     <span className="badge" style={{ background: '#fee2e2', color: '#ef4444' }}>Absent</span>
   );

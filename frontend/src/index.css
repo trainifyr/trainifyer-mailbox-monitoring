@@ -260,8 +260,10 @@ ul {
   text-transform: uppercase;
 }
 
-.badge-admin { background: rgba(16, 185, 129, 0.1); color: var(--primary); }
-.badge-student { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.badge-admin   { background: rgba(16, 185, 129, 0.1); color: var(--primary); }   /* PRESENT – green */
+.badge-student { background: rgba(16, 185, 129, 0.1); color: #10b981; }           /* PRESENT – green (student side) */
+.badge-partial { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }          /* PARTIAL – amber/yellow */
+.badge-active  { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }          /* ACTIVE  – blue */
 
 /* Animations */
 @keyframes fadeIn {

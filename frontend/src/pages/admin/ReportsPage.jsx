@@ -322,7 +322,8 @@ export default function ReportsPage() {
                           <td style={{ textAlign: 'right' }}>
                             <span className={`badge ${
                               d.status === 'PRESENT' ? 'badge-student' : 
-                              d.status === 'PARTIAL' ? 'badge-admin' : ''
+                              d.status === 'PARTIAL' ? 'badge-partial' :
+                              d.status === 'ACTIVE'  ? 'badge-active'  : ''
                             }`} style={{ 
                               background: d.status === 'ABSENT' ? '#fee2e2' : '',
                               color: d.status === 'ABSENT' ? '#ef4444' : ''
