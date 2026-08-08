@@ -57,8 +57,8 @@ async function sweepStaleSessions(meetingId = null, forceAll = false) {
       }
 
       await pool.query(
-        `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'LEAVE')`,
-        [staleLog.id, staleLog.user_id]
+        `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
+        [staleLog.id]
       );
 
       await pool.query(

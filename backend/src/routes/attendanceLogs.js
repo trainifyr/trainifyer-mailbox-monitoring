@@ -159,11 +159,11 @@ router.post('/join-log', async (req, res, next) => {
                    last_joined_at, total_minutes, attendance_percentage, status`,
         [existingRow.id]
       );
-      // Fire JOIN event — wrapped in try/catch so a failed event log never blocks the 201 response
+      // Fire JOIN event
       try {
         await pool.query(
-          `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
-          [updated[0].id, userId]
+          `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
+          [updated[0].id]
         );
       } catch (evErr) { console.error('event insert failed (rejoin):', evErr.message); }
       return res.json({ data: updated[0] });
@@ -182,11 +182,11 @@ router.post('/join-log', async (req, res, next) => {
       [id, userId, externalName]
     );
 
-    // Fire JOIN event — wrapped in try/catch so a failed event log never blocks the 201 response
+    // Fire JOIN event
     try {
       await pool.query(
-        `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
-        [rows[0].id, userId]
+        `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
+        [rows[0].id]
       );
     } catch (evErr) { console.error('event insert failed (new join):', evErr.message); }
 
@@ -308,8 +308,8 @@ router.post('/leave-log', async (req, res, next) => {
     }
 
     await pool.query(
-      `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'LEAVE')`,
-      [attendanceRow.id, userId]
+      `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
+      [attendanceRow.id]
     );
 
     // Update the attendance log
