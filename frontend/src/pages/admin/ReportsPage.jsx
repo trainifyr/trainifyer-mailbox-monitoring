@@ -176,14 +176,7 @@ export default function ReportsPage() {
                <label className="label" style={{ fontSize: '0.7rem' }}>To Date</label>
                <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
-            <div className="input-group" style={{ marginBottom: 0 }}>
-               <label className="label" style={{ fontSize: '0.7rem' }}>Time Scale</label>
-               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={granularity} onChange={(e) => setGranularity(e.target.value)}>
-                 <option value="daily">Daily View</option>
-                 <option value="weekly">Weekly Rollup</option>
-                 <option value="monthly">Monthly Aggregate</option>
-               </select>
-            </div>
+
             <div className="input-group" style={{ marginBottom: 0 }}>
                <label className="label" style={{ fontSize: '0.7rem' }}>Status</label>
                <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -251,28 +244,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Time Analysis Area */}
-          {series && series.length > 0 && (
-            <div style={{ marginBottom: '3.5rem' }}>
-               <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Temporal Trends ({granularity})</h2>
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
-                  {series.map((s) => (
-                    <div key={s.period} className="card" style={{ padding: '1.25rem' }}>
-                       <div style={{ fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border)' }}>{s.period}</div>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                         <span>{s.sessions} Sessions</span>
-                         <span style={{ fontWeight: 600, color: '#10b981' }}>{Math.round(s.average_percentage)}% Enrolled</span>
-                       </div>
-                       <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', background: 'var(--border-light)' }}>
-                          <div style={{ flex: s.present_count, background: '#10b981' }} />
-                          <div style={{ flex: s.partial_count, background: '#f59e0b' }} />
-                          <div style={{ flex: s.absent_count, background: '#ef4444' }} />
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-          )}
+
 
           {/* Master Detail Table */}
           <section>
