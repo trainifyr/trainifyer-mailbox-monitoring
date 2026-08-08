@@ -159,10 +159,13 @@ router.post('/join-log', async (req, res, next) => {
                    last_joined_at, total_minutes, attendance_percentage, status`,
         [existingRow.id]
       );
-      await pool.query(
-        `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
-        [updated[0].id, userId]
-      );
+      // Fire JOIN event — wrapped in try/catch so a failed event log never blocks the 201 response
+      try {
+        await pool.query(
+          `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
+          [updated[0].id, userId]
+        );
+      } catch (evErr) { console.error('event insert failed (rejoin):', evErr.message); }
       return res.json({ data: updated[0] });
     }
 
@@ -179,10 +182,13 @@ router.post('/join-log', async (req, res, next) => {
       [id, userId, externalName]
     );
 
-    await pool.query(
-      `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
-      [rows[0].id, userId]
-    );
+    // Fire JOIN event — wrapped in try/catch so a failed event log never blocks the 201 response
+    try {
+      await pool.query(
+        `INSERT INTO public.attendance_events (attendance_log_id, user_id, event) VALUES ($1, $2, 'JOIN')`,
+        [rows[0].id, userId]
+      );
+    } catch (evErr) { console.error('event insert failed (new join):', evErr.message); }
 
     res.status(201).json({ data: rows[0] });
   } catch (err) {
@@ -347,10 +353,8 @@ router.post('/heartbeat', async (req, res, next) => {
       return res.json({ data: null, message: 'Public meeting — attendance not recorded' });
     }
 
-    // Since heartbeats hit every 60s, checking for stale sessions globally across the meeting
-    // ensures disconnected users are cleaned up organically as long as anyone is in the meeting
-    await sweepStaleSessions(id);
-
+    // Update last_heartbeat FIRST — must happen before the sweep so the student's
+    // own session is not finalised by the sweep before the timestamp is refreshed.
     let result;
     if (userId) {
       result = await pool.query(
@@ -378,6 +382,9 @@ router.post('/heartbeat', async (req, res, next) => {
         message: 'No active session found for this user in this meeting'
       });
     }
+
+    // NOW sweep other stale sessions in this meeting (safe — our own heartbeat is already refreshed)
+    await sweepStaleSessions(id);
 
     res.json({ data: result.rows[0] });
   } catch (err) {

@@ -24,9 +24,6 @@ const STATUS_FILTERS = ['PRESENT', 'PARTIAL', 'ACTIVE', 'ABSENT'];
 
 router.get('/attendance', async (req, res, next) => {
   try {
-    // Ensure sessions are finalized before reporting
-    await sweepStaleSessions();
-
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
 
