@@ -197,6 +197,7 @@ export default function MeetingRoomPage() {
   // Polls the meeting status every 10 seconds.
   // When Admin clicks "End", students are automatically kicked out of Jitsi
   // and their attendance is finalized (the backend does that part on the API call).
+  const statusPollIntervalRef = useRef(null);
   useEffect(() => {
     // Only poll if we are inside an ongoing session
     if (!isAuthenticated || !id || !hasJoined) return;
@@ -208,21 +209,23 @@ export default function MeetingRoomPage() {
         const res = await apiClient.get('/meetings');
         const found = res.data.data.find((m) => m.id === id);
         if (!found || found.status === 'ENDED' || found.status === 'CANCELLED') {
-          // Meeting has ended — hang up Jitsi and redirect
+          // Stop polling immediately
+          clearInterval(statusPollIntervalRef.current);
+          // Hang up Jitsi call
           if (jitsiApiRef.current) {
             try { jitsiApiRef.current.executeCommand('hangup'); } catch (_) {}
           }
+          // Reset so sendLeaveLog isn't blocked by sessionEndedRef
+          sessionEndedRef.current = false;
           await sendLeaveLog(false);
-          setMeeting((prev) => prev ? { ...prev, status: 'ENDED' } : prev);
-          clearInterval(statusPollRef2.current);
+          navigate('/student/meetings');
         }
       } catch (_) {}
     };
 
-    const statusPollRef2 = { current: null };
-    statusPollRef2.current = setInterval(pollStatus, 10000);
-    return () => clearInterval(statusPollRef2.current);
-  }, [id, isAuthenticated, hasJoined, isAdmin, sendLeaveLog]);
+    statusPollIntervalRef.current = setInterval(pollStatus, 10000);
+    return () => clearInterval(statusPollIntervalRef.current);
+  }, [id, isAuthenticated, hasJoined, isAdmin, sendLeaveLog, navigate]);
 
   useEffect(() => {
     if (consentState !== 'accepted' || !meeting || !jitsiContainerRef.current || !hasJoined) return;

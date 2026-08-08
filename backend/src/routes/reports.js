@@ -711,11 +711,8 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
       return res.status(403).json({ error: 'Forbidden', message: 'Students can only view their own logs' });
     }
 
-    // Ensure session is finalized before querying event logs
-    await sweepStaleSessions(meetingId);
-
     const { rows } = await pool.query(
-      `SELECT ae.id, ae.event, ae.event_at,
+      `SELECT ae.id, ae.event AS event_type, ae.event_at,
               al.joined_at AS log_joined_at, al.left_at AS log_left_at,
               al.total_minutes, al.attendance_percentage, al.status
        FROM public.attendance_events ae
