@@ -709,7 +709,7 @@ router.get('/attendance/student/:userId/logs/:meetingId/:date', async (req, res,
     }
 
     const { rows } = await pool.query(
-      `SELECT ae.id, ae.event AS event_type, ae.event_at,
+      `SELECT ae.id, ae.event_type, ae.event_at,
               al.joined_at AS log_joined_at, al.left_at AS log_left_at,
               al.total_minutes, al.attendance_percentage, al.status
        FROM public.attendance_events ae
