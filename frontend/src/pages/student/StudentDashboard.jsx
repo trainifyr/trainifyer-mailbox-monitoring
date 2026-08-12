@@ -172,8 +172,8 @@ export default function StudentDashboard() {
                      </tr>
                    </thead>
                    <tbody>
-                      {report.details.slice(0, 15).map((d) => (
-                        <tr key={d.attendance_log_id}>
+                      {report.details.slice(0, 15).map((d, i) => (
+                        <tr key={d.meeting_title + d.session_date + i}>
                           <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
                           <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                             {d.joined_at ? new Date(d.joined_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '—'}
