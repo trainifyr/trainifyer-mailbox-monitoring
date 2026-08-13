@@ -32,6 +32,7 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 *   **Metric Engine**: Automatically computes session duration, percentage, and participation status (Present/Partial/Absent).
 *   **Rich Dashboards**: High-fidelity KPI cards, time-series distributions, and CSV data export for admins.
 *   **Per-Student Daily Attendance Sheet**: Clickable student names open a full day-by-day attendance ledger with implicit absences — if a student missed a session (one-off or recurring), they are automatically marked **Absent** with `0%` attendance for that date.
+*   **Student Self-Service Portal**: Dedicated full history view for students with robust "from/to" date filtering to independently audit their own attendance tracking.
 
 ### 🗂️ Student & Batch Management
 *   **Drill-Down Navigation**: Clickable student and batch names on admin pages navigate to dedicated detail views.
