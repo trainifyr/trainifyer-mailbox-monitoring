@@ -16,6 +16,7 @@ import AdminMeetingsPage from '../pages/meetings/AdminMeetingsPage';
 import MeetingsListPage from '../pages/meetings/MeetingsListPage';
 import MeetingRoomPage from '../pages/meetings/MeetingRoomPage';
 import StudentDashboard from '../pages/student/StudentDashboard';
+import StudentAttendanceHistory from '../pages/student/StudentAttendanceHistory';
 import ReportsPage from '../pages/admin/ReportsPage';
 import ProfilePage from '../pages/ProfilePage';
 import StudentAttendancePage from '../pages/admin/StudentAttendancePage';
@@ -66,6 +67,9 @@ export default function AppRoutes() {
         {/* Student-only routes */}
         <Route path="/student/dashboard" element={
           <StudentRoute><StudentDashboard /></StudentRoute>
+        } />
+        <Route path="/student/attendance-history" element={
+          <StudentRoute><StudentAttendanceHistory /></StudentRoute>
         } />
 
         {/* Authenticated routes (any role) */}

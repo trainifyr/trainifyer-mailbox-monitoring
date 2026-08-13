@@ -164,8 +164,8 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {details?.slice(0, 6).map((d) => (
-                        <tr key={d.attendance_log_id}>
+                      {details?.map((d, i) => (
+                        <tr key={d.meeting_title + (d.user_id || d.external_name) + i}>
                           <td style={{ fontWeight: 500, color: 'var(--text-heading)' }}>{d.user_name || d.external_name}</td>
                           <td>{d.meeting_title}</td>
                           <td>
@@ -180,7 +180,9 @@ export default function AdminDashboard() {
                               {d.status}
                             </span>
                           </td>
-                          <td style={{ fontWeight: 600 }}>{d.attendance_percentage != null ? `${Math.round(d.attendance_percentage)}%` : '—'}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            {d.status === 'ACTIVE' ? 'Live' : d.attendance_percentage != null ? `${Math.round(d.attendance_percentage)}%` : '—'}
+                          </td>
                         </tr>
                       ))}
                       {(!details || details.length === 0) && (

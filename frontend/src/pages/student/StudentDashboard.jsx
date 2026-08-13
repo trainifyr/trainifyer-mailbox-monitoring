@@ -13,7 +13,8 @@ import {
   XCircle, 
   ArrowRight,
   User,
-  ExternalLink
+  ExternalLink,
+  History
 } from 'lucide-react';
 import AttendanceCalendar from '../../components/AttendanceCalendar';
 
@@ -196,6 +197,15 @@ export default function StudentDashboard() {
                </div>
              </div>
            )}
+
+              {/* Link to full history */}
+              {report?.details && report.details.length > 0 && (
+                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                  <Link to="/student/attendance-history" style={{ fontSize: '0.875rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--primary)' }}>
+                    <History size={14} /> View Full Attendance History
+                  </Link>
+                </div>
+              )}
           </section>
 
           {/* Sidebar Area */}
