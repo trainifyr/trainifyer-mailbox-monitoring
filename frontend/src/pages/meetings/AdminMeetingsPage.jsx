@@ -390,7 +390,7 @@ export default function AdminMeetingsPage() {
                               Edit
                             </button>
                           )}
-                          {(m.status === 'LIVE' || m.status === 'ENDED') && (
+                          {(m.status === 'LIVE' || m.status === 'ENDED' || m.status === 'SCHEDULED') && (
                             <button
                               className="btn btn-sm btn-ghost"
                               onClick={() => handleEndMeeting(m.id)}
