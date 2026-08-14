@@ -11,12 +11,12 @@ async function sweepStaleSessions(meetingId = null, forceAll = false) {
     const timeCondition = forceAll ? '' : `AND (al.last_heartbeat IS NULL OR al.last_heartbeat < now() - interval '5 minutes')`;
     
     const query = meetingId 
-      ? `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+      ? `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.last_heartbeat, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.meeting_id = $1 AND al.left_at IS NULL
            ${timeCondition}`
-      : `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.total_minutes, m.scheduled_start, m.scheduled_end
+      : `SELECT al.id, al.meeting_id, al.user_id, al.joined_at, al.last_joined_at, al.last_heartbeat, al.total_minutes, m.scheduled_start, m.scheduled_end
          FROM public.attendance_logs al
          JOIN public.meetings m ON m.id = al.meeting_id
          WHERE al.left_at IS NULL
@@ -25,10 +25,11 @@ async function sweepStaleSessions(meetingId = null, forceAll = false) {
     const { rows: stale } = meetingId ? await pool.query(query, [meetingId]) : await pool.query(query);
 
     for (const staleLog of stale) {
-      const now2 = new Date();
-      // Use last_joined_at (segment start) instead of joined_at to get delta for this segment only
+      // Calculate true end time: if heartbeat exists use it, otherwise segmentStart (meaning 0 credit)
       const segmentStart = staleLog.last_joined_at ? new Date(staleLog.last_joined_at) : new Date(staleLog.joined_at);
-      const staleMinutes = Math.max(0, Math.round(((now2 - segmentStart) / 60000) * 100) / 100);
+      const trueEnd = staleLog.last_heartbeat ? new Date(staleLog.last_heartbeat) : segmentStart;
+      
+      const staleMinutes = Math.max(0, Math.round(((trueEnd - segmentStart) / 60000) * 100) / 100);
       const priorMin2 = parseFloat(staleLog.total_minutes) || 0;
       const totalMin2 = priorMin2 + staleMinutes;
       let stalePct = null;
@@ -57,13 +58,13 @@ async function sweepStaleSessions(meetingId = null, forceAll = false) {
       }
 
       await pool.query(
-        `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
-        [staleLog.id]
+        `INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', $2)`,
+        [staleLog.id, trueEnd]
       );
 
       await pool.query(
-        `UPDATE public.attendance_logs SET left_at = now(), total_minutes = $1, attendance_percentage = $2, status = $3::public.attendance_status WHERE id = $4`,
-        [totalMin2, stalePct, staleStatus, staleLog.id]
+        `UPDATE public.attendance_logs SET left_at = $1, total_minutes = $2, attendance_percentage = $3, status = $4::public.attendance_status WHERE id = $5`,
+        [trueEnd, totalMin2, stalePct, staleStatus, staleLog.id]
       );
     }
   } catch (e) {
