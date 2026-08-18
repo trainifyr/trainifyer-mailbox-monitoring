@@ -87,16 +87,24 @@ export default function MeetingRoomPage() {
   }, [sendLeaveLog]);
 
   const startHeartbeat = useCallback(() => {
-    const ping = async () => {
+    if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+
+    const ping = async (intervalId) => {
       try {
         await apiClient.post(`/meetings/${id}/heartbeat`);
         setHeartbeatActive(true);
       } catch (e) {
-        if (e.response?.status === 404) clearInterval(heartbeatIntervalRef.current);
+        if (e.response?.status === 404) clearInterval(intervalId);
       }
     };
-    ping();
-    heartbeatIntervalRef.current = setInterval(ping, HEARTBEAT_INTERVAL_MS);
+    
+    // Self-contained interval to avoid ref collision on rapid reconnects
+    const idObj = { current: null };
+    idObj.current = setInterval(() => ping(idObj.current), HEARTBEAT_INTERVAL_MS);
+    heartbeatIntervalRef.current = idObj.current;
+    
+    // Initial immediate ping
+    ping(idObj.current);
   }, [id]);
 
   const sendJoinLog = useCallback(async () => {
