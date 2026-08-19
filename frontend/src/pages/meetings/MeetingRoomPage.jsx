@@ -253,8 +253,8 @@ export default function MeetingRoomPage() {
           } catch (e) { }
         }
 
-        // TEMPORARY hardware test to isolate if systemli is actively banning multiparty calls
-        const domain = 'meet.jit.si';
+        // meet.ffmuc.net: stable open server, no moderator lock, no caps
+        const domain = 'meet.ffmuc.net';
 
         const options = {
           roomName: meeting.jitsi_room_name,
