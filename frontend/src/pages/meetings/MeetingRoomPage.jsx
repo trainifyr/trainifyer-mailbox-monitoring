@@ -253,8 +253,8 @@ export default function MeetingRoomPage() {
           } catch (e) { }
         }
 
-        // meet.fairmeeting.net: stable community server, no auth locks, NO iframe X-Frame blocking
-        const domain = 'meet.fairmeeting.net';
+        // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
+        const domain = 'meet.systemli.org';
 
         const options = {
           roomName: meeting.jitsi_room_name,
