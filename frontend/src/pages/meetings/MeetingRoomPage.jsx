@@ -253,8 +253,8 @@ export default function MeetingRoomPage() {
           } catch (e) { }
         }
 
-        // meet.ffmuc.net: stable open server, no moderator lock, no caps
-        const domain = 'meet.ffmuc.net';
+        // meet.fairmeeting.net: stable community server, no auth locks, NO iframe X-Frame blocking
+        const domain = 'meet.fairmeeting.net';
 
         const options = {
           roomName: meeting.jitsi_room_name,
