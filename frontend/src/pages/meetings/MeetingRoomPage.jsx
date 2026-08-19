@@ -285,6 +285,13 @@ export default function MeetingRoomPage() {
               }
             },
 
+            // Crucial block: Prevent P2P crashing when exactly 2 people are in the room.
+            // If P2P is true, Jitsi tries to disconnect from the server and connect users directly,
+            // which often fails on strict networks and kicks both people out.
+            p2p: {
+              enabled: false
+            },
+
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
 
