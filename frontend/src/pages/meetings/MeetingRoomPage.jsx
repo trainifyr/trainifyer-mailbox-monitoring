@@ -253,8 +253,8 @@ export default function MeetingRoomPage() {
           } catch (e) { }
         }
 
-        // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
-        const domain = 'meet.systemli.org';
+        // TEMPORARY hardware test to isolate if systemli is actively banning multiparty calls
+        const domain = 'meet.jit.si';
 
         const options = {
           roomName: meeting.jitsi_room_name,
