@@ -8,7 +8,7 @@ import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
 import { ArrowLeft, Loader, Activity, VideoOff, MicOff, Settings } from 'lucide-react';
 import './MeetingRoomPage.css';
 
-const HEARTBEAT_INTERVAL_MS = 60000; 
+const HEARTBEAT_INTERVAL_MS = 60000;
 
 export default function MeetingRoomPage() {
   const { id } = useParams();
@@ -78,7 +78,7 @@ export default function MeetingRoomPage() {
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('unload', handleUnload);
     window.addEventListener('pagehide', handleUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('unload', handleUnload);
@@ -97,12 +97,12 @@ export default function MeetingRoomPage() {
         if (e.response?.status === 404) clearInterval(intervalId);
       }
     };
-    
+
     // Self-contained interval to avoid ref collision on rapid reconnects
     const idObj = { current: null };
     idObj.current = setInterval(() => ping(idObj.current), HEARTBEAT_INTERVAL_MS);
     heartbeatIntervalRef.current = idObj.current;
-    
+
     // Initial immediate ping
     ping(idObj.current);
   }, [id]);
@@ -115,7 +115,7 @@ export default function MeetingRoomPage() {
         attendanceLogIdRef.current = res.data.data.id;
         startHeartbeat();
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [id, startHeartbeat]);
 
   useEffect(() => {
@@ -164,7 +164,7 @@ export default function MeetingRoomPage() {
   useEffect(() => {
     if (!meeting || !isAuthenticated || hasJoined) return;
     let cancelled = false;
-    
+
     async function fetchActiveParticipants() {
       try {
         const res = await apiClient.get(`/meetings/${id}/active-participants`);
@@ -188,7 +188,7 @@ export default function MeetingRoomPage() {
         if (!cancelled) setParticipantsLoading(false);
       }
     }
-    
+
     fetchActiveParticipants();
     const interval = setInterval(fetchActiveParticipants, 15000);
     return () => {
@@ -217,14 +217,14 @@ export default function MeetingRoomPage() {
           clearInterval(statusPollIntervalRef.current);
           // Hang up Jitsi call
           if (jitsiApiRef.current) {
-            try { jitsiApiRef.current.executeCommand('hangup'); } catch (_) {}
+            try { jitsiApiRef.current.executeCommand('hangup'); } catch (_) { }
           }
           // Reset so sendLeaveLog isn't blocked by sessionEndedRef
           sessionEndedRef.current = false;
           await sendLeaveLog(false);
           navigate('/student/meetings');
         }
-      } catch (_) {}
+      } catch (_) { }
     };
 
     statusPollIntervalRef.current = setInterval(pollStatus, 10000);
@@ -250,13 +250,12 @@ export default function MeetingRoomPage() {
             const res = await apiClient.get('/users/students');
             const u = res.data.data.find((s) => s.id === userId);
             if (u) userDisplayName = u.full_name;
-          } catch (e) {}
+          } catch (e) { }
         }
 
-        // Primary: meet.ffmuc.net (Freifunk Munich — stable, no moderator, no limit, iframe-compatible)
-        // Fallback: meet.systemli.org (currently unstable as of 2026-08-19, switch back when recovered)
-        const domain = 'meet.ffmuc.net';
-        
+        // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
+        const domain = 'meet.systemli.org';
+
         const options = {
           roomName: meeting.jitsi_room_name,
           width: '100%',
@@ -277,7 +276,7 @@ export default function MeetingRoomPage() {
             disableDeepLinking: true,
             disableProfile: true,
             disableSpeakerStats: true,
-            
+
             // Limit bandwidth payload to stop public instances from dropping connection
             resolution: 360,
             constraints: {
@@ -285,19 +284,19 @@ export default function MeetingRoomPage() {
                 height: { ideal: 360, max: 360, min: 180 }
               }
             },
-            
+
             // Google Meet gallery feel
             disableLocalVideoFlip: true,
-            
+
             hideConferenceSubject: true, // We have our own title bar
             hideConferenceTimer: true,
-            
+
             // Restrict moderator buttons if the user is a student
             // For security, students MUST NOT have 'hangup' in their toolbar, to prevent phantom "End meeting for all"
             toolbarButtons: isAdmin
               ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
               : ['microphone', 'camera', meeting.require_screen_share === 'OFF' ? null : 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'].filter(Boolean),
-            
+
             // Mute/Kick overrides
             remoteVideoMenu: {
               disableKick: !isAdmin,
@@ -346,7 +345,7 @@ export default function MeetingRoomPage() {
         }
 
         setJitsiLoading(false);
-        
+
         // Force Google Meet style grid view immediately upon entering the call
         jitsiApi.addListener('videoConferenceJoined', async () => {
           setIsInConference(true);
@@ -427,7 +426,7 @@ export default function MeetingRoomPage() {
           isSessionEnded = true;
           if (meeting.recur_start_time) {
             const [sh, sm] = meeting.recur_start_time.split(':').map(Number);
-            sessionEndedMsg = `Today's session has ended. See you tomorrow from ${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}.`;
+            sessionEndedMsg = `Today's session has ended. See you tomorrow from ${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}.`;
           }
         }
       } else if (!meeting.is_recurring && meeting.scheduled_end) {
@@ -470,7 +469,7 @@ export default function MeetingRoomPage() {
                 {activeCount > 0 && <span className="participants-indicator-pulse" />}
                 {activeCount > 0 ? 'Active in Call' : 'Room is empty'}
               </div>
-              
+
               {activeCount > 0 && (
                 <div className="avatar-stack">
                   {activeParticipants.slice(0, 3).map((p, idx) => (
@@ -485,7 +484,7 @@ export default function MeetingRoomPage() {
                   )}
                 </div>
               )}
-              
+
               <div className="participants-text" style={{ fontSize: '0.9375rem', marginTop: activeCount > 0 ? '0.5rem' : 0 }}>
                 {participantsLoading ? 'Checking participants...' : participantsText}
               </div>
