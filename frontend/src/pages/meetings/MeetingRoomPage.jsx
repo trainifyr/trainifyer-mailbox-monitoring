@@ -253,8 +253,9 @@ export default function MeetingRoomPage() {
           } catch (e) {}
         }
 
-        // meet.systemli.org: confirmed iframe-compatible, public Jitsi instance with anonymous room creation
-        const domain = 'meet.systemli.org'; 
+        // Primary: meet.ffmuc.net (Freifunk Munich — stable, no moderator, no limit, iframe-compatible)
+        // Fallback: meet.systemli.org (currently unstable as of 2026-08-19, switch back when recovered)
+        const domain = 'meet.ffmuc.net';
         
         const options = {
           roomName: meeting.jitsi_room_name,
