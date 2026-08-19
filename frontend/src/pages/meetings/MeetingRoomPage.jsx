@@ -355,33 +355,13 @@ export default function MeetingRoomPage() {
           }
         });
 
-        const handleUnexpectedDrop = async () => {
-          if (sessionEndedRef.current) return;
-          setIsInConference(false);
-          // Log the LEAVE before attempting reconnect so the timeline is accurate
-          const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-          const token = defaultAuthTokenRef.current;
-          if (attendanceLogIdRef.current && token) {
-            try {
-              await fetch(`${apiUrl}/meetings/${id}/leave-log`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                keepalive: true,
-              });
-            } catch {}
-          }
-          // Reset so the reconnected session creates a fresh JOIN log entry
-          attendanceLogIdRef.current = null;
-          setJitsiLoading(true);
-          jitsiApiRef.current?.dispose();
-          setTimeout(() => {
-            if (!cancelled) initJitsi();
-          }, 3000);
-        };
 
-        // Intercept silent kicks or packet-loss drops and silently resurrect the connection
-        jitsiApi.addListener('readyToClose', handleUnexpectedDrop);
-        jitsiApi.addListener('videoConferenceLeft', handleUnexpectedDrop);
+        // NOTE: Do NOT listen to readyToClose or videoConferenceLeft here.
+        // Those events fire during Jitsi's own internal reconnect cycles.
+        // Intercepting them caused us to destroy+recreate the iframe every ~60s,
+        // creating an infinite reconnect loop. Jitsi handles network blips natively.
+        // Students are kicked via the admin "End" button (status poll) or
+        // naturally close the tab/click Leave — both of which call sendLeaveLog directly.
       } catch (e) {
         console.error('Failed to initialize Jitsi meeting room:', e);
         if (!cancelled) setJitsiLoading(false);
