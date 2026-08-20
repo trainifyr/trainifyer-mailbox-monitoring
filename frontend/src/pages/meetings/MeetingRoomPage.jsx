@@ -20,6 +20,7 @@ export default function MeetingRoomPage() {
   const sessionEndedRef = useRef(false);
   const attendanceLogIdRef = useRef(null);
   const defaultAuthTokenRef = useRef(null); // synchronous token access for beforeunload
+  const wakeLockRef = useRef(null); // Reference to hold the screen awake lock
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -213,6 +214,41 @@ export default function MeetingRoomPage() {
       clearInterval(interval);
     };
   }, [id, meeting, isAuthenticated, hasJoined]);
+
+  // --- Screen Wake Lock (Prevent Sleep) ---
+  // Actively holds the computer awake while the student is in the meeting
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && hasJoined) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.error('Wake Lock error:', err.name, err.message);
+        }
+      }
+    };
+
+    const handleVisibilityChange = async () => {
+      // Wake locks are automatically dropped when the tab is hidden. 
+      // We must re-request it when they come back.
+      if (document.visibilityState === 'visible' && hasJoined) {
+        await requestWakeLock();
+      }
+    };
+
+    if (hasJoined) {
+      requestWakeLock();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [hasJoined]);
 
   // --- Meeting End Watcher ---
   // Polls the meeting status every 10 seconds.
