@@ -89,7 +89,24 @@ export default function MeetingRoomPage() {
   const startHeartbeat = useCallback(() => {
     if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
 
+    let lastTick = Date.now();
+
     const ping = async (intervalId) => {
+      // Sleep/Freeze detection: If the timer fires extremely late (e.g., > 2.5 minutes interval instead of 1 min),
+      // it means the computer went to sleep, hibernate, or the browser aggressively throttled the background tab.
+      const now = Date.now();
+      const elapsed = now - lastTick;
+      lastTick = now;
+
+      // Allow 2.5 minutes (150,000ms) of slop before considering it a sleep event
+      if (elapsed > 150000) {
+        console.warn('System sleep or severe throttling detected. Halting session.');
+        clearInterval(intervalId);
+        await sendLeaveLog(); // kick out attendance
+        setHasJoined(false); // force them out to lobby
+        return;
+      }
+
       try {
         await apiClient.post(`/meetings/${id}/heartbeat`);
         setHeartbeatActive(true);
@@ -105,7 +122,7 @@ export default function MeetingRoomPage() {
 
     // Initial immediate ping
     ping(idObj.current);
-  }, [id]);
+  }, [id, sendLeaveLog]);
 
   const sendJoinLog = useCallback(async () => {
     try {

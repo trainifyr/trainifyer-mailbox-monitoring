@@ -116,6 +116,21 @@ router.post('/join-log', async (req, res, next) => {
     // Check for existing attendance log (consolidated)
     let existingRow = null;
     if (userId) {
+      // First, forcefully clean up any ghost duplicates from race conditions (multiple devices joining simultaneously)
+      // Keep only the most recent row, mark all older ones as left_at = now()
+      await pool.query(
+        `UPDATE public.attendance_logs
+         SET left_at = now()
+         WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
+           AND left_at IS NULL
+           AND id NOT IN (
+             SELECT id FROM public.attendance_logs 
+             WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
+             ORDER BY joined_at DESC LIMIT 1
+           )`,
+        [id, userId]
+      );
+
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
@@ -127,6 +142,19 @@ router.post('/join-log', async (req, res, next) => {
       );
       if (rows.length > 0) existingRow = rows[0];
     } else if (externalName) {
+      await pool.query(
+        `UPDATE public.attendance_logs
+         SET left_at = now()
+         WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
+           AND left_at IS NULL
+           AND id NOT IN (
+             SELECT id FROM public.attendance_logs 
+             WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
+             ORDER BY joined_at DESC LIMIT 1
+           )`,
+        [id, externalName]
+      );
+
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
                 total_minutes, attendance_percentage, status
