@@ -277,11 +277,24 @@ export default function MeetingRoomPage() {
             disableProfile: true,
             disableSpeakerStats: true,
 
-            // Limit bandwidth payload to stop public instances from dropping connection
+            // Camera video capped at 360p to avoid dropping free server connections
             resolution: 360,
             constraints: {
               video: {
                 height: { ideal: 360, max: 360, min: 180 }
+              }
+            },
+
+            // Point 8: Screen share at high resolution with low FPS to keep bandwidth reasonable.
+            // This fixes the blurry small-text problem during screen sharing.
+            desktopSharingFrameRate: { min: 3, max: 8 },
+            desktopSharingResolution: 1080,
+            desktopSharingMaxFps: 8,
+            screenShareSettings: {
+              desktopMediaVideo: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: { ideal: 8, max: 10 }
               }
             },
 
@@ -334,7 +347,8 @@ export default function MeetingRoomPage() {
             VIDEO_QUALITY_LABEL_DISABLED: true,
             DISABLE_DOMINANT_SPEAKER_INDICATOR: true,
             TOOLBAR_ALWAYS_VISIBLE: false,
-            TILE_VIEW_MAX_COLUMNS: 4,
+            // Point 7: Maximize tile density — 5 columns fits up to 20 people without scrolling
+            TILE_VIEW_MAX_COLUMNS: 5,
             MOBILE_APP_PROMO: false,
             SHOW_CHROME_EXTENSION_BANNER: false,
             GENERATE_ROOMNAMES_ON_WELCOME_PAGE: false,
