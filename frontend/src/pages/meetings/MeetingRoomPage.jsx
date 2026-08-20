@@ -5,7 +5,7 @@ import apiClient from '../../api/client';
 import { supabase } from '../../lib/supabaseClient';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
-import { ArrowLeft, Loader, Activity, VideoOff, MicOff, Settings } from 'lucide-react';
+import { ArrowLeft, Loader, Activity, Clock } from 'lucide-react';
 import './MeetingRoomPage.css';
 
 const HEARTBEAT_INTERVAL_MS = 60000;
@@ -500,8 +500,18 @@ export default function MeetingRoomPage() {
             <div className="lobby-actions">
               {isSessionEnded ? (
                 <div className="session-ended-notice">
-                  <span>🔒</span>
-                  <p>{sessionEndedMsg}</p>
+                  <div className="session-ended-icon-wrap">
+                    <Clock size={28} />
+                  </div>
+                  <div className="session-ended-text">
+                    <strong>Session Closed</strong>
+                    <p>{sessionEndedMsg}</p>
+                    {meeting.is_recurring && meeting.recur_start_time && (
+                      <span className="session-ended-next">
+                        Next session: tomorrow at {meeting.recur_start_time.slice(0, 5)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <button className="lobby-join-btn" onClick={() => setHasJoined(true)}>
@@ -515,15 +525,32 @@ export default function MeetingRoomPage() {
     );
   }
 
+  // Build a readable schedule string for the badge
+  const scheduleBadge = (() => {
+    if (meeting.is_recurring && meeting.recur_start_time && meeting.recur_end_time) {
+      return `${meeting.recur_start_time.slice(0, 5)} – ${meeting.recur_end_time.slice(0, 5)}`;
+    }
+    if (!meeting.is_recurring && meeting.scheduled_end) {
+      return new Date(meeting.scheduled_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return null;
+  })();
+
   return (
     <div className="meeting-room-page">
       <div className="meeting-room-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
           <h2>{meeting.title}</h2>
+          {scheduleBadge && (
+            <span className="meeting-schedule-badge">
+              <Clock size={12} />
+              {scheduleBadge}
+            </span>
+          )}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /></span>}
+          {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /> Live</span>}
           {!isAdmin && isInConference && (
             <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
           )}

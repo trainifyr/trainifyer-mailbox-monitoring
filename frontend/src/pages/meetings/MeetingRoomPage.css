@@ -365,17 +365,19 @@
 .btn-leave-meeting {
   padding: 0.45rem 1.1rem;
   border-radius: 20px;
-  border: none;
-  background: #ef4444;
-  color: #fff;
+  border: 1.5px solid rgba(239, 68, 68, 0.6);
+  background: transparent;
+  color: #f87171;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 }
 
 .btn-leave-meeting:hover {
-  background: #dc2626;
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
   transform: translateY(-1px);
 }
 
@@ -386,23 +388,67 @@
 /* Shown in the lobby when the session time has passed */
 .session-ended-notice {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(239, 68, 68, 0.07);
   border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 12px;
-  text-align: center;
+  border-radius: 14px;
+  text-align: left;
 }
 
-.session-ended-notice span {
-  font-size: 1.75rem;
-}
-
-.session-ended-notice p {
+.session-ended-icon-wrap {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: #f87171;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-ended-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.session-ended-text strong {
+  color: #f87171;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.session-ended-text p {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
+}
+
+.session-ended-next {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary, #10b981);
+}
+
+/* Schedule badge in the in-meeting header */
+.meeting-schedule-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--primary, #10b981);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
