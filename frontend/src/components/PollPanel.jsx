@@ -92,10 +92,12 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   const updateOption = (i, v) => { const u = [...newOptions]; u[i] = v; setNewOptions(u); };
   const removeOption = (i) => setNewOptions(newOptions.filter((_, idx) => idx !== i));
 
-  // Visibility rule: hide closed polls created before this user's session
+  // Visibility rule: hide closed polls this user wasn't present for.
+  // EXCEPTION: always show polls the current user created themselves (clock-skew protection).
   const visiblePolls = polls.filter((poll) => {
-    if (!poll.is_closed) return true;
-    if (!sessionJoinedAt) return true;
+    if (!poll.is_closed) return true;                          // open → always show
+    if (poll.creator_name === userName) return true;           // own poll → always show
+    if (!sessionJoinedAt) return true;                         // no join time → show all
     return new Date(poll.created_at) > new Date(sessionJoinedAt);
   });
 
