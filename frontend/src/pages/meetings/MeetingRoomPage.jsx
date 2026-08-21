@@ -657,7 +657,7 @@ export default function MeetingRoomPage() {
           <PollPanel
             meetingId={id}
             userId={userId}
-            userName={user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Guest'}
+            userName={user?.full_name || 'Guest'}
             isAdmin={isAdmin}
             sessionJoinedAt={sessionJoinedAtRef.current}
             onClose={() => { setIsPollPanelOpen(false); setNewPollCount(0); }}
