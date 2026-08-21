@@ -77,11 +77,27 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   };
 
   const handleVote = async (pollId, optionIndex) => {
-    const { error } = await supabase.from('meeting_poll_votes').upsert(
-      { poll_id: pollId, voter_id: userId || null, voter_name: userName, option_index: optionIndex, voted_at: new Date().toISOString() },
-      { onConflict: 'one_vote_per_user_poll' }
-    );
-    if (error) console.error('Failed to vote:', error.message);
+    // Check if the user already voted to update instead of insert (bypassing flaky upsert constraint logic)
+    let query = supabase.from('meeting_poll_votes').select('id').eq('poll_id', pollId);
+    if (userId) query = query.eq('voter_id', userId);
+    else query = query.is('voter_id', null).eq('voter_name', userName);
+
+    const { data: existingVote } = await query.maybeSingle();
+
+    if (existingVote) {
+      const { error } = await supabase.from('meeting_poll_votes')
+        .update({ option_index: optionIndex, voted_at: new Date().toISOString() })
+        .eq('id', existingVote.id);
+      if (error) console.error('Failed to update vote:', error.message);
+    } else {
+      const { error } = await supabase.from('meeting_poll_votes').insert({
+        poll_id: pollId,
+        voter_id: userId || null,
+        voter_name: userName,
+        option_index: optionIndex,
+      });
+      if (error) console.error('Failed to insert vote:', error.message);
+    }
   };
 
   const closePoll = async (pollId) => {
