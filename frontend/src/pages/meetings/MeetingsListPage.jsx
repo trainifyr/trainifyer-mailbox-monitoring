@@ -110,7 +110,6 @@ export default function MeetingsListPage() {
 
                   <button
                     className={`btn ${isLive ? 'btn-primary' : 'btn-ghost'}`}
-                    disabled={isOver}
                     onClick={() => navigate(`/meeting/${m.id}`)}
                     style={{ 
                       width: '100%', 
