@@ -5,7 +5,8 @@ import apiClient from '../../api/client';
 import { supabase } from '../../lib/supabaseClient';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
-import { ArrowLeft, Loader, Activity, Clock } from 'lucide-react';
+import PollPanel from '../../components/PollPanel';
+import { ArrowLeft, Loader, Activity, Clock, BarChart2 } from 'lucide-react';
 import './MeetingRoomPage.css';
 
 const HEARTBEAT_INTERVAL_MS = 60000;
@@ -39,6 +40,7 @@ export default function MeetingRoomPage() {
   const [isInConference, setIsInConference] = useState(false); // true only after Jitsi pre-join complete
   const [activeParticipants, setActiveParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(true);
+  const [isPollPanelOpen, setIsPollPanelOpen] = useState(false);
 
   // sendLeaveLog: call this whenever a user leaves.
   // useBeacon=true is for tab-close (beforeunload) where fetch is killed by the browser.
@@ -620,18 +622,34 @@ export default function MeetingRoomPage() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /> Live</span>}
+          {isInConference && (
+            <button className={`btn-icon ${isPollPanelOpen ? 'active' : ''}`} onClick={() => setIsPollPanelOpen(!isPollPanelOpen)} title="Live Polls">
+              <BarChart2 size={20} />
+            </button>
+          )}
           {!isAdmin && isInConference && (
             <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
           )}
         </div>
       </div>
-      <div className="jitsi-wrapper">
-        {/* Consent overlay — blocks Jitsi until accepted (Students only) */}
-        {consentState === 'needed' && !isAdmin && (
-          <PrivacyConsentOverlay onAccept={handleAccept} onDecline={() => navigate(-1)} submitting={consentSubmitting} />
+      <div className="jitsi-wrapper" style={{ display: 'flex' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          {/* Consent overlay — blocks Jitsi until accepted (Students only) */}
+          {consentState === 'needed' && !isAdmin && (
+            <PrivacyConsentOverlay onAccept={handleAccept} onDecline={() => navigate(-1)} submitting={consentSubmitting} />
+          )}
+          {consentState === 'accepted' && jitsiLoading && <div className="jitsi-loading-overlay"><Loader size={24} className="spin" /><p>Opening video...</p></div>}
+          <div className="jitsi-container" ref={jitsiContainerRef} style={{ width: '100%', height: '100%', display: consentState === 'accepted' ? 'block' : 'none' }} />
+        </div>
+        {isPollPanelOpen && (
+          <PollPanel
+            meetingId={id}
+            userId={userId}
+            userName={user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Guest'}
+            isAdmin={isAdmin}
+            onClose={() => setIsPollPanelOpen(false)}
+          />
         )}
-        {consentState === 'accepted' && jitsiLoading && <div className="jitsi-loading-overlay"><Loader size={24} className="spin" /><p>Opening video...</p></div>}
-        <div className="jitsi-container" ref={jitsiContainerRef} style={{ width: '100%', height: '100%', display: consentState === 'accepted' ? 'block' : 'none' }} />
       </div>
     </div>
   );
