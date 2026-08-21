@@ -639,7 +639,7 @@ export default function MeetingRoomPage() {
               )}
             </button>
           )}
-          {!isAdmin && isInConference && (
+          {isInConference && (
             <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
           )}
         </div>
