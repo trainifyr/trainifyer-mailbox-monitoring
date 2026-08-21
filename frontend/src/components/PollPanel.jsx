@@ -259,7 +259,7 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
                   {/* Footer */}
                   <div className="poll-meta-row">
                     <span>{totalVotes} vote{totalVotes !== 1 ? 's' : ''} · by {poll.creator_name}</span>
-                    {isAdmin && !poll.is_closed && (
+                    {(isAdmin || poll.creator_name === userName) && !poll.is_closed && (
                       <span className="poll-close-btn" onClick={() => closePoll(poll.id)}>Close poll</span>
                     )}
                   </div>
