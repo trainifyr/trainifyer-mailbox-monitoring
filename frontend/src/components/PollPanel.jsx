@@ -11,7 +11,6 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   const [newOptions, setNewOptions] = useState(['', '']);
   const [loading, setLoading] = useState(true);
 
-  // Fetch initial data
   const fetchPollsAndVotes = useCallback(async () => {
     setLoading(true);
     const { data: pollsData, error: pollsError } = await supabase
@@ -42,8 +41,9 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
           if (payload.eventType === 'INSERT') {
             setPolls((prev) => [payload.new, ...prev]);
             if (onNewPoll) onNewPoll();
+          } else if (payload.eventType === 'UPDATE') {
+            setPolls((prev) => prev.map((p) => (p.id === payload.new.id ? payload.new : p)));
           }
-          else if (payload.eventType === 'UPDATE') setPolls((prev) => prev.map((p) => (p.id === payload.new.id ? payload.new : p)));
         }
       )
       .on(
@@ -92,42 +92,57 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   const updateOption = (i, v) => { const u = [...newOptions]; u[i] = v; setNewOptions(u); };
   const removeOption = (i) => setNewOptions(newOptions.filter((_, idx) => idx !== i));
 
-  // Visibility rule: hide closed polls this user wasn't present for.
-  // EXCEPTION: always show polls the current user created themselves (clock-skew protection).
+  // Visibility: hide closed polls from users who weren't present, but always show own polls
   const visiblePolls = polls.filter((poll) => {
-    if (!poll.is_closed) return true;                          // open → always show
-    if (poll.creator_name === userName) return true;           // own poll → always show
-    if (!sessionJoinedAt) return true;                         // no join time → show all
+    if (!poll.is_closed) return true;
+    if (poll.creator_name === userName) return true;
+    if (!sessionJoinedAt) return true;
     return new Date(poll.created_at) > new Date(sessionJoinedAt);
   });
 
+  const handleOptionClick = (poll, optionIndex) => {
+    if (poll.is_closed) return;
+    handleVote(poll.id, optionIndex);
+  };
+
   return (
     <div className="poll-panel animate-fade-in-right">
-      {/* Header — same height as meeting-room-header (52px) */}
+      {/* Header */}
       <div className="poll-panel-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <BarChart2 size={18} />
           <h2>Live Polls</h2>
         </div>
-        <button
+        <span
           onClick={onClose}
           title="Close"
-          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, transition: 'background 0.15s, color 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.color='#fff'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='rgba(255,255,255,0.4)'; }}
-        ><X size={18} /></button>
+          style={{
+            color: 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            userSelect: 'none',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+        >
+          <X size={18} />
+        </span>
       </div>
 
       <div className="poll-panel-content">
-
-        {/* Create Poll trigger */}
+        {/* Create trigger */}
         {!isCreating && (
-          <button className="poll-create-trigger" onClick={() => setIsCreating(true)}>
+          <div className="poll-create-trigger" onClick={() => setIsCreating(true)}>
             <Plus size={15} /> Create New Poll
-          </button>
+          </div>
         )}
 
-        {/* Create Poll form */}
+        {/* Create form */}
         {isCreating && (
           <form className="poll-create-card animate-fade-in" onSubmit={handleCreatePoll}>
             <h3>New Poll</h3>
@@ -151,21 +166,21 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
                     required
                   />
                   {newOptions.length > 2 && (
-                    <button type="button" className="poll-option-remove-btn" onClick={() => removeOption(i)}>
+                    <span className="poll-option-remove-btn" onClick={() => removeOption(i)}>
                       <X size={14} />
-                    </button>
+                    </span>
                   )}
                 </div>
               ))}
             </div>
             {newOptions.length < 5 && (
-              <button type="button" className="poll-add-option-btn" onClick={addOption}>
+              <div className="poll-add-option-btn" onClick={addOption}>
                 + Add option
-              </button>
+              </div>
             )}
             <div className="poll-form-actions">
               <button type="submit" className="poll-btn-launch">Launch</button>
-              <button type="button" className="poll-btn-cancel" onClick={() => setIsCreating(false)}>Cancel</button>
+              <span className="poll-btn-cancel" onClick={() => setIsCreating(false)}>Cancel</span>
             </div>
           </form>
         )}
@@ -186,35 +201,35 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
 
               return (
                 <div key={poll.id} className="poll-card">
-                  {/* Question row */}
+                  {/* Question */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '0.85rem' }}>
                     <p className="poll-card-title">{poll.question}</p>
                     {poll.is_closed && <span className="poll-closed-badge">Closed</span>}
                   </div>
 
-                  {/* Options */}
+                  {/* Options — using div with onClick for maximum click compatibility */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     {poll.options.map((opt, i) => {
                       const optVoters = pollVotes.filter((v) => v.option_index === i);
                       const pct = totalVotes === 0 ? 0 : Math.round((optVoters.length / totalVotes) * 100);
                       const myVote = optVoters.find((v) => v.voter_name === userName);
+                      const isDisabled = poll.is_closed;
 
                       return (
-                        <div key={i} className="poll-option-row">
-                        <button
-                            className={`poll-option-btn${myVote ? ' selected' : ''}`}
-                            disabled={poll.is_closed}
-                            onClick={() => handleVote(poll.id, i)}
+                        <div key={i}>
+                          <div
+                            className={`poll-option-btn${myVote ? ' selected' : ''}${isDisabled ? ' disabled' : ''}`}
+                            onClick={() => handleOptionClick(poll, i)}
+                            style={{ cursor: isDisabled ? 'not-allowed' : 'pointer' }}
                           >
-                            {/* pointer-events:none on inner divs so clicks always reach the button */}
-                            <div className="poll-option-progress" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
-                            <div className="poll-option-content" style={{ pointerEvents: 'none' }}>
+                            <div className="poll-option-progress" style={{ width: `${pct}%` }} />
+                            <div className="poll-option-content">
                               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 {myVote && <Check size={12} />}{opt}
                               </span>
                               <span style={{ fontWeight: 700, fontSize: '0.75rem', flexShrink: 0 }}>{pct}%</span>
                             </div>
-                          </button>
+                          </div>
                           {optVoters.length > 0 && (
                             <div className="poll-voter-names">
                               {optVoters.map((v) => v.voter_name).join(', ')}
@@ -229,7 +244,7 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
                   <div className="poll-meta-row">
                     <span>{totalVotes} vote{totalVotes !== 1 ? 's' : ''} · by {poll.creator_name}</span>
                     {isAdmin && !poll.is_closed && (
-                      <button className="poll-close-btn" onClick={() => closePoll(poll.id)}>Close poll</button>
+                      <span className="poll-close-btn" onClick={() => closePoll(poll.id)}>Close poll</span>
                     )}
                   </div>
                 </div>
