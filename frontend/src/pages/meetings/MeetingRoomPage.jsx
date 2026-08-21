@@ -364,10 +364,12 @@ export default function MeetingRoomPage() {
             hideConferenceSubject: true, // We have our own title bar
             hideConferenceTimer: true,
 
-            // Restrict moderator buttons if the user is a student
-            // For security, students MUST NOT have 'hangup' in their toolbar, to prevent phantom "End meeting for all"
+            // Mute/Kick overrides
+            // Note: We completely remove the internal 'hangup' button for everyone (including Admin)
+            // so they are forced to use our custom red "Leave Meeting" header button. Using the internal
+            // Jitsi hangup button causes the iframe to redirect to the systemli homepage (Image 1).
             toolbarButtons: isAdmin
-              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'mute-everyone', 'security', 'settings', 'fullscreen']
+              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'mute-everyone', 'security', 'settings', 'fullscreen']
               : ['microphone', 'camera', meeting.require_screen_share === 'OFF' ? null : 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'].filter(Boolean),
 
             // Mute/Kick overrides
