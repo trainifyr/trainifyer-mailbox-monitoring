@@ -3,7 +3,7 @@ import supabase from '../lib/supabaseClient';
 import { BarChart2, Plus, X, Check, Activity } from 'lucide-react';
 import './PollPanel.css';
 
-export default function PollPanel({ meetingId, userId, userName, isAdmin, onClose }) {
+export default function PollPanel({ meetingId, userId, userName, isAdmin, sessionJoinedAt, onClose }) {
   const [polls, setPolls] = useState([]);
   const [votes, setVotes] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -193,9 +193,23 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
             <Activity size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
             <p>No polls have been created yet.</p>
           </div>
-        ) : (
+        ) : (() => {
+            // Hide polls that are CLOSED and were created BEFORE this user joined this session.
+            // Open polls are always shown regardless of join time.
+            const visiblePolls = polls.filter((poll) => {
+              if (!poll.is_closed) return true; // always show open polls
+              if (!sessionJoinedAt) return true; // no join time recorded, show all
+              return new Date(poll.created_at) > new Date(sessionJoinedAt);
+            });
+            if (visiblePolls.length === 0 && !isCreating) return (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+                <Activity size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                <p>No polls have been created yet.</p>
+              </div>
+            );
+            return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {polls.map((poll) => {
+            {visiblePolls.map((poll) => {
               const pollVotes = votes.filter((v) => v.poll_id === poll.id);
               const totalVotes = pollVotes.length;
               // To handle vote changes properly, we don't disable voting if they hasVoted.
@@ -255,7 +269,8 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
               );
             })}
           </div>
-        )}
+            );
+          })()}
       </div>
     </div>
   );

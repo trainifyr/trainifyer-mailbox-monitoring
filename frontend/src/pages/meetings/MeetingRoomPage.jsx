@@ -22,6 +22,7 @@ export default function MeetingRoomPage() {
   const attendanceLogIdRef = useRef(null);
   const defaultAuthTokenRef = useRef(null); // synchronous token access for beforeunload
   const wakeLockRef = useRef(null); // Reference to hold the screen awake lock
+  const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -585,7 +586,10 @@ export default function MeetingRoomPage() {
                   </div>
                 </div>
               ) : (
-                <button className="lobby-join-btn" onClick={() => setHasJoined(true)}>
+          <button className="lobby-join-btn" onClick={() => {
+                  sessionJoinedAtRef.current = new Date().toISOString();
+                  setHasJoined(true);
+                }}>
                   Join Meeting
                 </button>
               )}
@@ -647,6 +651,7 @@ export default function MeetingRoomPage() {
             userId={userId}
             userName={user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Guest'}
             isAdmin={isAdmin}
+            sessionJoinedAt={sessionJoinedAtRef.current}
             onClose={() => setIsPollPanelOpen(false)}
           />
         )}
