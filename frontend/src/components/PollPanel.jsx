@@ -55,6 +55,10 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setVotes((prev) => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setVotes((prev) => prev.map((v) => (v.id === payload.new.id ? payload.new : v)));
+          } else if (payload.eventType === 'DELETE') {
+            setVotes((prev) => prev.filter((v) => v.id !== payload.old.id));
           }
         }
       )
@@ -84,13 +88,17 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
   };
 
   const handleVote = async (pollId, optionIndex) => {
-    // Optimistic UI update could go here
-    const { error } = await supabase.from('meeting_poll_votes').insert({
-      poll_id: pollId,
-      voter_id: userId || null,
-      voter_name: userName,
-      option_index: optionIndex,
-    });
+    // If they already voted, upsert it (allows changing vote)
+    const { error } = await supabase.from('meeting_poll_votes').upsert(
+      {
+        poll_id: pollId,
+        voter_id: userId || null,
+        voter_name: userName,
+        option_index: optionIndex,
+        voted_at: new Date().toISOString(),
+      },
+      { onConflict: 'one_vote_per_user_poll' }
+    );
     if (error) {
       console.error('Failed to vote:', error.message);
     }
@@ -190,7 +198,8 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
             {polls.map((poll) => {
               const pollVotes = votes.filter((v) => v.poll_id === poll.id);
               const totalVotes = pollVotes.length;
-              const hasVoted = pollVotes.some((v) => v.voter_name === userName);
+              // To handle vote changes properly, we don't disable voting if they hasVoted.
+              // But we should visually show their CURRENT vote
 
               return (
                 <div key={poll.id} className="poll-card">
@@ -203,15 +212,15 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {poll.options.map((opt, i) => {
-                      const votesForOption = pollVotes.filter((v) => v.option_index === i).length;
-                      const percentage = totalVotes === 0 ? 0 : Math.round((votesForOption / totalVotes) * 100);
-                      const myVote = pollVotes.find((v) => v.voter_name === userName && v.option_index === i);
+                      const votesForOption = pollVotes.filter((v) => v.option_index === i);
+                      const percentage = totalVotes === 0 ? 0 : Math.round((votesForOption.length / totalVotes) * 100);
+                      const myVote = votesForOption.find((v) => v.voter_name === userName);
 
                       return (
                         <div key={i} className="poll-option-row">
                           <button
                             className={`poll-option-btn ${myVote ? 'selected' : ''}`}
-                            disabled={poll.is_closed || hasVoted}
+                            disabled={poll.is_closed}
                             onClick={() => handleVote(poll.id, i)}
                           >
                             <div className="poll-option-progress" style={{ width: `${percentage}%` }}></div>
@@ -224,6 +233,11 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, onClos
                               </span>
                             </div>
                           </button>
+                          {votesForOption.length > 0 && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', paddingLeft: '8px' }}>
+                              {votesForOption.map(v => v.voter_name).join(', ')}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
