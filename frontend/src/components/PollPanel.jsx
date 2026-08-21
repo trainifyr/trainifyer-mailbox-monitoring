@@ -3,7 +3,7 @@ import supabase from '../lib/supabaseClient';
 import { BarChart2, Plus, X, Check, Activity } from 'lucide-react';
 import './PollPanel.css';
 
-export default function PollPanel({ meetingId, userId, userName, isAdmin, sessionJoinedAt, onClose }) {
+export default function PollPanel({ meetingId, userId, userName, isAdmin, sessionJoinedAt, onNewPoll, onClose }) {
   const [polls, setPolls] = useState([]);
   const [votes, setVotes] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -39,7 +39,10 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
         'postgres_changes',
         { event: '*', schema: 'public', table: 'meeting_polls', filter: `meeting_id=eq.${meetingId}` },
         (payload) => {
-          if (payload.eventType === 'INSERT') setPolls((prev) => [payload.new, ...prev]);
+          if (payload.eventType === 'INSERT') {
+            setPolls((prev) => [payload.new, ...prev]);
+            if (onNewPoll) onNewPoll();
+          }
           else if (payload.eventType === 'UPDATE') setPolls((prev) => prev.map((p) => (p.id === payload.new.id ? payload.new : p)));
         }
       )
@@ -104,7 +107,13 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
           <BarChart2 size={18} />
           <h2>Live Polls</h2>
         </div>
-        <button className="btn-icon" onClick={onClose} title="Close"><X size={18} /></button>
+        <button
+          onClick={onClose}
+          title="Close"
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, transition: 'background 0.15s, color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.07)'; e.currentTarget.style.color='#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='rgba(255,255,255,0.4)'; }}
+        ><X size={18} /></button>
       </div>
 
       <div className="poll-panel-content">
@@ -190,13 +199,14 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
 
                       return (
                         <div key={i} className="poll-option-row">
-                          <button
+                        <button
                             className={`poll-option-btn${myVote ? ' selected' : ''}`}
                             disabled={poll.is_closed}
                             onClick={() => handleVote(poll.id, i)}
                           >
-                            <div className="poll-option-progress" style={{ width: `${pct}%` }} />
-                            <div className="poll-option-content">
+                            {/* pointer-events:none on inner divs so clicks always reach the button */}
+                            <div className="poll-option-progress" style={{ width: `${pct}%`, pointerEvents: 'none' }} />
+                            <div className="poll-option-content" style={{ pointerEvents: 'none' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 {myVote && <Check size={12} />}{opt}
                               </span>

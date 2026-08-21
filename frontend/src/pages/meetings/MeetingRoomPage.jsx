@@ -42,6 +42,7 @@ export default function MeetingRoomPage() {
   const [activeParticipants, setActiveParticipants] = useState([]);
   const [participantsLoading, setParticipantsLoading] = useState(true);
   const [isPollPanelOpen, setIsPollPanelOpen] = useState(false);
+  const [newPollCount, setNewPollCount] = useState(0);
 
   // sendLeaveLog: call this whenever a user leaves.
   // useBeacon=true is for tab-close (beforeunload) where fetch is killed by the browser.
@@ -627,8 +628,15 @@ export default function MeetingRoomPage() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /> Live</span>}
           {isInConference && (
-            <button className={`btn-icon ${isPollPanelOpen ? 'active' : ''}`} onClick={() => setIsPollPanelOpen(!isPollPanelOpen)} title="Live Polls">
-              <BarChart2 size={20} />
+            <button
+              className={`meeting-poll-btn${isPollPanelOpen ? ' active' : ''}`}
+              onClick={() => { setIsPollPanelOpen(!isPollPanelOpen); setNewPollCount(0); }}
+              title="Live Polls"
+            >
+              <BarChart2 size={18} />
+              {newPollCount > 0 && !isPollPanelOpen && (
+                <span className="poll-badge-dot">{newPollCount}</span>
+              )}
             </button>
           )}
           {!isAdmin && isInConference && (
@@ -652,7 +660,8 @@ export default function MeetingRoomPage() {
             userName={user?.user_metadata?.full_name || user?.user_metadata?.first_name || 'Guest'}
             isAdmin={isAdmin}
             sessionJoinedAt={sessionJoinedAtRef.current}
-            onClose={() => setIsPollPanelOpen(false)}
+            onClose={() => { setIsPollPanelOpen(false); setNewPollCount(0); }}
+            onNewPoll={() => { if (!isPollPanelOpen) setNewPollCount((c) => c + 1); }}
           />
         )}
       </div>
