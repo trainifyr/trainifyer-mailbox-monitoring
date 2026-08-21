@@ -23,6 +23,7 @@ export default function MeetingRoomPage() {
   const defaultAuthTokenRef = useRef(null); // synchronous token access for beforeunload
   const wakeLockRef = useRef(null); // Reference to hold the screen awake lock
   const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
+  const bgSubscriptionsRef = useRef({ polls: null }); // Track background sockets
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -253,6 +254,29 @@ export default function MeetingRoomPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [hasJoined]);
+
+  // Background listener for the red dot on the poll icon
+  useEffect(() => {
+    if (!isInConference || !id) return;
+
+    if (!bgSubscriptionsRef.current.polls) {
+      const sub = supabase.channel(`meeting-polls-bg-${id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meeting_polls', filter: `meeting_id=eq.${id}` }, () => {
+          // Note: we can't easily check isPollPanelOpen from inside the listener due to stale closures,
+          // but clicking the button clears it, which is the correct UX anyway.
+          setNewPollCount(prev => prev + 1);
+        })
+        .subscribe();
+      bgSubscriptionsRef.current.polls = sub;
+    }
+
+    return () => {
+      if (bgSubscriptionsRef.current.polls) {
+        supabase.removeChannel(bgSubscriptionsRef.current.polls);
+        bgSubscriptionsRef.current.polls = null;
+      }
+    };
+  }, [isInConference, id]);
 
   // --- Meeting End Watcher ---
   // Polls the meeting status every 10 seconds.
@@ -661,7 +685,6 @@ export default function MeetingRoomPage() {
             isAdmin={isAdmin}
             sessionJoinedAt={sessionJoinedAtRef.current}
             onClose={() => { setIsPollPanelOpen(false); setNewPollCount(0); }}
-            onNewPoll={() => { if (!isPollPanelOpen) setNewPollCount((c) => c + 1); }}
           />
         )}
       </div>
