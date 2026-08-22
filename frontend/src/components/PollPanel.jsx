@@ -108,12 +108,13 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   const updateOption = (i, v) => { const u = [...newOptions]; u[i] = v; setNewOptions(u); };
   const removeOption = (i) => setNewOptions(newOptions.filter((_, idx) => idx !== i));
 
-  // Visibility: hide closed polls from users who weren't present, but always show own polls
+  // Visibility: hide closed polls created before this session.
+  // A 10s buffer handles client-vs-server clock skew mid-session (including own polls).
   const visiblePolls = polls.filter((poll) => {
     if (!poll.is_closed) return true;
-    if (poll.creator_name === userName) return true;
     if (!sessionJoinedAt) return true;
-    return new Date(poll.created_at) > new Date(sessionJoinedAt);
+    const joinedAt = new Date(sessionJoinedAt).getTime() - 10_000; // 10s skew buffer
+    return new Date(poll.created_at).getTime() > joinedAt;
   });
 
   const handleOptionClick = (poll, optionIndex) => {
