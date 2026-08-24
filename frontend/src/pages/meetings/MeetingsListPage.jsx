@@ -45,6 +45,15 @@ export default function MeetingsListPage() {
     return `${dateStr} • ${startStr} ${endStr ? `- ${endStr}` : ''}`;
   };
 
+  // For recurring meetings show 'Daily • HH:MM AM – HH:MM PM' using the time portion only
+  const formatRecurringTime = (start, end) => {
+    if (!start) return '—';
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    const startStr = new Date(start).toLocaleTimeString([], options);
+    const endStr = end ? new Date(end).toLocaleTimeString([], options) : '';
+    return `Daily • ${startStr}${endStr ? ` – ${endStr}` : ''}`;
+  };
+
   return (
     <div className="animate-fade-in content-area">
       <header style={{ marginBottom: '3rem' }}>
@@ -97,8 +106,9 @@ export default function MeetingsListPage() {
                   
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                        <Calendar size={16} /> <span>{formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
-                     </div>
+                      <Calendar size={16} />
+                      <span>{m.is_recurring ? formatRecurringTime(m.scheduled_start, m.scheduled_end) : formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
+                   </div>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         {m.is_public ? (
                           <><Globe size={16} /> <span>Public Training Session</span></>
@@ -110,12 +120,15 @@ export default function MeetingsListPage() {
 
                   <button
                     className={`btn ${isLive ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => navigate(`/meeting/${m.id}`)}
+                    onClick={() => !isOver && navigate(`/meeting/${m.id}`)}
+                    disabled={isOver}
                     style={{ 
                       width: '100%', 
                       border: isLive ? 'none' : '1px solid var(--border)',
                       justifyContent: 'center',
-                      padding: '1rem'
+                      padding: '1rem',
+                      opacity: isOver ? 0.45 : 1,
+                      cursor: isOver ? 'not-allowed' : 'pointer',
                     }}
                   >
                     {isLive ? <><PlayCircle size={18} /> Join Now</> : isOver ? 'Session Closed' : 'View Details'}
