@@ -123,7 +123,9 @@ router.get('/', async (req, res, next) => {
         // Student not assigned to any batch — only see public meetings
         const result = await pool.query(
           `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
-                  m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
+                  m.scheduled_start, m.scheduled_end, m.status,
+                  m.is_recurring, m.recur_start_time, m.recur_end_time,
+                  m.created_by, m.created_at, m.updated_at,
                   creator.full_name AS created_by_name,
                   b.name AS batch_name,
                   COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
@@ -141,7 +143,9 @@ router.get('/', async (req, res, next) => {
       } else {
         const result = await pool.query(
           `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
-                  m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
+                  m.scheduled_start, m.scheduled_end, m.status,
+                  m.is_recurring, m.recur_start_time, m.recur_end_time,
+                  m.created_by, m.created_at, m.updated_at,
                   creator.full_name AS created_by_name,
                   b.name AS batch_name,
                   COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
@@ -162,7 +166,9 @@ router.get('/', async (req, res, next) => {
       // Anonymous — only public meetings
       const result = await pool.query(
         `SELECT m.id, m.title, m.batch_id, m.jitsi_room_name, m.is_public,
-                m.scheduled_start, m.scheduled_end, m.status, m.created_by, m.created_at, m.updated_at,
+                m.scheduled_start, m.scheduled_end, m.status,
+                m.is_recurring, m.recur_start_time, m.recur_end_time,
+                m.created_by, m.created_at, m.updated_at,
                 creator.full_name AS created_by_name,
                 b.name AS batch_name,
                 COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,

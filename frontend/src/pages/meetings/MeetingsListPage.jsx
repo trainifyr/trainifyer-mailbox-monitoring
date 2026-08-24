@@ -45,13 +45,26 @@ export default function MeetingsListPage() {
     return `${dateStr} • ${startStr} ${endStr ? `- ${endStr}` : ''}`;
   };
 
-  // For recurring meetings show 'Daily • HH:MM AM – HH:MM PM' using the time portion only
-  const formatRecurringTime = (start, end) => {
-    if (!start) return '—';
-    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const startStr = new Date(start).toLocaleTimeString([], options);
-    const endStr = end ? new Date(end).toLocaleTimeString([], options) : '';
-    return `Daily • ${startStr}${endStr ? ` – ${endStr}` : ''}`;
+  // For recurring meetings show 'Daily • HH:MM AM – HH:MM PM'
+  const formatRecurringTime = (startStrRaw, endStrRaw) => {
+    if (!startStrRaw) return '—';
+    // startStrRaw is like "14:30:00" mapping it to a dummy date to use built-in formatter
+    const s = new Date(`1970-01-01T${startStrRaw}Z`);
+    const e = endStrRaw ? new Date(`1970-01-01T${endStrRaw}Z`) : null;
+    
+    // adjust for local timezone visually (or if we assume UTC backend, let JS handle it)
+    // Wait, postgres TIME is usually absolute. Let's just parse parts manually for simplicity 
+    // to avoid arbitrary tz shifts on simple string times.
+    const formatPart = (timeStr) => {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':');
+      const d = new Date(); d.setHours(parseInt(h,10), parseInt(m,10));
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    const startFormatted = formatPart(startStrRaw);
+    const endFormatted = formatPart(endStrRaw);
+    return `Daily • ${startFormatted}${endFormatted ? ` – ${endFormatted}` : ''}`;
   };
 
   return (
@@ -107,7 +120,7 @@ export default function MeetingsListPage() {
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                       <Calendar size={16} />
-                      <span>{m.is_recurring ? formatRecurringTime(m.scheduled_start, m.scheduled_end) : formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
+                      <span>{m.is_recurring ? formatRecurringTime(m.recur_start_time, m.recur_end_time) : formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
                    </div>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         {m.is_public ? (
