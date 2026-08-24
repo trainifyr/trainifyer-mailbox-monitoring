@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight } from 'lucide-react';
+import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function MeetingsListPage() {
   const { isAuthenticated } = useAuth();
@@ -91,12 +91,37 @@ export default function MeetingsListPage() {
               const isOver = status === 'ENDED' || status === 'CANCELLED';
               const isLive = status === 'LIVE';
 
+              if (isOver) {
+                return (
+                  <div key={m.id} className="card" style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '2.5rem 1.5rem',
+                    textAlign: 'center',
+                    border: '1px dashed rgba(255,255,255,0.06)',
+                    background: 'rgba(255,255,255,0.01)',
+                  }}>
+                    <div style={{ marginBottom: '1.25rem', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }}>
+                      <CheckCircle size={32} color="rgba(255,255,255,0.2)" />
+                    </div>
+                    <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Session Ended</h3>
+                    <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)', marginBottom: '1.5rem', maxWidth: '240px', lineHeight: '1.4' }}>
+                      {m.title}
+                    </p>
+                    <div style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 'bold' }}>
+                      Completed
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={m.id} className={`card ${isLive ? 'active-laser-glow' : ''}`} style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
                   padding: '2rem',
-                  opacity: isOver ? 0.6 : 1,
                   border: isLive ? '2px solid var(--primary)' : '1px solid var(--border)',
                   background: isLive ? 'linear-gradient(to bottom right, var(--bg-card), var(--primary-glow))' : 'var(--bg-card)'
                 }}>
@@ -108,8 +133,8 @@ export default function MeetingsListPage() {
                       status === 'LIVE' ? 'badge-student' : 
                       status === 'SCHEDULED' ? 'badge-admin' : ''
                     }`} style={{ 
-                      background: isLive ? '#10b981' : isOver ? 'var(--border-light)' : '', 
-                      color: isLive ? 'white' : isOver ? 'var(--text-muted)' : '' 
+                      background: isLive ? '#10b981' : '', 
+                      color: isLive ? 'white' : '' 
                     }}>
                       {status === 'LIVE' ? '● LIVE NOW' : status}
                     </span>
@@ -133,19 +158,17 @@ export default function MeetingsListPage() {
 
                   <button
                     className={`btn ${isLive ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => !isOver && navigate(`/meeting/${m.id}`)}
-                    disabled={isOver}
+                    onClick={() => navigate(`/meeting/${m.id}`)}
                     style={{ 
                       width: '100%', 
                       border: isLive ? 'none' : '1px solid var(--border)',
                       justifyContent: 'center',
                       padding: '1rem',
-                      opacity: isOver ? 0.45 : 1,
-                      cursor: isOver ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                     }}
                   >
-                    {isLive ? <><PlayCircle size={18} /> Join Now</> : isOver ? 'Session Closed' : 'View Details'}
-                    {!isOver && <ArrowRight size={16} style={{ marginLeft: '8px' }} />}
+                    {isLive ? <><PlayCircle size={18} /> Join Now</> : 'View Details'}
+                    <ArrowRight size={16} style={{ marginLeft: '8px' }} />
                   </button>
                 </div>
               );
