@@ -498,12 +498,13 @@ router.get('/attendance/student/:id', async (req, res, next) => {
       });
     }
 
-    // 1. Get student's batch ID
+    // 1. Get student's batch ID and assigned_at
     const batchRes = await pool.query(
-      `SELECT batch_id FROM public.student_batches WHERE student_id = $1`,
+      `SELECT batch_id, assigned_at FROM public.student_batches WHERE student_id = $1`,
       [targetUserId]
     );
     const batchId = batchRes.rows[0]?.batch_id;
+    const assignedAt = batchRes.rows[0]?.assigned_at;
 
     if (!batchId) {
       // Student is not enrolled in any batch. Return empty shape.
@@ -538,6 +539,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           AND m.is_recurring = false
           AND (m.scheduled_start <= NOW() OR m.status IN ('LIVE', 'ENDED'))
           AND m.status IS DISTINCT FROM 'CANCELLED'
+          AND COALESCE(m.scheduled_start, m.created_at) >= $3
 
         UNION
 
@@ -551,12 +553,14 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           al_date.session_date::timestamp WITH TIME ZONE AS session_timestamp
         FROM public.meetings m
         JOIN (
-          SELECT DISTINCT meeting_id, DATE(joined_at) AS session_date
+          SELECT meeting_id, DATE(joined_at) AS session_date, MIN(joined_at) AS first_join
           FROM public.attendance_logs
+          GROUP BY meeting_id, DATE(joined_at)
         ) al_date ON al_date.meeting_id = m.id
         WHERE m.batch_id = $2 
           AND m.is_recurring = true
           AND m.status IS DISTINCT FROM 'CANCELLED'
+          AND al_date.first_join >= $3
 
         UNION
 
@@ -573,6 +577,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           AND m.is_recurring = true 
           AND m.status = 'LIVE'
           AND m.status IS DISTINCT FROM 'CANCELLED'
+          AND NOW() >= $3
       ),
       unique_sessions AS (
         SELECT DISTINCT ON (meeting_id, session_date)
@@ -630,7 +635,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
         AND agg.log_date = us.session_date::date
       ORDER BY us.session_timestamp DESC
     `;
-    const { rows } = await pool.query(query, [targetUserId, batchId]);
+    const { rows } = await pool.query(query, [targetUserId, batchId, assignedAt]);
 
     // 3. Compute KPI summary metrics
     let total_sessions = rows.length;
