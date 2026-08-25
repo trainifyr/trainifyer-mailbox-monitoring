@@ -6,7 +6,8 @@ import { supabase } from '../../lib/supabaseClient';
 import loadJitsiScript from '../../lib/loadJitsiScript';
 import PrivacyConsentOverlay from '../../components/PrivacyConsentOverlay';
 import PollPanel from '../../components/PollPanel';
-import { ArrowLeft, Loader, Activity, Clock, BarChart2 } from 'lucide-react';
+import ChatPanel from '../../components/ChatPanel';
+import { ArrowLeft, Loader, Activity, Clock, BarChart2, MessageSquare } from 'lucide-react';
 import './MeetingRoomPage.css';
 
 const HEARTBEAT_INTERVAL_MS = 60000;
@@ -23,7 +24,7 @@ export default function MeetingRoomPage() {
   const defaultAuthTokenRef = useRef(null); // synchronous token access for beforeunload
   const wakeLockRef = useRef(null); // Reference to hold the screen awake lock
   const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
-  const bgSubscriptionsRef = useRef({ polls: null }); // Track background sockets
+  const bgSubscriptionsRef = useRef({ polls: null, chat: null }); // Track background sockets
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,6 +45,8 @@ export default function MeetingRoomPage() {
   const [participantsLoading, setParticipantsLoading] = useState(true);
   const [isPollPanelOpen, setIsPollPanelOpen] = useState(false);
   const [newPollCount, setNewPollCount] = useState(0);
+  const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
+  const [newChatCount, setNewChatCount] = useState(0);
 
   // sendLeaveLog: call this whenever a user leaves.
   // useBeacon=true is for tab-close (beforeunload) where fetch is killed by the browser.
@@ -255,19 +258,32 @@ export default function MeetingRoomPage() {
     };
   }, [hasJoined]);
 
-  // Background listener for the red dot on the poll icon
+  // Background listener for the red dot on the poll & chat icons
   useEffect(() => {
     if (!isInConference || !id) return;
 
+    // Polls
     if (!bgSubscriptionsRef.current.polls) {
       const sub = supabase.channel(`meeting-polls-bg-${id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meeting_polls', filter: `meeting_id=eq.${id}` }, () => {
-          // Note: we can't easily check isPollPanelOpen from inside the listener due to stale closures,
-          // but clicking the button clears it, which is the correct UX anyway.
           setNewPollCount(prev => prev + 1);
         })
         .subscribe();
       bgSubscriptionsRef.current.polls = sub;
+    }
+
+    // Chat
+    if (!bgSubscriptionsRef.current.chat) {
+      const subChat = supabase.channel(`meeting-chat-bg-${id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meeting_messages', filter: `meeting_id=eq.${id}` }, (payload) => {
+          // Point 5 requirement: Only show red dot if message is pinned or sent AFTER we joined
+          if (payload.new.sender_id === userId) return; // ignore our own messages
+          if (sessionJoinedAtRef.current && (payload.new.is_pinned || new Date(payload.new.created_at) >= new Date(sessionJoinedAtRef.current))) {
+            setNewChatCount(prev => prev + 1);
+          }
+        })
+        .subscribe();
+      bgSubscriptionsRef.current.chat = subChat;
     }
 
     return () => {
@@ -275,8 +291,12 @@ export default function MeetingRoomPage() {
         supabase.removeChannel(bgSubscriptionsRef.current.polls);
         bgSubscriptionsRef.current.polls = null;
       }
+      if (bgSubscriptionsRef.current.chat) {
+        supabase.removeChannel(bgSubscriptionsRef.current.chat);
+        bgSubscriptionsRef.current.chat = null;
+      }
     };
-  }, [isInConference, id]);
+  }, [isInConference, id, userId]);
 
   // --- Meeting End Watcher ---
   // Polls the meeting status every 10 seconds.
@@ -652,16 +672,29 @@ export default function MeetingRoomPage() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           {heartbeatActive && <span className="heartbeat-indicator" title="Active Connection"><Activity size={14} /><span className="heartbeat-dot" /> Live</span>}
           {isInConference && (
-            <button
-              className={`meeting-poll-btn${isPollPanelOpen ? ' active' : ''}`}
-              onClick={() => { setIsPollPanelOpen(!isPollPanelOpen); setNewPollCount(0); }}
-              title="Live Polls"
-            >
-              <BarChart2 size={18} />
-              {newPollCount > 0 && !isPollPanelOpen && (
-                <span className="poll-badge-dot">{newPollCount}</span>
-              )}
-            </button>
+            <>
+              <button
+                className={`meeting-poll-btn${isChatPanelOpen ? ' active' : ''}`}
+                onClick={() => { setIsChatPanelOpen(!isChatPanelOpen); setNewChatCount(0); setIsPollPanelOpen(false); }}
+                title="Session Chat"
+              >
+                <MessageSquare size={18} />
+                {newChatCount > 0 && !isChatPanelOpen && (
+                  <span className="poll-badge-dot">{newChatCount}</span>
+                )}
+              </button>
+
+              <button
+                className={`meeting-poll-btn${isPollPanelOpen ? ' active' : ''}`}
+                onClick={() => { setIsPollPanelOpen(!isPollPanelOpen); setNewPollCount(0); setIsChatPanelOpen(false); }}
+                title="Live Polls"
+              >
+                <BarChart2 size={18} />
+                {newPollCount > 0 && !isPollPanelOpen && (
+                  <span className="poll-badge-dot">{newPollCount}</span>
+                )}
+              </button>
+            </>
           )}
           {isInConference && (
             <button className="btn btn-leave-meeting" onClick={async () => { await sendLeaveLog(); navigate(-1); }}>Leave Meeting</button>
@@ -685,6 +718,15 @@ export default function MeetingRoomPage() {
             isAdmin={isAdmin}
             sessionJoinedAt={sessionJoinedAtRef.current}
             onClose={() => { setIsPollPanelOpen(false); setNewPollCount(0); }}
+          />
+        )}
+        {isChatPanelOpen && (
+          <ChatPanel
+            meetingId={id}
+            userId={userId}
+            userName={user?.full_name || 'Guest'}
+            joinedAt={sessionJoinedAtRef.current}
+            onClose={() => { setIsChatPanelOpen(false); setNewChatCount(0); }}
           />
         )}
       </div>
