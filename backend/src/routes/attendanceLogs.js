@@ -201,6 +201,24 @@ router.post('/join-log', async (req, res, next) => {
     // This cleans up orphaned sessions from browser crashes or disconnects across the board
     await sweepStaleSessions(id);
 
+    // --- Fresh-room check: clear pinned messages when the room was empty ---
+    // If nobody was in the room before this person joined, it means a brand new session
+    // has started. We wipe all pinned messages so late-joiners to the NEXT session don't
+    // see pins from a previous session they were never part of.
+    const { rows: activeLogsRows } = await pool.query(
+      `SELECT id FROM public.attendance_logs
+       WHERE meeting_id = $1 AND left_at IS NULL AND status = 'ACTIVE'
+       LIMIT 1`,
+      [id]
+    );
+    if (activeLogsRows.length === 0) {
+      // Room is empty — this is a fresh start: wipe pinned messages
+      await pool.query(
+        `DELETE FROM public.meeting_messages WHERE meeting_id = $1 AND is_pinned = true`,
+        [id]
+      );
+    }
+
     // Insert new attendance log — joined_at and last_joined_at are both set to now()
     const { rows } = await pool.query(
       `INSERT INTO public.attendance_logs (meeting_id, user_id, external_name, joined_at, last_joined_at, last_heartbeat, total_minutes, status)
