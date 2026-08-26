@@ -431,6 +431,7 @@ export default function MeetingRoomPage() {
 
             hideConferenceSubject: true, // We have our own title bar
             hideConferenceTimer: true,
+            disableReactions: true,
 
             // Mute/Kick overrides
             // Note: We completely remove the internal 'hangup' button for everyone (including Admin)
