@@ -26,6 +26,24 @@ export default function MeetingRoomPage() {
   const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
   const bgSubscriptionsRef = useRef({ polls: null, chat: null }); // Track background sockets
 
+  // Play a short beep using the Web Audio API for attention-grabbing notifications.
+  // frequency: Hz (higher = more urgent); duration: ms
+  const playBeep = (frequency = 880, duration = 180) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = frequency;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration / 1000);
+    } catch (_) { /* AudioContext not supported */ }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) defaultAuthTokenRef.current = session.access_token;
@@ -267,6 +285,7 @@ export default function MeetingRoomPage() {
       const sub = supabase.channel(`meeting-polls-bg-${id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meeting_polls', filter: `meeting_id=eq.${id}` }, () => {
           setNewPollCount(prev => prev + 1);
+          playBeep(1047, 200); // High C — distinct "poll arrived" sound
         })
         .subscribe();
       bgSubscriptionsRef.current.polls = sub;
@@ -280,6 +299,7 @@ export default function MeetingRoomPage() {
           if (payload.new.sender_id === userId) return; // ignore our own messages
           if (sessionJoinedAtRef.current && (payload.new.is_pinned || new Date(payload.new.created_at) >= new Date(sessionJoinedAtRef.current))) {
             setNewChatCount(prev => prev + 1);
+            playBeep(660, 150); // Softer G5 — subtle "chat message" chime
           }
         })
         .subscribe();
@@ -417,8 +437,8 @@ export default function MeetingRoomPage() {
             // so they are forced to use our custom red "Leave Meeting" header button. Using the internal
             // Jitsi hangup button causes the iframe to redirect to the systemli homepage (Image 1).
             toolbarButtons: isAdmin
-              ? ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'mute-everyone', 'security', 'settings', 'fullscreen']
-              : ['microphone', 'camera', meeting.require_screen_share === 'OFF' ? null : 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'].filter(Boolean),
+              ? ['microphone', 'camera', 'desktop', 'raisehand', 'participants-pane', 'tileview', 'mute-everyone', 'security', 'settings', 'fullscreen']
+              : ['microphone', 'camera', meeting.require_screen_share === 'OFF' ? null : 'desktop', 'raisehand', 'participants-pane', 'tileview', 'settings', 'fullscreen'].filter(Boolean),
 
             // Mute/Kick overrides
             remoteVideoMenu: {
