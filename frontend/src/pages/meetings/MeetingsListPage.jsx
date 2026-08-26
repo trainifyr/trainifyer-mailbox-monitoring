@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight, CheckCircle } from 'lucide-react';
+import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight, CheckCircle, Lock } from 'lucide-react';
 
 export default function MeetingsListPage() {
   const { isAuthenticated } = useAuth();
@@ -96,22 +96,39 @@ export default function MeetingsListPage() {
                   <div key={m.id} className="card" style={{ 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: '2.5rem 1.5rem',
-                    textAlign: 'center',
-                    border: '1px dashed rgba(255,255,255,0.06)',
-                    background: 'rgba(255,255,255,0.01)',
+                    padding: '2rem',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(20,20,25,0.4)',
+                    backdropFilter: 'blur(10px)',
                   }}>
-                    <div style={{ marginBottom: '1.25rem', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }}>
-                      <CheckCircle size={32} color="rgba(255,255,255,0.2)" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                      <div style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.3)', borderRadius: '12px' }}>
+                         <Lock size={24} />
+                      </div>
+                      <span className="badge" style={{ 
+                        background: 'rgba(255,255,255,0.05)', 
+                        color: 'rgba(255,255,255,0.4)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em'
+                      }}>
+                        Completed
+                      </span>
                     </div>
-                    <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Session Ended</h3>
-                    <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)', marginBottom: '1.5rem', maxWidth: '240px', lineHeight: '1.4' }}>
-                      {m.title}
-                    </p>
-                    <div style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 'bold' }}>
-                      Completed
+
+                    <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'rgba(255,255,255,0.4)' }}>{m.title}</h3>
+                    
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.25)' }}>
+                        <Calendar size={16} />
+                        <span>{m.is_recurring ? formatRecurringTime(m.recur_start_time, m.recur_end_time) : formatTimeRange(m.scheduled_start, m.scheduled_end)}</span>
+                     </div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.25)' }}>
+                          {m.is_public ? (
+                            <><Globe size={16} /> <span>Public Training Session</span></>
+                          ) : (
+                            <><Users size={16} /> <span>{m.batch_name || 'Restricted Cohort'}</span></>
+                          )}
+                       </div>
                     </div>
                   </div>
                 );
