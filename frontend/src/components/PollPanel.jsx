@@ -42,7 +42,7 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
             setPolls((prev) => [payload.new, ...prev]);
             if (onNewPoll) onNewPoll();
           } else if (payload.eventType === 'UPDATE') {
-            setPolls((prev) => prev.map((p) => (p.id === payload.new.id ? payload.new : p)));
+            setPolls((prev) => prev.map((p) => (p.id === payload.new.id ? { ...p, ...payload.new } : p)));
           }
         }
       )
@@ -51,7 +51,7 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
         { event: '*', schema: 'public', table: 'meeting_poll_votes' },
         (payload) => {
           if (payload.eventType === 'INSERT') setVotes((prev) => [...prev, payload.new]);
-          else if (payload.eventType === 'UPDATE') setVotes((prev) => prev.map((v) => (v.id === payload.new.id ? payload.new : v)));
+          else if (payload.eventType === 'UPDATE') setVotes((prev) => prev.map((v) => (v.id === payload.new.id ? { ...v, ...payload.new } : v)));
           else if (payload.eventType === 'DELETE') setVotes((prev) => prev.filter((v) => v.id !== payload.old.id));
         }
       )

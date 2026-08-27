@@ -109,6 +109,29 @@ router.post('/join-log', async (req, res, next) => {
       }
     }
 
+    // --- Room Lifecycle Management ---
+    // Auto-finalize ALL stale ACTIVE logs in this meeting
+    // This cleans up orphaned sessions from browser crashes globally
+    await sweepStaleSessions(id);
+
+    // Fresh-room check: clear pinned messages when the room officially transitions from Empty -> Occupied
+    // We do this unconditionally BEFORE handling the individual user's attendance log 
+    // so it doesn't get bypassed if the user is reusing an existing log row.
+    const { rows: activeLogsRows } = await pool.query(
+      `SELECT id FROM public.attendance_logs
+       WHERE meeting_id = $1 AND left_at IS NULL AND status = 'ACTIVE'
+       LIMIT 1`,
+      [id]
+    );
+
+    if (activeLogsRows.length === 0) {
+      // Room is completely empty — this is a fresh start: wipe pinned messages
+      await pool.query(
+        `DELETE FROM public.meeting_messages WHERE meeting_id = $1 AND is_pinned = true`,
+        [id]
+      );
+    }
+
     // For recurring meetings: look up existing row scoped to TODAY only (fresh record each day).
     // For one-off meetings: look up by meeting+user alone (consolidated across disconnects).
     const dateClause = meeting.is_recurring ? `AND DATE(joined_at) = CURRENT_DATE` : '';
@@ -195,28 +218,6 @@ router.post('/join-log', async (req, res, next) => {
         );
       } catch (evErr) { console.error('event insert failed (rejoin):', evErr.message); }
       return res.json({ data: updated[0] });
-    }
-
-    // Auto-finalize ALL stale ACTIVE logs in this meeting (not just for the joining user)
-    // This cleans up orphaned sessions from browser crashes or disconnects across the board
-    await sweepStaleSessions(id);
-
-    // --- Fresh-room check: clear pinned messages when the room was empty ---
-    // If nobody was in the room before this person joined, it means a brand new session
-    // has started. We wipe all pinned messages so late-joiners to the NEXT session don't
-    // see pins from a previous session they were never part of.
-    const { rows: activeLogsRows } = await pool.query(
-      `SELECT id FROM public.attendance_logs
-       WHERE meeting_id = $1 AND left_at IS NULL AND status = 'ACTIVE'
-       LIMIT 1`,
-      [id]
-    );
-    if (activeLogsRows.length === 0) {
-      // Room is empty — this is a fresh start: wipe pinned messages
-      await pool.query(
-        `DELETE FROM public.meeting_messages WHERE meeting_id = $1 AND is_pinned = true`,
-        [id]
-      );
     }
 
     // Insert new attendance log — joined_at and last_joined_at are both set to now()
