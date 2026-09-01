@@ -261,8 +261,10 @@ export default function StudentAttendancePage() {
                       {sessionLogs.map((ev, i) => {
                         const next = sessionLogs[i + 1];
                         const isJoin = ev.event_type === 'JOIN';
-                        const duration = isJoin && next && next.event_type === 'LEAVE'
-                          ? Math.round((new Date(next.event_at) - new Date(ev.event_at)) / 60000) + ' min'
+                        // Use the stored total_minutes for the JOIN row so it always
+                        // matches the Total row (accounts for disconnections mid-session).
+                        const duration = isJoin
+                          ? Math.round(selectedSession.total_minutes) + ' min'
                           : null;
                         return (
                           <tr key={ev.id}>
