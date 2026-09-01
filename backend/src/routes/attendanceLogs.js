@@ -125,7 +125,12 @@ router.post('/join-log', async (req, res, next) => {
     );
 
     if (activeLogsRows.length === 0) {
-      // Room is completely empty — this is a fresh start: wipe pinned messages
+      // Room is completely empty — this is a fresh session start.
+      // Wipe ALL polls (votes cascade via FK) and ALL pinned messages for a clean slate.
+      await pool.query(
+        `DELETE FROM public.meeting_polls WHERE meeting_id = $1`,
+        [id]
+      );
       await pool.query(
         `DELETE FROM public.meeting_messages WHERE meeting_id = $1 AND is_pinned = true`,
         [id]
