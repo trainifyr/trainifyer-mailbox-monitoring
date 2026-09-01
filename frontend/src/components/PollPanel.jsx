@@ -101,7 +101,7 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
   };
 
   const closePoll = async (pollId) => {
-    await supabase.from('meeting_polls').update({ is_closed: true }).eq('id', pollId);
+    await supabase.from('meeting_polls').update({ is_closed: true, closed_at: new Date().toISOString() }).eq('id', pollId);
   };
 
   const addOption = () => { if (newOptions.length < 5) setNewOptions([...newOptions, '']); };
@@ -114,6 +114,13 @@ export default function PollPanel({ meetingId, userId, userName, isAdmin, sessio
     if (!poll.is_closed) return true;
     if (!sessionJoinedAt) return true;
     const joinedAt = new Date(sessionJoinedAt).getTime() - 10_000; // 10s skew buffer
+    
+    // If we have a closed_at timestamp, we check if it was closed AFTER we joined.
+    if (poll.closed_at) {
+      return new Date(poll.closed_at).getTime() > joinedAt;
+    }
+    
+    // Fallback for legacy polls without closed_at
     return new Date(poll.created_at).getTime() > joinedAt;
   });
 
