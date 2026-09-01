@@ -280,6 +280,24 @@ export default function MeetingRoomPage() {
   useEffect(() => {
     if (!isInConference || !id) return;
 
+    let cancelled = false;
+
+    // Fetch pre-existing pinned messages to show a notification badge for late joiners
+    const fetchExistingPinned = async () => {
+      const { data, error } = await supabase
+        .from('meeting_messages')
+        .select('id')
+        .eq('meeting_id', id)
+        .eq('is_pinned', true)
+        .neq('sender_id', userId); // don't notify if we pinned it ourselves previously
+      
+      if (!error && data?.length > 0 && !cancelled) {
+        setNewChatCount(prev => prev + data.length);
+        playBeep(660, 150); 
+      }
+    };
+    fetchExistingPinned();
+
     // Polls
     if (!bgSubscriptionsRef.current.polls) {
       const sub = supabase.channel(`meeting-polls-bg-${id}`)
@@ -307,6 +325,7 @@ export default function MeetingRoomPage() {
     }
 
     return () => {
+      cancelled = true;
       if (bgSubscriptionsRef.current.polls) {
         supabase.removeChannel(bgSubscriptionsRef.current.polls);
         bgSubscriptionsRef.current.polls = null;
