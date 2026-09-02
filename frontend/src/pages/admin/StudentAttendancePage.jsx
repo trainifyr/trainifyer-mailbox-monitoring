@@ -81,6 +81,17 @@ export default function StudentAttendancePage() {
     }
   }
 
+  // Lock body scroll when the session detail modal is open so it always
+  // appears perfectly centered in the viewport without the user needing to scroll.
+  useEffect(() => {
+    if (selectedSession) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [selectedSession]);
+
   return (
     <div className="page-container animate-fade-in">
       {/* Header */}
@@ -217,9 +228,9 @@ export default function StudentAttendancePage() {
       {selectedSession && (
         <div
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000
+            zIndex: 1000, backdropFilter: 'blur(4px)',
           }}
           onClick={() => setSelectedSession(null)}
         >
