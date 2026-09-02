@@ -261,10 +261,10 @@ export default function StudentAttendancePage() {
                       {sessionLogs.map((ev, i) => {
                         const next = sessionLogs[i + 1];
                         const isJoin = ev.event_type === 'JOIN';
-                        // Use the stored total_minutes for the JOIN row so it always
-                        // matches the Total row (accounts for disconnections mid-session).
-                        const duration = isJoin
-                          ? Math.round(selectedSession.total_minutes) + ' min'
+                        // Calculate per-segment duration: time from this JOIN to the immediately next LEAVE.
+                        // This correctly handles multiple JOIN/LEAVE cycles in one session.
+                        const duration = isJoin && next && next.event_type === 'LEAVE'
+                          ? Math.round((new Date(next.event_at) - new Date(ev.event_at)) / 60000) + ' min'
                           : null;
                         return (
                           <tr key={ev.id}>
