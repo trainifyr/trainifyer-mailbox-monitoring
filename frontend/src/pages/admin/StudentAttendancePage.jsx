@@ -203,13 +203,24 @@ export default function StudentAttendancePage() {
                             {isExpanded && (
                               <tr>
                                 <td colSpan={6} style={{ padding: 0, background: 'var(--bg-card)' }}>
-                                  <div style={{
-                                    margin: '0 1rem 1rem 1rem',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '10px',
-                                    overflow: 'hidden',
+                                  <div className="card" style={{
+                                    margin: '0.5rem 1rem 1.5rem 1rem',
+                                    padding: '2rem',
                                     animation: 'fadeIn 0.15s ease',
+                                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1)'
                                   }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                      <div>
+                                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{d.meeting_title}</h3>
+                                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                          {new Date(d.session_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                        </p>
+                                      </div>
+                                      <button className="btn btn-ghost" style={{ padding: '0.5rem' }} onClick={(e) => { e.stopPropagation(); setSelectedSession(null); }}>
+                                        <X size={20} />
+                                      </button>
+                                    </div>
+
                                     {logsLoading ? (
                                       <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
                                     ) : sessionLogs.length === 0 ? (
