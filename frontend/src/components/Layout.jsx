@@ -76,7 +76,7 @@ export default function Layout() {
           <nav style={{ flex: 1, paddingTop: '1rem', overflowY: 'auto', overflowX: 'hidden' }}>
             {user?.role === 'ADMIN' && (
               <>
-                <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Management</div>
+                <div style={{ padding: '1rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Management</div>
                 <NavLink to="/admin/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
                 <NavLink to="/admin/students" icon={Users}>Students</NavLink>
                 <NavLink to="/admin/batches" icon={Layers}>Batches</NavLink>
@@ -87,13 +87,13 @@ export default function Layout() {
 
             {user?.role === 'STUDENT' && (
               <>
-                <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Student Area</div>
+                <div style={{ padding: '1rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Student Area</div>
                 <NavLink to="/student/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
                 <NavLink to="/meetings" icon={Video}>My Meetings</NavLink>
               </>
             )}
 
-            <div style={{ padding: '1.5rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Communication</div>
+            <div style={{ padding: '1rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Communication</div>
             <NavLink to="/mailbox" icon={Mail} hasBadge={hasUnreadMail}>Mailbox</NavLink>
           </nav>
 

@@ -200,11 +200,11 @@ ul {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.875rem 1.5rem;
+  padding: 0.7rem 1.25rem;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   transition: all 0.2s ease;
-  margin: 0.25rem 0.75rem;
+  margin: 0.125rem 0.75rem;
   border-radius: var(--radius-md);
 }
 
