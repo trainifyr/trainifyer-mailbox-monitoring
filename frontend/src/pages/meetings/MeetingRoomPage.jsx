@@ -431,16 +431,18 @@ export default function MeetingRoomPage() {
               }
             },
 
-            // Point 8: Screen share at high resolution with low FPS to keep bandwidth reasonable.
-            // This fixes the blurry small-text problem during screen sharing.
-            desktopSharingFrameRate: { min: 3, max: 8 },
-            desktopSharingResolution: 1080,
-            desktopSharingMaxFps: 8,
+            // Point 8: Screen share at 720p with slightly higher FPS for smoother delivery.
+            // 1080p caused severe jitter on the free Jitsi server (meet.systemli.org) due to
+            // bandwidth limits. 720p is still sharp enough to read text while keeping frame
+            // delivery stable for all viewers.
+            desktopSharingFrameRate: { min: 5, max: 12 },
+            desktopSharingResolution: 720,
+            desktopSharingMaxFps: 12,
             screenShareSettings: {
               desktopMediaVideo: {
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
-                frameRate: { ideal: 8, max: 10 }
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 12, max: 15 }
               }
             },
 
