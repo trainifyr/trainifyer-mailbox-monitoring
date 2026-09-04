@@ -129,7 +129,13 @@ export default function MeetingRoomPage() {
       if (elapsed > 150000) {
         console.warn('System sleep or severe throttling detected. Halting session.');
         clearInterval(intervalId);
+        
+        sessionEndedRef.current = false; // Allow standard leave log to fire
         await sendLeaveLog(); // kick out attendance
+        
+        attendanceLogIdRef.current = null;
+        sessionEndedRef.current = false;
+        
         setHasJoined(false); // force them out to lobby
         return;
       }
