@@ -111,8 +111,9 @@ router.post('/join-log', async (req, res, next) => {
 
     // --- Room Lifecycle Management ---
     // Auto-finalize ALL stale ACTIVE logs in this meeting
-    // This cleans up orphaned sessions from browser crashes globally
-    await sweepStaleSessions(id);
+    // Pass userId so the currently joining student never sweeps themselves
+    // and increase the threshold inside the sweeper so brief network drops aren't punished.
+    await sweepStaleSessions(id, false, userId);
 
     // Fresh-room check: clear pinned messages when the room officially transitions from Empty -> Occupied
     // We do this unconditionally BEFORE handling the individual user's attendance log 
@@ -435,8 +436,9 @@ router.post('/heartbeat', async (req, res, next) => {
       });
     }
 
-    // NOW sweep other stale sessions in this meeting (safe — our own heartbeat is already refreshed)
-    await sweepStaleSessions(id);
+    // NOW sweep other stale sessions in this meeting
+    // Pass userId/externalName so we never accidentally sweep ourselves due to race conditions
+    await sweepStaleSessions(id, false, userId || externalName);
 
     res.json({ data: result.rows[0] });
   } catch (err) {
