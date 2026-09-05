@@ -24,6 +24,7 @@ function startFinalizeAttendanceJob() {
         SELECT
           al.id,
           al.joined_at,
+          al.last_joined_at,
           al.total_minutes,
           al.last_heartbeat,
           m.scheduled_start,
@@ -64,7 +65,8 @@ function startFinalizeAttendanceJob() {
           leftAt = log.last_heartbeat ? new Date(log.last_heartbeat) : new Date(log.joined_at);
         }
 
-        const joinedAt = new Date(log.joined_at);
+        // Use last_joined_at to accurately measure the current segment (fallback to joined_at)
+        const joinedAt = log.last_joined_at ? new Date(log.last_joined_at) : new Date(log.joined_at);
         const sessionMs = leftAt - joinedAt;
         const sessionMinutes = Math.max(0, sessionMs / 60000);
 
