@@ -99,10 +99,11 @@ function startFinalizeAttendanceJob() {
         }
 
         // Insert LEAVE event so the timeline shows in the admin panel
+        // Importantly, backdate the event_at to match leftAt exactly, otherwise the UI will use now()
         try {
           await pool.query(
-            `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'LEAVE')`,
-            [log.id]
+            `INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', $2)`,
+            [log.id, leftAt]
           );
         } catch (evErr) { console.error('[AUTO-FINALIZE] LEAVE event insert failed:', evErr.message); }
 
