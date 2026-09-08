@@ -196,6 +196,26 @@ export default function AdminMeetingsPage() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Returns true if the meeting time window is currently active (or upcoming today for SCHEDULED).
+  // For recurring meetings: window is 00:00 to recur_end_time today.
+  // For one-off meetings: window is before scheduled_end.
+  // If End has already been hit today for a recurring meeting AND time is past end → hide button.
+  const canEndMeeting = (m) => {
+    const now = new Date();
+    if (m.is_recurring) {
+      if (!m.recur_end_time) return true; // no end time configured — always show
+      const [eh, em] = m.recur_end_time.split(':').map(Number);
+      const recurEnd = new Date();
+      recurEnd.setHours(eh, em, 0, 0);
+      // Hide the End button if we are past today's recur_end_time
+      return now < recurEnd;
+    } else {
+      // Non-recurring: show only if meeting hasn't passed its scheduled_end
+      if (!m.scheduled_end) return true;
+      return now < new Date(m.scheduled_end);
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="admin-meetings-page">
@@ -390,7 +410,7 @@ export default function AdminMeetingsPage() {
                               Edit
                             </button>
                           )}
-                          {(m.status === 'LIVE' || m.status === 'ENDED' || m.status === 'SCHEDULED') && (
+                          {(m.status === 'LIVE' || m.status === 'SCHEDULED') && canEndMeeting(m) && (
                             <button
                               className="btn btn-sm btn-ghost"
                               onClick={() => handleEndMeeting(m.id)}
