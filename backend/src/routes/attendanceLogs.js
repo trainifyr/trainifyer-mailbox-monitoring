@@ -42,7 +42,31 @@ function computeAttendanceStatus(percentage, studentActuallyJoined = false) {
   return 'PARTIAL'; // if they joined but < 30%, still counts as PARTIAL not ABSENT (ABSENT = didn't join at all)
 }
 
+// --- GET /api/meetings/:id/my-active-session ---
+// Returns { active: true } if the authenticated user has a live heartbeat in this meeting.
+// Used by the lobby screen to show "Switch Here" instead of "Join Meeting".
+router.get('/my-active-session', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { userId } = resolveIdentity(req);
+    if (!userId) return res.json({ active: false });
+
+    const { rows } = await pool.query(
+      `SELECT id FROM public.attendance_logs
+       WHERE meeting_id = $1 AND user_id = $2
+         AND left_at IS NULL
+         AND last_heartbeat >= now() - interval '90 seconds'
+       LIMIT 1`,
+      [id, userId]
+    );
+    return res.json({ active: rows.length > 0, logId: rows[0]?.id || null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- POST /api/meetings/:id/join-log ---
+
 // Record that the current user has joined the meeting.
 // - Creates a row in attendance_logs with joined_at = now(), status = ACTIVE.
 // - Idempotent: if an active (left_at IS NULL) attendance log already exists

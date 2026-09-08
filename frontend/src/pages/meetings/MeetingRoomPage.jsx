@@ -25,6 +25,7 @@ export default function MeetingRoomPage() {
   const wakeLockRef = useRef(null); // Reference to hold the screen awake lock
   const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
   const bgSubscriptionsRef = useRef({ polls: null, chat: null }); // Track background sockets
+  const kickChannelRef = useRef(null); // Supabase channel for SESSION_KICKED broadcasts
 
   // Play a short beep using the Web Audio API for attention-grabbing notifications.
   // frequency: Hz (higher = more urgent); duration: ms
@@ -65,6 +66,8 @@ export default function MeetingRoomPage() {
   const [newPollCount, setNewPollCount] = useState(0);
   const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
   const [newChatCount, setNewChatCount] = useState(0);
+  const [hasActiveSession, setHasActiveSession] = useState(false); // True if user is already in meeting from another tab
+  const [isKicked, setIsKicked] = useState(false); // True when this tab was displaced by Switch Here from another
 
   // sendLeaveLog: call this whenever a user leaves.
   // useBeacon=true is for tab-close (beforeunload) where fetch is killed by the browser.
@@ -343,6 +346,38 @@ export default function MeetingRoomPage() {
     };
   }, [isInConference, id, userId]);
 
+  // --- Switch Here: detect if user already has an active session elsewhere ---
+  useEffect(() => {
+    if (!isAuthenticated || !id || isAdmin || hasJoined) return;
+    apiClient.get(`/meetings/${id}/my-active-session`)
+      .then(res => setHasActiveSession(res.data.active))
+      .catch(() => {});
+  }, [id, isAuthenticated, isAdmin, hasJoined]);
+
+  // --- Switch Here: listen for SESSION_KICKED broadcast on this meeting channel ---
+  useEffect(() => {
+    if (!isAuthenticated || !id || !userId) return;
+    const channelName = `meeting-session:${id}`;
+    const ch = supabase.channel(channelName, { config: { broadcast: { self: false } } });
+    ch.on('broadcast', { event: 'SESSION_KICKED' }, (payload) => {
+      if (payload.payload?.targetUserId === userId) {
+        // This tab has been displaced — gracefully exit
+        if (jitsiApiRef.current) {
+          try { jitsiApiRef.current.executeCommand('hangup'); } catch (_) {}
+        }
+        sessionEndedRef.current = false;
+        sendLeaveLog(false);
+        setIsKicked(true);
+        setHasJoined(false);
+      }
+    }).subscribe();
+    kickChannelRef.current = ch;
+    return () => {
+      supabase.removeChannel(ch);
+      kickChannelRef.current = null;
+    };
+  }, [id, isAuthenticated, userId, sendLeaveLog]);
+
   // --- Meeting End Watcher ---
   // Polls the meeting status every 10 seconds.
   // When Admin clicks "End", students are automatically kicked out of Jitsi
@@ -615,6 +650,24 @@ export default function MeetingRoomPage() {
       }
     }
 
+    // handleSwitchHere: broadcast SESSION_KICKED to other tabs, then join here
+    const handleSwitchHere = async () => {
+      // Broadcast kick to all other tabs/devices listening on this meeting channel
+      const channelName = `meeting-session:${id}`;
+      const ch = kickChannelRef.current ||
+        supabase.channel(channelName, { config: { broadcast: { self: false } } });
+      await ch.send({
+        type: 'broadcast',
+        event: 'SESSION_KICKED',
+        payload: { targetUserId: userId }
+      });
+      // Small delay so the other tab can finish its leave-log before we rejoin
+      await new Promise(r => setTimeout(r, 1200));
+      setHasActiveSession(false);
+      sessionJoinedAtRef.current = new Date().toISOString();
+      setHasJoined(true);
+    };
+
     return (
       <div className="meeting-room-page animate-fade-in">
         <div className="meeting-room-header">
@@ -633,60 +686,86 @@ export default function MeetingRoomPage() {
 
           {/* Right Column: Pre-join info */}
           <div className="lobby-info-card">
-            <h1>Ready to join?</h1>
-            <p className="meeting-subtitle">Jitsi Video Conference Room</p>
+            {isKicked ? (
+              <>
+                <h1>You joined elsewhere</h1>
+                <p className="meeting-subtitle">You switched this meeting to another tab or device.</p>
+                <div className="lobby-actions">
+                  <button className="lobby-join-btn" onClick={() => {
+                    setIsKicked(false);
+                    setHasActiveSession(false);
+                    sessionJoinedAtRef.current = new Date().toISOString();
+                    setHasJoined(true);
+                  }}>Rejoin Here</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1>Ready to join?</h1>
+                <p className="meeting-subtitle">Jitsi Video Conference Room</p>
 
-            <div className="active-participants-wrapper">
-              <div className="active-participants-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {activeCount > 0 && <span className="participants-indicator-pulse" />}
-                {activeCount > 0 ? 'Active in Call' : 'Room is empty'}
-              </div>
+                <div className="active-participants-wrapper">
+                  <div className="active-participants-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {activeCount > 0 && <span className="participants-indicator-pulse" />}
+                    {activeCount > 0 ? 'Active in Call' : 'Room is empty'}
+                  </div>
 
-              {activeCount > 0 && (
-                <div className="avatar-stack">
-                  {activeParticipants.slice(0, 3).map((p, idx) => (
-                    <div key={p.id || idx} className="avatar-bubble" title={p.name}>
-                      {p.name.charAt(0).toUpperCase()}
-                    </div>
-                  ))}
-                  {activeCount > 3 && (
-                    <div className="avatar-bubble more">
-                      +{activeCount - 3}
+                  {activeCount > 0 && (
+                    <div className="avatar-stack">
+                      {activeParticipants.slice(0, 3).map((p, idx) => (
+                        <div key={p.id || idx} className="avatar-bubble" title={p.name}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                      ))}
+                      {activeCount > 3 && (
+                        <div className="avatar-bubble more">
+                          +{activeCount - 3}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <div className="participants-text" style={{ fontSize: '0.9375rem', marginTop: activeCount > 0 ? '0.5rem' : 0 }}>
-                {participantsLoading ? 'Checking participants...' : participantsText}
-              </div>
-            </div>
-
-            <div className="lobby-actions">
-              {isSessionEnded ? (
-                <div className="session-ended-notice">
-                  <div className="session-ended-icon-wrap">
-                    <Clock size={28} />
-                  </div>
-                  <div className="session-ended-text">
-                    <strong>Session Closed</strong>
-                    <p>{sessionEndedMsg}</p>
-                    {meeting.is_recurring && meeting.recur_start_time && (
-                      <span className="session-ended-next">
-                        Next session: tomorrow at {meeting.recur_start_time.slice(0, 5)}
-                      </span>
-                    )}
+                  <div className="participants-text" style={{ fontSize: '0.9375rem', marginTop: activeCount > 0 ? '0.5rem' : 0 }}>
+                    {participantsLoading ? 'Checking participants...' : participantsText}
                   </div>
                 </div>
-              ) : (
-          <button className="lobby-join-btn" onClick={() => {
-                  sessionJoinedAtRef.current = new Date().toISOString();
-                  setHasJoined(true);
-                }}>
-                  Join Meeting
-                </button>
-              )}
-            </div>
+
+                <div className="lobby-actions">
+                  {isSessionEnded ? (
+                    <div className="session-ended-notice">
+                      <div className="session-ended-icon-wrap">
+                        <Clock size={28} />
+                      </div>
+                      <div className="session-ended-text">
+                        <strong>Session Closed</strong>
+                        <p>{sessionEndedMsg}</p>
+                        {meeting.is_recurring && meeting.recur_start_time && (
+                          <span className="session-ended-next">
+                            Next session: tomorrow at {meeting.recur_start_time.slice(0, 5)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : hasActiveSession ? (
+                    <>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                        You're already in this meeting from another tab or device.
+                      </p>
+                      <button className="lobby-join-btn" style={{ background: 'var(--primary)' }} onClick={handleSwitchHere}>
+                        Switch Here
+                      </button>
+                    </>
+                  ) : (
+                    <button className="lobby-join-btn" onClick={() => {
+                      sessionJoinedAtRef.current = new Date().toISOString();
+                      setHasJoined(true);
+                    }}>
+                      Join Meeting
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
