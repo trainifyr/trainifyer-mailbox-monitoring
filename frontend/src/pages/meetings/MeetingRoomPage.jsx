@@ -26,6 +26,7 @@ export default function MeetingRoomPage() {
   const sessionJoinedAtRef = useRef(null); // Timestamp when user clicked Join in this session
   const bgSubscriptionsRef = useRef({ polls: null, chat: null }); // Track background sockets
   const kickChannelRef = useRef(null); // Supabase channel for SESSION_KICKED broadcasts
+  const kickChannelSubscribedRef = useRef(false); // True once kickChannel reports SUBSCRIBED
 
   // Play a short beep using the Web Audio API for attention-grabbing notifications.
   // frequency: Hz (higher = more urgent); duration: ms
@@ -370,11 +371,14 @@ export default function MeetingRoomPage() {
         setIsKicked(true);
         setHasJoined(false);
       }
-    }).subscribe();
+    }).subscribe((status) => {
+      kickChannelSubscribedRef.current = (status === 'SUBSCRIBED');
+    });
     kickChannelRef.current = ch;
     return () => {
       supabase.removeChannel(ch);
       kickChannelRef.current = null;
+      kickChannelSubscribedRef.current = false;
     };
   }, [id, isAuthenticated, userId, sendLeaveLog]);
 
@@ -652,17 +656,27 @@ export default function MeetingRoomPage() {
 
     // handleSwitchHere: broadcast SESSION_KICKED to other tabs, then join here
     const handleSwitchHere = async () => {
-      // Broadcast kick to all other tabs/devices listening on this meeting channel
       const channelName = `meeting-session:${id}`;
-      const ch = kickChannelRef.current ||
-        supabase.channel(channelName, { config: { broadcast: { self: false } } });
+
+      // Supabase Broadcast send() silently fails if the channel is not fully SUBSCRIBED.
+      // Wait for the existing channel, or create a fresh one and await SUBSCRIBED status.
+      let ch = kickChannelRef.current;
+      if (!ch || !kickChannelSubscribedRef.current) {
+        ch = supabase.channel(channelName, { config: { broadcast: { self: false } } });
+        await new Promise((resolve) => {
+          ch.subscribe((status) => {
+            if (status === 'SUBSCRIBED') resolve();
+          });
+        });
+      }
+
       await ch.send({
         type: 'broadcast',
         event: 'SESSION_KICKED',
         payload: { targetUserId: userId }
       });
       // Small delay so the other tab can finish its leave-log before we rejoin
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 1400));
       setHasActiveSession(false);
       sessionJoinedAtRef.current = new Date().toISOString();
       setHasJoined(true);
