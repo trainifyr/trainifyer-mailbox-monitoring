@@ -123,6 +123,58 @@ function startFinalizeAttendanceJob() {
           `[AUTO-FINALIZE] Log ${log.id} finalized → ${status} (${attendancePercentage ?? '—'}%)`
         );
       }
+
+      // --- Auto-Lock: set recurring meeting to ENDED when room is empty past end time ---
+      // Runs after sweeping so all stale logs are already finalized before we check.
+      const { rows: recurMeetings } = await pool.query(`
+        SELECT id, recur_start_time, recur_end_time
+        FROM public.meetings
+        WHERE is_recurring = true
+          AND status != 'CANCELLED'
+          AND status != 'ENDED'
+          AND recur_end_time IS NOT NULL
+          AND (CURRENT_DATE + recur_end_time::time) < NOW()
+      `);
+
+      for (const m of recurMeetings) {
+        // Check if any student is still actively in the room
+        const { rows: activeRows } = await pool.query(`
+          SELECT id FROM public.attendance_logs
+          WHERE meeting_id = $1 AND left_at IS NULL
+            AND last_heartbeat >= NOW() - interval '2 minutes'
+          LIMIT 1
+        `, [m.id]);
+
+        if (activeRows.length === 0) {
+          await pool.query(
+            `UPDATE public.meetings SET status = 'ENDED' WHERE id = $1`,
+            [m.id]
+          );
+          console.log(`[AUTO-LOCK] Meeting ${m.id} locked (room empty past end time).`);
+        }
+      }
+
+      // --- Auto-Reset: unlock recurring meetings for the next day's session ---
+      // If a recurring meeting is ENDED and we are now within today's active window → reset to LIVE
+      const { rows: endedRecurMeetings } = await pool.query(`
+        SELECT id, recur_start_time, recur_end_time
+        FROM public.meetings
+        WHERE is_recurring = true
+          AND status = 'ENDED'
+          AND recur_start_time IS NOT NULL
+          AND recur_end_time IS NOT NULL
+          AND (CURRENT_DATE + recur_start_time::time) <= NOW()
+          AND (CURRENT_DATE + recur_end_time::time) >= NOW()
+      `);
+
+      for (const m of endedRecurMeetings) {
+        await pool.query(
+          `UPDATE public.meetings SET status = 'LIVE' WHERE id = $1`,
+          [m.id]
+        );
+        console.log(`[AUTO-RESET] Meeting ${m.id} unlocked for today's session.`);
+      }
+
     } catch (err) {
       console.error('[AUTO-FINALIZE] Error in attendance finalize job:', err.message);
     }
