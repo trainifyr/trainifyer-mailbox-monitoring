@@ -636,8 +636,7 @@ export default function MeetingRoomPage() {
         if (now > todayEnd) {
           isSessionEnded = true;
           if (meeting.recur_start_time) {
-            const [sh, sm] = meeting.recur_start_time.split(':').map(Number);
-            sessionEndedMsg = `Today's session has ended. See you tomorrow from ${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}.`;
+            sessionEndedMsg = `Today's session has ended.`;
           }
         }
       } else if (!meeting.is_recurring && meeting.scheduled_end) {
@@ -755,7 +754,7 @@ export default function MeetingRoomPage() {
                         <p>{sessionEndedMsg}</p>
                         {meeting.is_recurring && meeting.recur_start_time && (
                           <span className="session-ended-next">
-                            Next session: tomorrow at {meeting.recur_start_time.slice(0, 5)}
+                            Next Session: Tomorrow at {meeting.recur_start_time.slice(0, 5)}
                           </span>
                         )}
                       </div>
