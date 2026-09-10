@@ -131,21 +131,20 @@ export default function MeetingsListPage() {
                        </div>
                     </div>
 
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => navigate(`/meeting/${m.id}`)}
-                      style={{ 
-                        width: '100%', 
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        justifyContent: 'center',
-                        padding: '1rem',
-                        cursor: 'pointer',
-                        color: 'rgba(255,255,255,0.5)'
-                      }}
-                    >
-                      View Details
-                      <ArrowRight size={16} style={{ marginLeft: '8px' }} />
-                    </button>
+                    {m.is_recurring && m.recur_start_time && (
+                      <div style={{
+                        marginTop: '0.5rem',
+                        padding: '0.6rem 1rem',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        borderRadius: '8px',
+                        color: '#10b981',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                      }}>
+                        See you Tomorrow at {m.recur_start_time.slice(0, 5)}
+                      </div>
+                    )}
                   </div>
                 );
               }
