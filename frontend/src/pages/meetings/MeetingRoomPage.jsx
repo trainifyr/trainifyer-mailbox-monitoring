@@ -754,7 +754,7 @@ export default function MeetingRoomPage() {
                         <p>{sessionEndedMsg}</p>
                         {meeting.is_recurring && meeting.recur_start_time && (
                           <span className="session-ended-next">
-                            Next Session: Tomorrow at {meeting.recur_start_time.slice(0, 5)}
+                            See you Tomorrow at {meeting.recur_start_time.slice(0, 5)}
                           </span>
                         )}
                       </div>
