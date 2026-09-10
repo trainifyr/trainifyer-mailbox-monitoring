@@ -111,7 +111,7 @@ export default function MeetingsListPage() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em'
                       }}>
-                        Completed
+                        {m.is_recurring ? 'Ended for Today' : 'Completed'}
                       </span>
                     </div>
 
