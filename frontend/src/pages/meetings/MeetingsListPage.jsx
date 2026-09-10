@@ -130,6 +130,22 @@ export default function MeetingsListPage() {
                           )}
                        </div>
                     </div>
+
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => navigate(`/meeting/${m.id}`)}
+                      style={{ 
+                        width: '100%', 
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        color: 'rgba(255,255,255,0.5)'
+                      }}
+                    >
+                      View Details
+                      <ArrowRight size={16} style={{ marginLeft: '8px' }} />
+                    </button>
                   </div>
                 );
               }
