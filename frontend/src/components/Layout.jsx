@@ -68,7 +68,7 @@ export default function Layout() {
         <aside className="sidebar">
           <div className="sidebar-logo">
             <Link to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontWeight: 'bold' }}>T</div>
+              <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>T</div>
               Trainifyer
             </Link>
           </div>
