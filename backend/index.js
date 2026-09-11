@@ -14,6 +14,8 @@ const PORT = process.env.PORT || 5000;
 
 // Security & parsing
 app.use(helmet());
+const compression = require('compression');
+app.use(compression());
 
 // Production CORS: Allow our Render frontend + local dev
 const allowedOrigins = [
