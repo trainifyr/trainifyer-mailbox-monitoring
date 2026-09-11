@@ -378,14 +378,14 @@ export default function AdminMeetingsPage() {
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                           <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary"
                             onClick={() => navigate(`/meeting/${m.id}`)}
                           >
                             <Video size={14} /> Join
                           </button>
                           {m.status !== 'ENDED' && m.status !== 'CANCELLED' && (
                             <button
-                              className="btn btn-ghost btn-sm"
+                              className="btn btn-ghost"
                               onClick={() => handleEdit(m)}
                               style={{ border: '1px solid var(--border)' }}
                             >
@@ -394,7 +394,7 @@ export default function AdminMeetingsPage() {
                           )}
                           {(m.status === 'LIVE' || m.status === 'SCHEDULED') && (
                             <button
-                              className="btn btn-sm btn-ghost"
+                              className="btn btn-ghost"
                               onClick={() => handleEndMeeting(m.id)}
                               style={{ color: '#ef4444', border: '1px solid #fee2e2', background: '#fef2f2' }}
                             >
@@ -403,7 +403,7 @@ export default function AdminMeetingsPage() {
                           )}
                           {(m.status === 'LIVE' || m.status === 'SCHEDULED') && (
                             <button
-                              className="btn btn-sm btn-ghost"
+                              className="btn btn-ghost"
                               onClick={() => handleCancelMeeting(m.id)}
                               style={{ color: '#dc2626', border: '1px solid #fee2e2', background: '#fef2f2' }}
                             >
