@@ -193,7 +193,7 @@ export default function AdminMeetingsPage() {
     const [h, m] = t.split(':');
     const d = new Date();
     d.setHours(parseInt(h), parseInt(m));
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toUpperCase();
   };
 
 
