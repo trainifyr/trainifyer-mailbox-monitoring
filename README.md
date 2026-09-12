@@ -23,9 +23,14 @@ Trainifyer is a robust, production-ready platform designed for educational insti
 *   **Embedded Video**: Seamless Jitsi Meet integration using the `meet.systemli.org` provider.
     *   *Note: We use this privacy-respecting, high-performance cooperative hosting to bypass mandatory host/admin logins, ensuring a lag-free, zero-friction experience for iframe embedding.*
 *   **Google Meet-style Lobby**: Pre-join lobby with live participant avatars, camera/mic controls, and a deferred Jitsi iframe — participants only join when ready.
+*   **Active Session Handling ("Switch Here")**: Prevents duplicate attendance logs and echo by detecting if a user is already active in another tab/device. Uses Supabase Realtime (`SESSION_KICKED`) to gracefully kick the old session and let the new one join.
 *   **Privacy Consent**: Mandatory privacy gatekeeper for all participants before entering video rooms.
 *   **Batch Isolation**: Meetings can be restricted to specific cohorts or marked as public.
 *   **Recurring Meetings**: A cron-based scheduler automatically flips recurring meeting status (`SCHEDULED` ↔ `LIVE`) based on configured time windows.
+
+### 📱 Responsive Design
+*   **Mobile-Ready UI**: Fully functioning mobile experience via collapsible hamburger sidebars, fluid grid cards, and horizontal scroll wrappers for dense admin data tables.
+*   **Dynamic Overlays**: Chat and Poll panels convert to full-width spatial overlays on smaller screens to maximize viewport visibility without breaking the live conference layout.
 
 ### 📊 Attendance & Reporting
 *   **Automated Tracking**: Join/Leave logs and 60-second heartbeats ensure precise attendance data.
