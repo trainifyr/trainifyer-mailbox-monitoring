@@ -11,7 +11,8 @@ import {
   Video, 
   BarChart3, 
   Mail,
-  ChevronRight
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function Layout() {
@@ -19,6 +20,12 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [hasUnreadMail, setHasUnreadMail] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -62,15 +69,33 @@ export default function Layout() {
     </Link>
   );
 
+  const showSidebar = isAuthenticated && !location.pathname.startsWith('/meeting/');
+
   return (
     <div className="app-container">
-      {isAuthenticated && !location.pathname.startsWith('/meeting/') && (
-        <aside className="sidebar">
+      {/* Mobile sidebar backdrop */}
+      {showSidebar && sidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {showSidebar && (
+        <aside className={`sidebar${sidebarOpen ? ' sidebar-open' : ''}`}>
           <div className="sidebar-logo">
             <Link to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>T</div>
               Trainifyer
             </Link>
+            {/* Close button — mobile only */}
+            <button
+              className="sidebar-close-btn"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close menu"
+            >
+              <X size={20} />
+            </button>
           </div>
           
           <nav style={{ flex: 1, paddingTop: '1rem', overflowY: 'auto', overflowX: 'hidden' }}>
@@ -107,6 +132,16 @@ export default function Layout() {
         {isAuthenticated ? (
           <header className="top-bar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Hamburger — mobile only */}
+              {showSidebar && (
+                <button
+                  className="hamburger-btn"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Open menu"
+                >
+                  <Menu size={22} />
+                </button>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem' }}>
