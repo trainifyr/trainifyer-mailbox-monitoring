@@ -432,3 +432,28 @@ CREATE POLICY "attendance_logs_update_own" ON public.attendance_logs
         AND supabase_user_id = auth.uid()
     )
   );
+
+-- =============================================================
+-- 10. attendance_events
+-- =============================================================
+DROP POLICY IF EXISTS "attendance_events_select_own"   ON public.attendance_events;
+DROP POLICY IF EXISTS "attendance_events_select_admin" ON public.attendance_events;
+
+ALTER TABLE public.attendance_events ENABLE ROW LEVEL SECURITY;
+
+-- Students see events linked to their own attendance logs only
+CREATE POLICY "attendance_events_select_own" ON public.attendance_events
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.attendance_logs al
+      JOIN public.users u ON u.id = al.user_id
+      WHERE al.id = attendance_events.attendance_log_id
+        AND u.supabase_user_id = auth.uid()
+    )
+  );
+
+-- Admins see all events
+CREATE POLICY "attendance_events_select_admin" ON public.attendance_events
+  FOR SELECT
+  USING (public.is_admin());
