@@ -20,9 +20,9 @@ const updateSettingsSchema = z.object({
 );
 
 // --- GET /api/batches/:id/settings ---
-// Returns the settings object for a batch. Open to all roles.
+// Returns the settings object for a batch. Open to ADMIN and STUDENT roles.
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireRole('ADMIN', 'STUDENT'), async (req, res, next) => {
   try {
     const { id } = req.params;
 

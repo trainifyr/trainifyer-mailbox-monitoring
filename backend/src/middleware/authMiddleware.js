@@ -70,7 +70,9 @@ async function authMiddleware(req, res, next) {
     const mockRole = req.header('x-mock-role') || null;
     const mockUserId = req.header('x-mock-user-id') || null;
 
-    if (mockRole && mockUserId) {
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    if (isDev && mockRole && mockUserId) {
       req.user = {
         id: mockUserId,
         email: `${mockUserId}@mock.local`,

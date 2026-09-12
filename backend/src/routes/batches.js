@@ -23,9 +23,9 @@ const assignStudentSchema = z.object({
 });
 
 // --- GET /api/batches ---
-// List all batches, ordered by creation date descending. Open to all roles.
+// List all batches, ordered by creation date descending. Open to ADMIN and STUDENT roles.
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireRole('ADMIN', 'STUDENT'), async (req, res, next) => {
   try {
     const includeArchived = req.query.includeArchived === 'true';
     const { rows } = await pool.query(

@@ -22,9 +22,9 @@ const updateStudentSchema = z.object({
 
 // --- GET /api/users/students ---
 // List all students. Optional ?batchId= filter to scope to a batch.
-// Open to all roles (no requireRole guard).
+// Open to ADMIN and STUDENT roles.
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireRole('ADMIN', 'STUDENT'), async (req, res, next) => {
   try {
     const { batchId } = req.query;
     let query, params;
@@ -63,7 +63,7 @@ router.get('/', async (req, res, next) => {
 // --- GET /api/users/directory ---
 // List all users (Admins and Students) for mailbox searching.
 // Open to all authenticated roles.
-router.get('/directory', async (req, res, next) => {
+router.get('/directory', requireRole('ADMIN', 'STUDENT'), async (req, res, next) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, email, full_name, role FROM public.users
