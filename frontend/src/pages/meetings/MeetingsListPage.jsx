@@ -31,7 +31,17 @@ export default function MeetingsListPage() {
   const getEffectiveStatus = (m) => {
     if (m.status === 'CANCELLED') return 'CANCELLED';
     if (m.status === 'ENDED') return 'ENDED';
-    if (m.scheduled_end && new Date() > new Date(m.scheduled_end)) return 'ENDED';
+    const now = new Date();
+    if (m.scheduled_end && now > new Date(m.scheduled_end)) return 'ENDED';
+    
+    // Client-side time barrier for recurring meetings
+    if (m.is_recurring && m.recur_end_time) {
+      const [endH, endM] = m.recur_end_time.split(':').map(Number);
+      const todayEnd = new Date();
+      todayEnd.setHours(endH, endM, 0, 0);
+      if (now > todayEnd) return 'ENDED';
+    }
+
     return m.status || 'SCHEDULED';
   };
 
@@ -134,15 +144,24 @@ export default function MeetingsListPage() {
                     {m.is_recurring && m.recur_start_time && (
                       <div style={{
                         marginTop: '0.5rem',
-                        padding: '0.6rem 1rem',
-                        background: 'rgba(16, 185, 129, 0.08)',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                        borderRadius: '8px',
-                        color: '#10b981',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
+                        padding: '1rem',
+                        background: '#1a1111',
+                        border: '1px solid #451a1a',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px'
                       }}>
-                        See you Tomorrow at {m.recur_start_time.slice(0, 5)}
+                        <div style={{ padding: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '50%', display: 'flex' }}>
+                          <Clock size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ color: '#ef4444', display: 'block', fontSize: '0.875rem', marginBottom: '2px' }}>Session Closed</strong>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginBottom: '6px' }}>Today's session has ended.</p>
+                          <span style={{ color: '#10b981', fontSize: '0.8125rem', fontWeight: 600 }}>
+                            See you Tomorrow at {m.recur_start_time.slice(0, 5)}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
