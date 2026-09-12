@@ -51,6 +51,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Prevent any child element from causing horizontal overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--text-heading);
@@ -504,23 +510,35 @@ th:last-child, td:last-child {
   }
 
   /* --- Card grids — single column on mobile --- */
-  [style*="minmax(360px"] {
+  /* Catch all auto-fill/auto-fit grids regardless of minmax value */
+  [style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
   }
-  [style*="minmax(300px"] {
-    grid-template-columns: 1fr !important;
-  }
-  [style*="minmax(280px"] {
+  [style*="minmax"] {
     grid-template-columns: 1fr !important;
   }
 
-  /* --- Admin tables — horizontal scroll --- */
+  /* --- Admin tables — No horizontal scroll; columns wrap and truncate instead --- */
   .table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    width: 100%;
   }
   .data-table {
-    min-width: 700px;
+    width: 100%;
+    min-width: unset;
+    table-layout: fixed;
+  }
+  /* Hide lower-priority columns on mobile */
+  .data-table th:nth-child(n+4),
+  .data-table td:nth-child(n+4) {
+    display: none;
+  }
+  /* Truncate long cell text */
+  .data-table td, .data-table th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
   }
 
   /* --- Top bar adjustments --- */
