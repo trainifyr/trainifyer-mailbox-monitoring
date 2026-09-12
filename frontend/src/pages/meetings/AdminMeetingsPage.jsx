@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Plus, Video, Calendar, Globe, Users, RefreshCw } from 'lucide-react';
+import { formatTimeString } from '../../lib/dateUtils';
 import './AdminMeetingsPage.css';
 
 const INITIAL_FORM = {
@@ -187,14 +188,7 @@ export default function AdminMeetingsPage() {
     return new Date(iso).toLocaleString();
   };
 
-  const formatRecurTime = (t) => {
-    if (!t) return '—';
-    // t is like "09:00:00" from DB
-    const [h, m] = t.split(':');
-    const d = new Date();
-    d.setHours(parseInt(h), parseInt(m));
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toUpperCase();
-  };
+  const formatRecurTime = (t) => formatTimeString(t);
 
 
 

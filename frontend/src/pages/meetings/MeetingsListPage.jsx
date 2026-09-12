@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 import { Video, Calendar, Globe, Users, Clock, PlayCircle, ArrowRight, CheckCircle, Lock } from 'lucide-react';
+import { formatTimeRange, formatTimeString } from '../../lib/dateUtils';
 
 export default function MeetingsListPage() {
   const { isAuthenticated } = useAuth();
@@ -45,36 +46,11 @@ export default function MeetingsListPage() {
     return m.status || 'SCHEDULED';
   };
 
-  const formatTimeRange = (start, end) => {
-    if (!start) return '—';
-    const s = new Date(start);
-    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const dateStr = s.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const startStr = s.toLocaleTimeString([], options);
-    const endStr = end ? new Date(end).toLocaleTimeString([], options) : '';
-    return `${dateStr} • ${startStr} ${endStr ? `- ${endStr}` : ''}`;
-  };
-
-  // For recurring meetings show 'Daily • HH:MM AM – HH:MM PM'
   const formatRecurringTime = (startStrRaw, endStrRaw) => {
     if (!startStrRaw) return '—';
-    // startStrRaw is like "14:30:00" mapping it to a dummy date to use built-in formatter
-    const s = new Date(`1970-01-01T${startStrRaw}Z`);
-    const e = endStrRaw ? new Date(`1970-01-01T${endStrRaw}Z`) : null;
-    
-    // adjust for local timezone visually (or if we assume UTC backend, let JS handle it)
-    // Wait, postgres TIME is usually absolute. Let's just parse parts manually for simplicity 
-    // to avoid arbitrary tz shifts on simple string times.
-    const formatPart = (timeStr) => {
-      if (!timeStr) return '';
-      const [h, m] = timeStr.split(':');
-      const d = new Date(); d.setHours(parseInt(h,10), parseInt(m,10));
-      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
-    const startFormatted = formatPart(startStrRaw);
-    const endFormatted = formatPart(endStrRaw);
-    return `Daily • ${startFormatted}${endFormatted ? ` – ${endFormatted}` : ''}`;
+    const startFormatted = formatTimeString(startStrRaw);
+    const endFormatted = formatTimeString(endStrRaw);
+    return `Daily • ${startFormatted}${endFormatted !== '—' ? ` – ${endFormatted}` : ''}`;
   };
 
   return (
