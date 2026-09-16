@@ -179,7 +179,7 @@ router.post('/join-log', async (req, res, next) => {
     if (userId) {
       // First, forcefully clean up any ghost duplicates from race conditions (multiple devices joining simultaneously)
       // Keep only the most recent row, mark all older ones as left_at = now()
-      const { rows: ghostRows } = await pool.query(
+      await pool.query(
         `UPDATE public.attendance_logs
          SET left_at = now()
          WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
@@ -188,12 +188,9 @@ router.post('/join-log', async (req, res, next) => {
              SELECT id FROM public.attendance_logs 
              WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
              ORDER BY joined_at DESC LIMIT 1
-           ) RETURNING id`,
+           )`,
         [id, userId]
       );
-      for (const ghost of ghostRows) {
-        try { await pool.query(`INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', now())`, [ghost.id]); } catch (e) {}
-      }
 
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
@@ -206,7 +203,7 @@ router.post('/join-log', async (req, res, next) => {
       );
       if (rows.length > 0) existingRow = rows[0];
     } else if (externalName) {
-      const { rows: ghostRows } = await pool.query(
+      await pool.query(
         `UPDATE public.attendance_logs
          SET left_at = now()
          WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
@@ -215,12 +212,9 @@ router.post('/join-log', async (req, res, next) => {
              SELECT id FROM public.attendance_logs 
              WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
              ORDER BY joined_at DESC LIMIT 1
-           ) RETURNING id`,
+           )`,
         [id, externalName]
       );
-      for (const ghost of ghostRows) {
-        try { await pool.query(`INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', now())`, [ghost.id]); } catch (e) {}
-      }
 
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
