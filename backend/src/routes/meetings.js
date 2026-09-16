@@ -107,7 +107,8 @@ router.get('/', async (req, res, next) => {
                 COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
                 COALESCE(bs.require_camera, false) AS require_camera,
                 COALESCE(bs.require_microphone, true) AS require_microphone,
-                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
+                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share,
+                (SELECT count(*)::int FROM public.attendance_logs al WHERE al.meeting_id = m.id AND al.left_at IS NULL) AS active_sessions_count
          FROM public.meetings m
          LEFT JOIN public.users creator ON creator.id = m.created_by
          LEFT JOIN public.batches b ON b.id = m.batch_id
@@ -131,7 +132,8 @@ router.get('/', async (req, res, next) => {
                   COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
                   COALESCE(bs.require_camera, false) AS require_camera,
                   COALESCE(bs.require_microphone, true) AS require_microphone,
-                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
+                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share,
+                  (SELECT count(*)::int FROM public.attendance_logs al WHERE al.meeting_id = m.id AND al.left_at IS NULL) AS active_sessions_count
            FROM public.meetings m
            LEFT JOIN public.users creator ON creator.id = m.created_by
            LEFT JOIN public.batches b ON b.id = m.batch_id
@@ -151,7 +153,8 @@ router.get('/', async (req, res, next) => {
                   COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
                   COALESCE(bs.require_camera, false) AS require_camera,
                   COALESCE(bs.require_microphone, true) AS require_microphone,
-                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
+                  COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share,
+                  (SELECT count(*)::int FROM public.attendance_logs al WHERE al.meeting_id = m.id AND al.left_at IS NULL) AS active_sessions_count
            FROM public.meetings m
            LEFT JOIN public.users creator ON creator.id = m.created_by
            LEFT JOIN public.batches b ON b.id = m.batch_id
@@ -174,7 +177,8 @@ router.get('/', async (req, res, next) => {
                 COALESCE(bs.meeting_join_enabled, true) AS meeting_join_enabled,
                 COALESCE(bs.require_camera, false) AS require_camera,
                 COALESCE(bs.require_microphone, true) AS require_microphone,
-                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share
+                COALESCE(bs.require_screen_share, 'OPTIONAL') AS require_screen_share,
+                (SELECT count(*)::int FROM public.attendance_logs al WHERE al.meeting_id = m.id AND al.left_at IS NULL) AS active_sessions_count
          FROM public.meetings m
          LEFT JOIN public.users creator ON creator.id = m.created_by
          LEFT JOIN public.batches b ON b.id = m.batch_id

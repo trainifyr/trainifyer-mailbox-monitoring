@@ -633,14 +633,14 @@ export default function MeetingRoomPage() {
         const [endH, endM] = meeting.recur_end_time.split(':').map(Number);
         const todayEnd = new Date();
         todayEnd.setHours(endH, endM, 0, 0);
-        if (now > todayEnd) {
+        if (now > todayEnd && activeCount === 0) {
           isSessionEnded = true;
           if (meeting.recur_start_time) {
             sessionEndedMsg = `Today's session has ended.`;
           }
         }
       } else if (!meeting.is_recurring && meeting.scheduled_end) {
-        if (now > new Date(meeting.scheduled_end)) {
+        if (now > new Date(meeting.scheduled_end) && activeCount === 0) {
           isSessionEnded = true;
           sessionEndedMsg = 'This meeting has already ended.';
         }

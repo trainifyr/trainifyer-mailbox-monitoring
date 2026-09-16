@@ -33,14 +33,20 @@ export default function MeetingsListPage() {
     if (m.status === 'CANCELLED') return 'CANCELLED';
     if (m.status === 'ENDED') return 'ENDED';
     const now = new Date();
-    if (m.scheduled_end && now > new Date(m.scheduled_end)) return 'ENDED';
+    
+    // Only lock if the meeting is empty (active_sessions_count === 0)
+    const isEmpty = m.active_sessions_count === 0;
+
+    if (m.scheduled_end && now > new Date(m.scheduled_end)) {
+      if (isEmpty) return 'ENDED';
+    }
     
     // Client-side time barrier for recurring meetings
     if (m.is_recurring && m.recur_end_time) {
       const [endH, endM] = m.recur_end_time.split(':').map(Number);
       const todayEnd = new Date();
       todayEnd.setHours(endH, endM, 0, 0);
-      if (now > todayEnd) return 'ENDED';
+      if (now > todayEnd && isEmpty) return 'ENDED';
     }
 
     return m.status || 'SCHEDULED';
