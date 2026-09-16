@@ -55,7 +55,7 @@ router.get('/my-active-session', async (req, res, next) => {
       `SELECT id FROM public.attendance_logs
        WHERE meeting_id = $1 AND user_id = $2
          AND left_at IS NULL
-         AND last_heartbeat >= now() - interval '90 seconds'
+         AND last_heartbeat >= now() - interval '8 minutes'
        LIMIT 1`,
       [id, userId]
     );
