@@ -109,7 +109,15 @@ router.post('/join-log', async (req, res, next) => {
     // --- Time-window guard: block new joins after meeting end time ---
     const now = new Date();
     const callerIsAdmin = req.user?.role === 'ADMIN';
-    if (!callerIsAdmin) { // Admins can always join
+    
+    // Check if room is completely empty before enforcing time locks
+    const { rows: activeCountRows } = await pool.query(
+      `SELECT count(*) FROM public.attendance_logs WHERE meeting_id = $1 AND left_at IS NULL`,
+      [id]
+    );
+    const isRoomEmpty = parseInt(activeCountRows[0].count, 10) === 0;
+
+    if (!callerIsAdmin && isRoomEmpty) { // Admins can always join, and anyone can rejoin if room is still active
       if (!meeting.is_recurring && meeting.scheduled_end) {
         // One-off meeting: block after scheduled_end
         if (now > new Date(meeting.scheduled_end)) {
@@ -171,7 +179,7 @@ router.post('/join-log', async (req, res, next) => {
     if (userId) {
       // First, forcefully clean up any ghost duplicates from race conditions (multiple devices joining simultaneously)
       // Keep only the most recent row, mark all older ones as left_at = now()
-      await pool.query(
+      const { rows: ghostRows } = await pool.query(
         `UPDATE public.attendance_logs
          SET left_at = now()
          WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
@@ -180,9 +188,12 @@ router.post('/join-log', async (req, res, next) => {
              SELECT id FROM public.attendance_logs 
              WHERE meeting_id = $1 AND user_id = $2 ${dateClause}
              ORDER BY joined_at DESC LIMIT 1
-           )`,
+           ) RETURNING id`,
         [id, userId]
       );
+      for (const ghost of ghostRows) {
+        try { await pool.query(`INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', now())`, [ghost.id]); } catch (e) {}
+      }
 
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
@@ -195,7 +206,7 @@ router.post('/join-log', async (req, res, next) => {
       );
       if (rows.length > 0) existingRow = rows[0];
     } else if (externalName) {
-      await pool.query(
+      const { rows: ghostRows } = await pool.query(
         `UPDATE public.attendance_logs
          SET left_at = now()
          WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
@@ -204,9 +215,12 @@ router.post('/join-log', async (req, res, next) => {
              SELECT id FROM public.attendance_logs 
              WHERE meeting_id = $1 AND external_name = $2 ${dateClause}
              ORDER BY joined_at DESC LIMIT 1
-           )`,
+           ) RETURNING id`,
         [id, externalName]
       );
+      for (const ghost of ghostRows) {
+        try { await pool.query(`INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', now())`, [ghost.id]); } catch (e) {}
+      }
 
       const { rows } = await pool.query(
         `SELECT id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
