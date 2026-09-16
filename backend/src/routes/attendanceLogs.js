@@ -221,9 +221,49 @@ router.post('/join-log', async (req, res, next) => {
     }
 
     if (existingRow) {
-      // If it is already active, return as is (idempotent)
       if (existingRow.left_at === null) {
-        return res.json({ data: existingRow });
+        // User was disconnected and is rejoining BEFORE the 7-minute sweeper caught them.
+        // Finalize their previous segment up to their last heartbeat (or last_joined_at).
+        const segmentStart = existingRow.last_joined_at ? new Date(existingRow.last_joined_at) : new Date(existingRow.joined_at);
+        const trueEnd = existingRow.last_heartbeat ? new Date(existingRow.last_heartbeat) : segmentStart;
+        
+        // Only split the segment if the gap between trueEnd and now() is significant (e.g., > 10 seconds),
+        // Otherwise, it was just a quick page refresh and we don't need to break the segment.
+        const gapMs = new Date() - trueEnd;
+        if (gapMs > 15000) {
+          const validSegmentMinutes = Math.max(0, Math.round(((trueEnd - segmentStart) / 60000) * 100) / 100);
+          const newTotalMin = (parseFloat(existingRow.total_minutes) || 0) + validSegmentMinutes;
+          
+          await pool.query(
+            `INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', $2)`,
+            [existingRow.id, trueEnd]
+          );
+          
+          // Re-activate with updated last_joined_at
+          const { rows: updated } = await pool.query(
+            `UPDATE public.attendance_logs
+             SET last_joined_at = now(),
+                 total_minutes = $1,
+                 last_heartbeat = now(),
+                 updated_at = now()
+             WHERE id = $2
+             RETURNING id, meeting_id, user_id, external_name, joined_at, left_at, last_heartbeat,
+                       last_joined_at, total_minutes, attendance_percentage, status`,
+            [newTotalMin, existingRow.id]
+          );
+
+          try {
+            await pool.query(
+              `INSERT INTO public.attendance_events (attendance_log_id, event_type) VALUES ($1, 'JOIN')`,
+              [updated[0].id]
+            );
+          } catch (evErr) { console.error('event insert failed (gap rejoin):', evErr.message); }
+          
+          return res.json({ data: updated[0] });
+        } else {
+          // Minimal gap (e.g. quick refresh). Just return as is.
+          return res.json({ data: existingRow });
+        }
       }
 
       // If it was previously disconnected, reactivate the SAME row — update only last_joined_at
