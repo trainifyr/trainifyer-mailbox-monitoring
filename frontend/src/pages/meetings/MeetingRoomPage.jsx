@@ -107,12 +107,10 @@ export default function MeetingRoomPage() {
     const handleUnload = () => sendLeaveLog(true);
 
     window.addEventListener('beforeunload', handleUnload);
-    window.addEventListener('unload', handleUnload);
     window.addEventListener('pagehide', handleUnload);
 
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
-      window.removeEventListener('unload', handleUnload);
       window.removeEventListener('pagehide', handleUnload);
     };
   }, [sendLeaveLog]);
