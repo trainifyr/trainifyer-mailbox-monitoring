@@ -31,16 +31,27 @@ export default function MeetingsListPage() {
 
   const getEffectiveStatus = (m) => {
     if (m.status === 'CANCELLED') return 'CANCELLED';
-    if (m.status === 'ENDED') return 'ENDED';
     const now = new Date();
-    
+
+    // For recurring meetings, check if we are currently within today's active window.
+    // If yes, override any stale ENDED status from the DB (cron may not have reset it yet).
+    if (m.is_recurring && m.recur_start_time && m.recur_end_time) {
+      const [startH, startM] = m.recur_start_time.split(':').map(Number);
+      const [endH, endM] = m.recur_end_time.split(':').map(Number);
+      const todayStart = new Date(); todayStart.setHours(startH, startM, 0, 0);
+      const todayEnd   = new Date(); todayEnd.setHours(endH, endM, 0, 0);
+      if (now >= todayStart && now <= todayEnd) return m.status === 'CANCELLED' ? 'CANCELLED' : 'LIVE';
+    }
+
+    if (m.status === 'ENDED') return 'ENDED';
+
     // Only lock if the meeting is empty (active_sessions_count === 0)
     const isEmpty = m.active_sessions_count === 0;
 
     if (m.scheduled_end && now > new Date(m.scheduled_end)) {
       if (isEmpty) return 'ENDED';
     }
-    
+
     // Client-side time barrier for recurring meetings
     if (m.is_recurring && m.recur_end_time) {
       const [endH, endM] = m.recur_end_time.split(':').map(Number);
