@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const pool = require('../lib/pgPool');
 const requireRole = require('../lib/requireRole');
 const { sweepStaleSessions } = require('../lib/attendanceSweeper');
+const supabase = require('../lib/supabaseClient');
 
 const router = Router();
 
@@ -450,6 +451,19 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
     // their timer running after the session is officially over.
     if (body.status === 'ENDED' || body.status === 'CANCELLED') {
       await sweepStaleSessions(id, true); // forceAll=true bypasses heartbeat check
+      // Broadcast realtime kick signal so students are ejected immediately
+      // without waiting for their 10-second status poll to fire.
+      try {
+        const ch = supabase.channel(`meeting-status:${id}`);
+        await ch.send({
+          type: 'broadcast',
+          event: 'MEETING_ENDED',
+          payload: { meetingId: id, status: body.status }
+        });
+        await supabase.removeChannel(ch);
+      } catch (broadcastErr) {
+        console.error('Failed to broadcast MEETING_ENDED:', broadcastErr.message);
+      }
     }
 
     res.json({ data: updatedRows[0] });

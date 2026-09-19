@@ -414,6 +414,28 @@ export default function MeetingRoomPage() {
     return () => clearInterval(statusPollIntervalRef.current);
   }, [id, isAuthenticated, hasJoined, isAdmin, sendLeaveLog, navigate]);
 
+  // --- Realtime Meeting End Listener ---
+  // Complements the poll above — kicks students instantly when Admin ends/cancels
+  // the meeting, without waiting for the next 10-second poll cycle.
+  useEffect(() => {
+    if (!isAuthenticated || !id || isAdmin || !hasJoined) return;
+
+    const kickNow = async () => {
+      if (jitsiApiRef.current) {
+        try { jitsiApiRef.current.executeCommand('hangup'); } catch (_) { }
+      }
+      sessionEndedRef.current = false;
+      await sendLeaveLog(false);
+      navigate('/student/meetings');
+    };
+
+    const ch = supabase.channel(`meeting-status:${id}`)
+      .on('broadcast', { event: 'MEETING_ENDED' }, kickNow)
+      .subscribe();
+
+    return () => { supabase.removeChannel(ch); };
+  }, [id, isAuthenticated, isAdmin, hasJoined, sendLeaveLog, navigate]);
+
   useEffect(() => {
     if (consentState !== 'accepted' || !meeting || !jitsiContainerRef.current || !hasJoined) return;
     let cancelled = false;
