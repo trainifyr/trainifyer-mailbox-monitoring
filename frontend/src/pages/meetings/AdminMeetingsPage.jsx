@@ -202,11 +202,13 @@ export default function AdminMeetingsPage() {
 
   return (
     <div className="admin-meetings-page">
-      <div className="page-header">
+      <div className="admin-header">
         <h2>Meetings</h2>
-        <button className="btn btn-primary" onClick={editingMeetingId ? handleCancelEdit : (showForm ? () => setShowForm(false) : () => setShowForm(true))}>
-          <Plus size={16} /> {showForm ? (editingMeetingId ? 'Cancel Edit' : 'Cancel') : 'Schedule Meeting'}
-        </button>
+        <div className="admin-header-actions">
+          <button className="btn btn-primary" onClick={editingMeetingId ? handleCancelEdit : (showForm ? () => setShowForm(false) : () => setShowForm(true))}>
+            <Plus size={16} /> {showForm ? (editingMeetingId ? 'Cancel Edit' : 'Cancel') : 'Schedule Meeting'}
+          </button>
+        </div>
       </div>
 
       {showForm && (

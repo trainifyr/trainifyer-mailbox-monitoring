@@ -88,6 +88,7 @@ ul {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
@@ -531,27 +532,21 @@ th:last-child, td:last-child {
     grid-template-columns: 1fr !important;
   }
 
-  /* --- Admin tables — No horizontal scroll; columns wrap and truncate instead --- */
+  /* --- Admin tables — Horizontal Scroll Enabled --- */
   .table-wrapper {
-    overflow-x: hidden;
+    overflow-x: auto;
     width: 100%;
   }
-  .data-table {
+  .table-container {
+    overflow-x: auto;
     width: 100%;
-    min-width: unset;
-    table-layout: fixed;
   }
-  /* Hide lower-priority columns on mobile */
-  .data-table th:nth-child(n+4),
-  .data-table td:nth-child(n+4) {
-    display: none;
+  .data-table, table {
+    width: max-content;
+    min-width: 100%;
   }
-  /* Truncate long cell text */
-  .data-table td, .data-table th {
+  .data-table td, .data-table th, table td, table th {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 0;
   }
 
   /* --- Top bar adjustments --- */

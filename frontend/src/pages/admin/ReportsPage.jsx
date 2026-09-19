@@ -147,12 +147,12 @@ export default function ReportsPage() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="admin-header">
         <div>
           <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Attendance Intelligence</h1>
           <p style={{ color: 'var(--text-muted)' }}>Deep dive into participant engagement across your training ecosystem.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="admin-header-actions" style={{ display: 'flex', gap: '0.75rem' }}>
            <button className="btn btn-ghost" onClick={fetchReport} style={{ border: '1px solid var(--border)' }}>
              <RefreshCcw size={18} /> Sync Data
            </button>

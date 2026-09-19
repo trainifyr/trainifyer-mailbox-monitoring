@@ -151,17 +151,19 @@ export default function StudentsPage() {
       )}
 
       {/* Page Header */}
-      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="admin-header">
         <div>
           <h1 style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Student Directory</h1>
           <p style={{ color: 'var(--text-muted)' }}>Manage your training scholars and their access credentials.</p>
         </div>
-        {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X size={18} /> : <UserPlus size={18} />}
-            {showForm ? 'Cancel' : 'Enroll Student'}
-          </button>
-        )}
+        <div className="admin-header-actions">
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+              {showForm ? <X size={18} /> : <UserPlus size={18} />}
+              {showForm ? 'Cancel' : 'Enroll Student'}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Enroll Form Card */}
