@@ -707,6 +707,7 @@ export default function MeetingRoomPage() {
           <button className="back-btn btn-ghost" style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 12px', color: '#fff' }} onClick={() => navigate(-1)}><ArrowLeft size={16} /> Exit</button>
           <h2>{meeting.title}</h2>
         </div>
+        <div className="lobby-scroll-wrapper">
 
         <div className="lobby-container card">
           <div className="lobby-preview-card animate-fade-in">
@@ -801,6 +802,7 @@ export default function MeetingRoomPage() {
             )}
           </div>
         </div>
+        </div> {/* end lobby-scroll-wrapper */}
       </div>
     );
   }
