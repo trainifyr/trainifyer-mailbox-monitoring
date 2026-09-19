@@ -159,6 +159,9 @@
   .profile-grid {
     grid-template-columns: 1fr;
   }
+  .profile-page {
+    padding: 1rem 1rem;
+  }
 }
 
 @keyframes fadeIn {

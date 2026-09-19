@@ -114,7 +114,8 @@ export default function Layout() {
               <>
                 <div style={{ padding: '1rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Student Area</div>
                 <NavLink to="/student/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
-                <NavLink to="/meetings" icon={Video}>My Meetings</NavLink>
+                <NavLink to="/student/meetings" icon={Video}>My Meetings</NavLink>
+                <NavLink to="/student/attendance" icon={BarChart3}>Attendance</NavLink>
               </>
             )}
 
@@ -142,10 +143,14 @@ export default function Layout() {
                   <Menu size={22} />
                 </button>
               )}
+              {/* Brand logo for mobile in authenticated view */}
+              <Link to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} className="mobile-only-brand" style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)' }}>
+                Trainifyer
+              </Link>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem' }}>
-                <div style={{ textAlign: 'right' }}>
+                <div className="hide-on-mobile" style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)' }}>{user?.full_name}</div>
                   <div className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-student'}`} style={{ fontSize: '0.65rem' }}>{user?.role}</div>
                 </div>
@@ -162,7 +167,7 @@ export default function Layout() {
         ) : (
           <header className="top-bar">
              <Link to="/" style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)' }}>Trainifyer</Link>
-             <Link to="/login" className="btn btn-primary">Sign In</Link>
+             {location.pathname !== '/login' && <Link to="/login" className="btn btn-primary">Sign In</Link>}
           </header>
         )}
 

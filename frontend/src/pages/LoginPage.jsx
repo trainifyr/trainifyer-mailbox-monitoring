@@ -113,7 +113,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+        <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', paddingBottom: '2rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
              <ShieldCheck size={14} /> Secure administrative portal
            </p>

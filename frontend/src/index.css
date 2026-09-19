@@ -431,6 +431,9 @@ th:last-child, td:last-child {
    MOBILE RESPONSIVE — hamburger sidebar + layout fixes
    ========================================================= */
 
+/* Responsive utilities */
+.mobile-only-brand { display: none; }
+
 /* Hamburger button — hidden on desktop */
 .hamburger-btn {
   display: none;
@@ -469,6 +472,14 @@ th:last-child, td:last-child {
 }
 
 @media (max-width: 768px) {
+  /* --- Responsive utilities --- */
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .mobile-only-brand {
+    display: block !important;
+  }
+
   /* --- Show hamburger + close btn --- */
   .hamburger-btn {
     display: flex;
