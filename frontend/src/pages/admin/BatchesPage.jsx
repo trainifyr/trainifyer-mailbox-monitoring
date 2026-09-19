@@ -283,9 +283,9 @@ export default function BatchesPage() {
         <div className="notification"><Check size={14} /> {notification}</div>
       )}
 
-      <div className="admin-header">
+      <div className="page-header">
         <h2>Batches</h2>
-        <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer', color: 'var(--text-main)' }}>
             <input
               type="checkbox"

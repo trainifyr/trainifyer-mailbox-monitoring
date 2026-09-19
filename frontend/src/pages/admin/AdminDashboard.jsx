@@ -88,12 +88,12 @@ export default function AdminDashboard() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <header className="admin-header">
+      <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem' }}>Welcome back, {user?.full_name?.split(' ')[0]}!</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Here's what's happening with your training batches today.</p>
         </div>
-        <div className="admin-header-actions">
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
            <Link to="/admin/meetings" className="btn btn-ghost" style={{ border: '1px solid var(--border)' }}>Schedule Meeting</Link>
            <Link to="/admin/students" className="btn btn-primary"><Plus size={18} /> Add Student</Link>
         </div>
