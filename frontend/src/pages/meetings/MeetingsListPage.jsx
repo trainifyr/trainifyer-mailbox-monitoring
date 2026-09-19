@@ -82,7 +82,7 @@ export default function MeetingsListPage() {
       ) : error ? (
         <div className="card" style={{ padding: '2rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2' }}>{error}</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
           {meetings.length === 0 ? (
             <div className="card" style={{ gridColumn: '1 / -1', padding: '4rem', textAlign: 'center' }}>
                <Video size={48} color="var(--border)" style={{ marginBottom: '1rem' }} />

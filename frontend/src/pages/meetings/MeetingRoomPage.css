@@ -26,6 +26,10 @@
   font-size: 1.25rem;
   flex: 1;
   text-align: left;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .back-btn {
