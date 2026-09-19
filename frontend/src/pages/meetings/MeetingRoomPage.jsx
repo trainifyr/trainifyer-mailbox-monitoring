@@ -704,7 +704,7 @@ export default function MeetingRoomPage() {
     return (
       <div className="meeting-room-page animate-fade-in">
         <div className="meeting-room-header">
-          <button className="back-btn btn-ghost" style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 12px', color: '#fff' }} onClick={() => navigate(-1)}><ArrowLeft size={16} /> Exit</button>
+          <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={16} /> Back</button>
           <h2>{meeting.title}</h2>
         </div>
         <div className="lobby-scroll-wrapper">
