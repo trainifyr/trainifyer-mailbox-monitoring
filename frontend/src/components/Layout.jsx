@@ -114,8 +114,7 @@ export default function Layout() {
               <>
                 <div style={{ padding: '1rem 1.5rem 0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: '0.1em' }}>Student Area</div>
                 <NavLink to="/student/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
-                <NavLink to="/student/meetings" icon={Video}>My Meetings</NavLink>
-                <NavLink to="/student/attendance" icon={BarChart3}>Attendance</NavLink>
+                <NavLink to="/meetings" icon={Video}>My Meetings</NavLink>
               </>
             )}
 
