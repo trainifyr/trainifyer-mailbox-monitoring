@@ -11,6 +11,8 @@ import {
   Trash2
 } from 'lucide-react';
 
+import './MailboxPage.css';
+
 const PAGE_SIZE = 20;
 
 export default function MailboxPage() {
@@ -197,16 +199,16 @@ export default function MailboxPage() {
   };
 
   return (
-    <div className="animate-fade-in card" style={{ height: 'calc(100vh - var(--nav-height) - 4rem)', display: 'grid', gridTemplateColumns: '260px 1fr', overflow: 'hidden', padding: 0, position: 'relative' }}>
+    <div className="animate-fade-in card mailbox-container">
       {/* Sidebar */}
-      <aside style={{ background: 'var(--border-light)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+      <aside className="mailbox-sidebar">
         <div style={{ padding: '1.5rem' }}>
            <button onClick={() => setActiveView('compose')} className="btn btn-primary" style={{ width: '100%', borderRadius: '12px', padding: '0.875rem' }}>
               <PenSquare size={18} /> Compose
            </button>
         </div>
         
-        <nav style={{ flex: 1, padding: '0 0.75rem' }}>
+        <nav className="mailbox-nav">
            <button onClick={() => { setActiveView('inbox'); setSelectedMessage(null); }} className={`nav-link ${activeView === 'inbox' || (activeView === 'detail' && selectedMessage?.sender_id !== userId) ? 'active' : ''}`} style={{ width: 'calc(100% - 1.5rem)', color: (activeView === 'inbox' || (activeView === 'detail' && selectedMessage?.sender_id !== userId)) ? 'white' : 'var(--text-main)', border: 'none', background: (activeView === 'inbox' || (activeView === 'detail' && selectedMessage?.sender_id !== userId)) ? 'var(--primary)' : 'transparent', textAlign: 'left', cursor: 'pointer' }}>
               <Inbox size={18} /> Inbox
               {inboxPagination?.unreadCount > 0 && <span className="counter-badge" style={{ marginLeft: 'auto', background: 'white', color: 'var(--primary)' }}>{inboxPagination.unreadCount}</span>}
@@ -219,7 +221,7 @@ export default function MailboxPage() {
 
       {/* Main Mail Area */}
       <main style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-         <div style={{ padding: '1.25rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+         <div className="mailbox-header-flex">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <h2 style={{ fontSize: '1.125rem', textTransform: 'capitalize' }}>
                 {activeView === 'detail' ? (selectedMessage?.sender_id === userId ? 'sent' : 'inbox') : activeView}
@@ -234,14 +236,13 @@ export default function MailboxPage() {
                 </button>
               )}
             </div>
-            <div style={{ position: 'relative' }}>
+            <div className="mailbox-search-wrapper" style={{ position: 'relative' }}>
                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                <input
-                 className="input"
+                 className="input mailbox-search-input"
                  placeholder="Search mail..."
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
-                 style={{ width: '200px', padding: '0.4rem 0.75rem 0.4rem 2rem', fontSize: '0.8125rem', borderRadius: '12px' }}
                />
             </div>
          </div>
@@ -276,16 +277,17 @@ export default function MailboxPage() {
                  return filtered.map(msg => {
                    const isSelected = selectedMessage?.id === msg.id && activeView === 'detail';
                    return (
-                     <div key={msg.id} onClick={() => handleOpenMessage(msg)} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '180px 1fr 100px 40px', gap: '2rem', alignItems: 'center', cursor: 'pointer', background: isSelected ? 'rgba(16, 185, 129, 0.12)' : (!msg.is_read && currentView === 'inbox' ? 'var(--primary-glow)' : 'transparent'), fontWeight: !msg.is_read && currentView === 'inbox' ? 600 : 400 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
+                     <div key={msg.id} onClick={() => handleOpenMessage(msg)} className="mail-item-grid" style={{ background: isSelected ? 'rgba(16, 185, 129, 0.12)' : (!msg.is_read && currentView === 'inbox' ? 'var(--primary-glow)' : 'transparent'), fontWeight: !msg.is_read && currentView === 'inbox' ? 600 : 400 }}>
+                        <div className="mail-item-sender" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: !msg.is_read && currentView === 'inbox' ? 'var(--primary)' : 'transparent' }} />
                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-heading)' }}>{currentView === 'inbox' ? msg.sender_name : msg.receiver_name}</span>
                         </div>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-heading)' }}>
+                        <div className="mail-item-subject" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-heading)' }}>
                            <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginRight: '8px' }}>{msg.subject}</span> — {msg.body.substring(0, 100)}...
                         </div>
-                        <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatDate(msg.created_at)}</div>
+                        <div className="mail-item-date" style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatDate(msg.created_at)}</div>
                         <button
+                          className="mail-item-delete"
                           onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
                           style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
                           aria-label="Delete message"
