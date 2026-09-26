@@ -163,7 +163,7 @@ function startFinalizeAttendanceJob() {
           AND status = 'ENDED'
           AND recur_start_time IS NOT NULL
           AND recur_end_time IS NOT NULL
-          AND (CURRENT_DATE + recur_start_time::time) <= NOW()
+          AND (CURRENT_DATE + recur_start_time::time) - interval '10 minutes' <= NOW()
           AND (CURRENT_DATE + recur_end_time::time) >= NOW()
       `);
 
