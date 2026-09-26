@@ -35,7 +35,9 @@ export default function StudentAttendancePage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tagsLoading, setTagsLoading] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [sessionLogs, setSessionLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const limit = 50;
   const [sortField, setSortField] = useState('session_timestamp');
