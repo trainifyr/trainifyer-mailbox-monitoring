@@ -48,8 +48,11 @@ export default function ReportsPage() {
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
 
+  const [page, setPage] = useState(1);
+  const limit = 50;
+  
   // Sort state
-  const [sortField, setSortField] = useState('joined_at');
+  const [sortField, setSortField] = useState('session_timestamp');
   const [sortDir, setSortDir] = useState('desc');
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function ReportsPage() {
     try {
       setLoading(true);
       setError(null);
-      const params = { granularity };
+      const params = { granularity, page, limit, sortField, sortDir };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
       if (statusFilter) params.status = statusFilter;
@@ -81,35 +84,28 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, toDate, granularity, statusFilter, batchId, userId]);
+  }, [fromDate, toDate, granularity, statusFilter, batchId, userId, page, limit, sortField, sortDir]);
 
   useEffect(() => {
     if (isAdmin) fetchReport();
   }, [fetchReport, isAdmin]);
 
-  const sortedDetails = report?.details
-    ? [...report.details].sort((a, b) => {
-        let aVal = a[sortField];
-        let bVal = b[sortField];
-        if (typeof aVal === 'string') {
-          aVal = aVal.toLowerCase();
-          bVal = (bVal || '').toLowerCase();
-        }
-        if (aVal == null) return 1;
-        if (bVal == null) return -1;
-        if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
-        return 0;
-      })
-    : [];
+  // Data is inherently sorted from the server now
+  const sortedDetails = report?.details || [];
+
+  const handleFilterChange = (setter, val) => {
+    setter(val);
+    setPage(1);
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
-      setSortDir('desc');
+      setSortDir('asc');
     }
+    setPage(1);
   };
 
   const SortIcon = ({ field }) => {
@@ -170,16 +166,16 @@ export default function ReportsPage() {
          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1.25rem' }}>
             <div className="input-group" style={{ marginBottom: 0 }}>
                <label className="label" style={{ fontSize: '0.7rem' }}>From Date</label>
-               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={fromDate} onChange={(e) => handleFilterChange(setFromDate, e.target.value)} />
             </div>
             <div className="input-group" style={{ marginBottom: 0 }}>
                <label className="label" style={{ fontSize: '0.7rem' }}>To Date</label>
-               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={toDate} onChange={(e) => setToDate(e.target.value)} />
+               <input type="date" className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={toDate} onChange={(e) => handleFilterChange(setToDate, e.target.value)} />
             </div>
 
             <div className="input-group" style={{ marginBottom: 0 }}>
                <label className="label" style={{ fontSize: '0.7rem' }}>Status</label>
-               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={statusFilter} onChange={(e) => handleFilterChange(setStatusFilter, e.target.value)}>
                  <option value="">All Statuses</option>
                  <option value="ACTIVE">Active</option>
                  <option value="PRESENT">Present</option>
@@ -189,7 +185,7 @@ export default function ReportsPage() {
             </div>
             <div className="input-group" style={{ marginBottom: 0 }}>
                <label className="label" style={{ fontSize: '0.7rem' }}>Batch</label>
-               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+               <select className="input" style={{ background: 'var(--bg-card)', fontSize: '0.8125rem' }} value={batchId} onChange={(e) => handleFilterChange(setBatchId, e.target.value)}>
                  <option value="">All Batches</option>
                  {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                </select>
@@ -309,6 +305,32 @@ export default function ReportsPage() {
                     </tbody>
                   </table>
                </div>
+               
+               {report?.pagination && (
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
+                   <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                     Showing page {report.pagination.page} of {report.pagination.totalPages} ({report.pagination.totalItems} records)
+                   </div>
+                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                     <button 
+                       className="btn btn-ghost" 
+                       disabled={report.pagination.page <= 1} 
+                       onClick={() => setPage((p) => Math.max(1, p - 1))}
+                       style={{ border: '1px solid var(--border)', fontSize: '0.8125rem' }}
+                     >
+                       Previous
+                     </button>
+                     <button 
+                       className="btn btn-ghost" 
+                       disabled={report.pagination.page >= report.pagination.totalPages} 
+                       onClick={() => setPage((p) => Math.min(report.pagination.totalPages, p + 1))}
+                       style={{ border: '1px solid var(--border)', fontSize: '0.8125rem' }}
+                     >
+                       Next
+                     </button>
+                   </div>
+                 </div>
+               )}
             </div>
           </section>
         </>

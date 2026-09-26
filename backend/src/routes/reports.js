@@ -27,7 +27,7 @@ router.get('/attendance', async (req, res, next) => {
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
 
-    let { userId, batchId, fromDate, toDate, granularity, status } = req.query;
+    let { userId, batchId, fromDate, toDate, granularity, status, page, limit, sortField, sortDir } = req.query;
 
     if (granularity && !GRANULARITIES.includes(granularity)) {
       return res.status(400).json({ error: 'Bad Request', message: `granularity must be one of: ${GRANULARITIES.join(', ')}` });
@@ -294,8 +294,8 @@ router.get('/attendance', async (req, res, next) => {
         absent_count: b.absent_count
       }));
 
-    // --- Details (limit 500) ---
-    const details = allRows.slice(0, 500).map(r => ({
+    // --- Details Sorting and Pagination ---
+    let detailsData = allRows.map(r => ({
       attendance_log_id: r.attendance_log_id || `implicit-${r.meeting_id}-${r.session_date}`,
       meeting_id:         r.meeting_id,
       meeting_title:      r.meeting_title,
@@ -311,6 +311,26 @@ router.get('/attendance', async (req, res, next) => {
       status:             r.status
     }));
 
+    if (sortField) {
+      detailsData.sort((a, b) => {
+        let aVal = a[sortField];
+        let bVal = b[sortField];
+        if (typeof aVal === 'string') { aVal = aVal.toLowerCase(); bVal = (bVal||'').toLowerCase(); }
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 50);
+    const totalItems = detailsData.length;
+    const totalPages = Math.ceil(totalItems / limitNum);
+    const startIdx = (pageNum - 1) * limitNum;
+    const details = detailsData.slice(startIdx, startIdx + limitNum);
+
     res.json({
       data: {
         summary: {
@@ -323,7 +343,8 @@ router.get('/attendance', async (req, res, next) => {
           absent_count
         },
         series,
-        details
+        details,
+        pagination: { page: pageNum, limit: limitNum, totalItems, totalPages }
       },
       filters: { userId: userId || null, batchId: batchId || null, fromDate: fromDate || null, toDate: toDate || null, granularity, status: status || null }
     });
@@ -489,6 +510,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
     const role = req.mockUserRole;
     const callerUserId = req.mockUserId;
     const targetUserId = req.params.id;
+    let { page, limit, sortField, sortDir } = req.query;
 
     // RBAC: Students can only request their own logs
     if (role === 'STUDENT' && callerUserId !== targetUserId) {
@@ -686,6 +708,26 @@ router.get('/attendance/student/:id', async (req, res, next) => {
 
     const average_percentage = total_sessions > 0 ? (sum_percentages / total_sessions) : 0;
 
+    if (sortField) {
+      details.sort((a, b) => {
+        let aVal = a[sortField];
+        let bVal = b[sortField];
+        if (typeof aVal === 'string') { aVal = aVal.toLowerCase(); bVal = (bVal||'').toLowerCase(); }
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 50);
+    const totalItems = details.length;
+    const totalPages = Math.ceil(totalItems / limitNum);
+    const startIdx = (pageNum - 1) * limitNum;
+    const paginatedDetails = details.slice(startIdx, startIdx + limitNum);
+
     res.json({
       data: {
         summary: {
@@ -695,7 +737,8 @@ router.get('/attendance/student/:id', async (req, res, next) => {
           partial_count,
           absent_count
         },
-        details
+        details: paginatedDetails,
+        pagination: { page: pageNum, limit: limitNum, totalItems, totalPages }
       }
     });
 

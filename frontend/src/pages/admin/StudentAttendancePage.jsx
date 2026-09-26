@@ -35,9 +35,11 @@ export default function StudentAttendancePage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [sessionLogs, setSessionLogs] = useState([]);
-  const [logsLoading, setLogsLoading] = useState(false);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 50;
+  const [sortField, setSortField] = useState('session_timestamp');
+  const [sortDir, setSortDir] = useState('desc');
 
   useEffect(() => {
     if (!isAdmin) { navigate('/admin/students'); return; }
@@ -47,8 +49,10 @@ export default function StudentAttendancePage() {
       try {
         setLoading(true);
         const [sRes, rRes] = await Promise.all([
+        const params = { page, limit, sortField, sortDir };
+        const [sRes, rRes] = await Promise.all([
           apiClient.get('/users/students'),
-          apiClient.get(`/reports/attendance/student/${id}`)
+          apiClient.get(`/reports/attendance/student/${id}`, { params })
         ]);
         if (cancelled) return;
 
@@ -64,7 +68,17 @@ export default function StudentAttendancePage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [id, isAdmin, navigate]);
+  }, [id, isAdmin, navigate, page, limit, sortField, sortDir]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+    setPage(1);
+  };
 
   const summary = report?.summary;
   const details = report?.details || [];
@@ -170,12 +184,12 @@ export default function StudentAttendancePage() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Session</th>
-                        <th>Batch</th>
-                        <th>Date &amp; Time</th>
-                        <th style={{ textAlign: 'center' }}>Duration</th>
-                        <th style={{ textAlign: 'center' }}>Attendance %</th>
-                        <th style={{ textAlign: 'right' }}>Status</th>
+                        <th onClick={() => handleSort('meeting_title')} style={{ cursor: 'pointer' }}>Session</th>
+                        <th onClick={() => handleSort('batch_name')} style={{ cursor: 'pointer' }}>Batch</th>
+                        <th onClick={() => handleSort('session_timestamp')} style={{ cursor: 'pointer' }}>Date &amp; Time</th>
+                        <th onClick={() => handleSort('total_minutes')} style={{ textAlign: 'center', cursor: 'pointer' }}>Duration</th>
+                        <th onClick={() => handleSort('attendance_percentage')} style={{ textAlign: 'center', cursor: 'pointer' }}>Attendance %</th>
+                        <th onClick={() => handleSort('status')} style={{ textAlign: 'right', cursor: 'pointer' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -210,8 +224,34 @@ export default function StudentAttendancePage() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
-                </div>
+                   </table>
+                 </div>
+                 {report?.pagination && (
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
+                     <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                       Showing page {report.pagination.page} of {report.pagination.totalPages} ({report.pagination.totalItems} records)
+                     </div>
+                     <div style={{ display: 'flex', gap: '0.5rem' }}>
+                       <button 
+                         className="btn btn-ghost" 
+                         disabled={report.pagination.page <= 1} 
+                         onClick={() => setPage((p) => Math.max(1, p - 1))}
+                         style={{ border: '1px solid var(--border)', fontSize: '0.8125rem' }}
+                       >
+                         Previous
+                       </button>
+                       <button 
+                         className="btn btn-ghost" 
+                         disabled={report.pagination.page >= report.pagination.totalPages} 
+                         onClick={() => setPage((p) => Math.min(report.pagination.totalPages, p + 1))}
+                         style={{ border: '1px solid var(--border)', fontSize: '0.8125rem' }}
+                       >
+                         Next
+                       </button>
+                     </div>
+                   </div>
+                 )}
+               </React.Fragment>
               )}
             </div>
           </section>
