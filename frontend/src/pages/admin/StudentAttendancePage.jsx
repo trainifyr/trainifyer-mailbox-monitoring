@@ -48,7 +48,6 @@ export default function StudentAttendancePage() {
     async function load() {
       try {
         setLoading(true);
-        const [sRes, rRes] = await Promise.all([
         const params = { page, limit, sortField, sortDir };
         const [sRes, rRes] = await Promise.all([
           apiClient.get('/users/students'),
@@ -180,7 +179,8 @@ export default function StudentAttendancePage() {
                   No attendance records found for this student.
                 </div>
               ) : (
-                <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                <React.Fragment>
+                  <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
                   <table>
                     <thead>
                       <tr>
