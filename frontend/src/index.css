@@ -149,6 +149,12 @@ ul {
   color: var(--text-heading);
 }
 
+/* --- Visibility Utilities --- */
+.mobile-only-brand {
+  display: none;
+}
+
+
 /* Inputs */
 .input-group {
   margin-bottom: 1.5rem;
@@ -626,5 +632,14 @@ td:last-child {
   /* --- Reduce huge heading sizes on mobile --- */
   h1 {
     font-size: 1.75rem !important;
+  }
+
+  /* --- Visibility Utilities for Mobile --- */
+  .mobile-only-brand {
+    display: inline-block !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
   }
 }
