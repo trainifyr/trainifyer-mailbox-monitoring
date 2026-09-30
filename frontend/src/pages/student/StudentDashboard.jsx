@@ -23,6 +23,7 @@ export default function StudentDashboard() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allDetails, setAllDetails] = useState([]);
 
   const fetchReport = useCallback(async (silent = false) => {
     try {
@@ -43,6 +44,10 @@ export default function StudentDashboard() {
     if (isStudent) {
       fetchReport();
       const interval = setInterval(() => fetchReport(true), 30000);
+      // Fetch all details separately for the calendar (never paginates)
+      apiClient.get('/reports/attendance', { params: { granularity: 'daily', page: 1, limit: 10000 } })
+        .then(res => setAllDetails(res.data.data?.details || []))
+        .catch(() => {});
       return () => clearInterval(interval);
     }
   }, [fetchReport, isStudent]);
@@ -212,7 +217,7 @@ export default function StudentDashboard() {
           <aside style={{ minWidth: 0, overflow: 'hidden' }}>
              <div style={{ marginBottom: '2rem' }}>
                <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Monthly Attendance</h3>
-               <AttendanceCalendar details={report?.details} />
+               <AttendanceCalendar details={allDetails} />
              </div>
 
              <div style={{ marginBottom: '2rem' }}>

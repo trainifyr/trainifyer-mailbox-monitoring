@@ -42,6 +42,8 @@ export default function StudentAttendancePage() {
   const limit = 50;
   const [sortField, setSortField] = useState('session_timestamp');
   const [sortDir, setSortDir] = useState('desc');
+  // Full dataset just for the calendar (never paginates)
+  const [allDetails, setAllDetails] = useState([]);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/admin/students'); return; }
@@ -70,6 +72,16 @@ export default function StudentAttendancePage() {
     load();
     return () => { cancelled = true; };
   }, [id, isAdmin, navigate, page, limit, sortField, sortDir]);
+
+  // Separate fetch for calendar — loads ALL records once, independent of pagination
+  useEffect(() => {
+    if (!isAdmin || !id) return;
+    let cancelled = false;
+    apiClient.get(`/reports/attendance/student/${id}`, { params: { page: 1, limit: 10000 } })
+      .then(res => { if (!cancelled) setAllDetails(res.data.data?.details || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [id, isAdmin]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -262,7 +274,7 @@ export default function StudentAttendancePage() {
           {/* Right sidebar */}
           <div style={{ width: '300px', flexShrink: 0, overflow: 'hidden', position: 'sticky', top: '1rem' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Monthly Attendance</div>
-            <AttendanceCalendar details={details} />
+            <AttendanceCalendar details={allDetails} />
           </div>
         </div>
       )}
