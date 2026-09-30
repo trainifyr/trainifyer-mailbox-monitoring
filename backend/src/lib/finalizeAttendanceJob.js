@@ -19,7 +19,7 @@ function startFinalizeAttendanceJob() {
 
   cron.schedule('*/5 * * * *', async () => {
     try {
-      // Find all ACTIVE logs whose meeting's scheduled_end has passed
+      // ─── STEP 1: Finalize stale ACTIVE attendance logs ───────────────────────
       const { rows: staleLogs } = await pool.query(`
         SELECT
           al.id,
@@ -44,88 +44,83 @@ function startFinalizeAttendanceJob() {
           )
       `);
 
-      if (staleLogs.length === 0) return;
+      if (staleLogs.length > 0) {
+        console.log(`[AUTO-FINALIZE] Found ${staleLogs.length} stale ACTIVE log(s) to finalize.`);
 
-      console.log(`[AUTO-FINALIZE] Found ${staleLogs.length} stale ACTIVE log(s) to finalize.`);
+        const now = new Date();
 
-      const now = new Date();
-
-      for (const log of staleLogs) {
-        // Determine the fairest left_at time
-        let leftAt;
-        if (log.last_heartbeat && new Date(log.last_heartbeat) < new Date(now.getTime() - 5 * 60000)) {
-          leftAt = new Date(log.last_heartbeat);
-        } else if (log.is_recurring) {
-          const [h, m] = log.recur_end_time.split(':').map(Number);
-          leftAt = new Date();
-          leftAt.setHours(h, m, 0, 0);
-        } else if (log.scheduled_end) {
-          leftAt = new Date(log.scheduled_end);
-        } else {
-          leftAt = log.last_heartbeat ? new Date(log.last_heartbeat) : new Date(log.joined_at);
-        }
-
-        // Use last_joined_at to accurately measure the current segment (fallback to joined_at)
-        const joinedAt = log.last_joined_at ? new Date(log.last_joined_at) : new Date(log.joined_at);
-        const sessionMs = leftAt - joinedAt;
-        const sessionMinutes = Math.max(0, sessionMs / 60000);
-
-        const priorMinutes = parseFloat(log.total_minutes) || 0;
-        let totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
-
-        let attendancePercentage = null;
-        let status = 'PARTIAL'; // default: joined but no way to compute percentage
-
-        if (log.is_recurring && log.recur_start_time && log.recur_end_time) {
-          const [sh, sm] = log.recur_start_time.split(':').map(Number);
-          const [eh, em] = log.recur_end_time.split(':').map(Number);
-          const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
-          
-          if (recurDurMin > 0) {
-            totalMinutes = Math.min(totalMinutes, recurDurMin); // Cap at max duration
-            attendancePercentage = Math.min(100, Math.round((totalMinutes / recurDurMin) * 100 * 100) / 100);
-            status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
+        for (const log of staleLogs) {
+          // Determine the fairest left_at time
+          let leftAt;
+          if (log.last_heartbeat && new Date(log.last_heartbeat) < new Date(now.getTime() - 5 * 60000)) {
+            leftAt = new Date(log.last_heartbeat);
+          } else if (log.is_recurring) {
+            const [h, m] = log.recur_end_time.split(':').map(Number);
+            leftAt = new Date();
+            leftAt.setHours(h, m, 0, 0);
+          } else if (log.scheduled_end) {
+            leftAt = new Date(log.scheduled_end);
+          } else {
+            leftAt = log.last_heartbeat ? new Date(log.last_heartbeat) : new Date(log.joined_at);
           }
-        } else if (log.scheduled_start && log.scheduled_end) {
-          const scheduledStart = new Date(log.scheduled_start);
-          const scheduledEnd = new Date(log.scheduled_end);
-          const meetingDurationMs = scheduledEnd - scheduledStart;
 
-          if (meetingDurationMs > 0) {
-            const meetingDurationMin = meetingDurationMs / 60000;
-            totalMinutes = Math.min(totalMinutes, meetingDurationMin); // Cap at max duration
-            attendancePercentage = Math.round((totalMinutes / meetingDurationMin) * 100 * 100) / 100;
-            if (attendancePercentage > 100) attendancePercentage = 100;
-            status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
+          const joinedAt = log.last_joined_at ? new Date(log.last_joined_at) : new Date(log.joined_at);
+          const sessionMs = leftAt - joinedAt;
+          const sessionMinutes = Math.max(0, sessionMs / 60000);
+
+          const priorMinutes = parseFloat(log.total_minutes) || 0;
+          let totalMinutes = Math.round((priorMinutes + sessionMinutes) * 100) / 100;
+
+          let attendancePercentage = null;
+          let status = 'PARTIAL';
+
+          if (log.is_recurring && log.recur_start_time && log.recur_end_time) {
+            const [sh, sm] = log.recur_start_time.split(':').map(Number);
+            const [eh, em] = log.recur_end_time.split(':').map(Number);
+            const recurDurMin = (eh * 60 + em) - (sh * 60 + sm);
+            if (recurDurMin > 0) {
+              totalMinutes = Math.min(totalMinutes, recurDurMin);
+              attendancePercentage = Math.min(100, Math.round((totalMinutes / recurDurMin) * 100 * 100) / 100);
+              status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
+            }
+          } else if (log.scheduled_start && log.scheduled_end) {
+            const scheduledStart = new Date(log.scheduled_start);
+            const scheduledEnd = new Date(log.scheduled_end);
+            const meetingDurationMs = scheduledEnd - scheduledStart;
+            if (meetingDurationMs > 0) {
+              const meetingDurationMin = meetingDurationMs / 60000;
+              totalMinutes = Math.min(totalMinutes, meetingDurationMin);
+              attendancePercentage = Math.round((totalMinutes / meetingDurationMin) * 100 * 100) / 100;
+              if (attendancePercentage > 100) attendancePercentage = 100;
+              status = attendancePercentage >= 75 ? 'PRESENT' : 'PARTIAL';
+            }
           }
-        }
 
-        // Insert LEAVE event so the timeline shows in the admin panel
-        // Importantly, backdate the event_at to match leftAt exactly, otherwise the UI will use now()
-        try {
+          try {
+            await pool.query(
+              `INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', $2)`,
+              [log.id, leftAt]
+            );
+          } catch (evErr) { console.error('[AUTO-FINALIZE] LEAVE event insert failed:', evErr.message); }
+
           await pool.query(
-            `INSERT INTO public.attendance_events (attendance_log_id, event_type, event_at) VALUES ($1, 'LEAVE', $2)`,
-            [log.id, leftAt]
+            `UPDATE public.attendance_logs
+             SET left_at = $1,
+                 total_minutes = $2,
+                 attendance_percentage = $3,
+                 status = $4::public.attendance_status
+             WHERE id = $5`,
+            [leftAt, totalMinutes, attendancePercentage, status, log.id]
           );
-        } catch (evErr) { console.error('[AUTO-FINALIZE] LEAVE event insert failed:', evErr.message); }
 
-        await pool.query(
-          `UPDATE public.attendance_logs
-           SET left_at = $1,
-               total_minutes = $2,
-               attendance_percentage = $3,
-               status = $4::public.attendance_status
-           WHERE id = $5`,
-          [leftAt, totalMinutes, attendancePercentage, status, log.id]
-        );
-
-        console.log(
-          `[AUTO-FINALIZE] Log ${log.id} finalized → ${status} (${attendancePercentage ?? '—'}%)`
-        );
+          console.log(`[AUTO-FINALIZE] Log ${log.id} finalized → ${status} (${attendancePercentage ?? '—'}%)`);
+        }
       }
 
-      // --- Auto-Lock: set recurring meeting to ENDED when room is empty past end time ---
-      // Runs after sweeping so all stale logs are already finalized before we check.
+      // ─── STEP 2: Auto-Lock recurring meetings ────────────────────────────────
+      // Runs UNCONDITIONALLY every tick — even when no stale logs were found.
+      // This fixes: (a) holidays where nobody joined so staleLogs was empty,
+      // and (b) rooms that emptied before the scheduled end time.
       const { rows: recurMeetings } = await pool.query(`
         SELECT id, recur_start_time, recur_end_time
         FROM public.meetings
@@ -135,13 +130,13 @@ function startFinalizeAttendanceJob() {
           AND recur_start_time IS NOT NULL
           AND recur_end_time IS NOT NULL
           AND (
-            (CURRENT_DATE + recur_end_time::time) < NOW() 
+            (CURRENT_DATE + recur_end_time::time) < NOW()
             OR NOW() < (CURRENT_DATE + recur_start_time::time)
           )
       `);
 
       for (const m of recurMeetings) {
-        // Check if any student is still actively in the room
+        // Only lock if truly nobody is still in the room (active heartbeat in last 2 min)
         const { rows: activeRows } = await pool.query(`
           SELECT id FROM public.attendance_logs
           WHERE meeting_id = $1 AND left_at IS NULL
@@ -154,12 +149,13 @@ function startFinalizeAttendanceJob() {
             `UPDATE public.meetings SET status = 'ENDED' WHERE id = $1`,
             [m.id]
           );
-          console.log(`[AUTO-LOCK] Meeting ${m.id} locked (room empty past end time).`);
+          console.log(`[AUTO-LOCK] Meeting ${m.id} locked (room empty, outside active window).`);
         }
       }
 
-      // --- Auto-Reset: unlock recurring meetings for the next day's session ---
-      // If a recurring meeting is ENDED and we are now within today's active window → reset to LIVE
+      // ─── STEP 3: Auto-Reset recurring meetings for today's session ───────────
+      // Runs UNCONDITIONALLY every tick.
+      // Unlocks ENDED meetings that are now within today's active window.
       const { rows: endedRecurMeetings } = await pool.query(`
         SELECT id, recur_start_time, recur_end_time
         FROM public.meetings
