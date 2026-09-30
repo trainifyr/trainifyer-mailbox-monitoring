@@ -697,6 +697,7 @@ router.get('/attendance/student/:id', async (req, res, next) => {
         session_date: r.session_date,
         meeting_title: r.meeting_title,
         batch_id: r.batch_id,
+        batch_name: r.batch_name || null,
         joined_at: r.joined_at || r.session_timestamp,
         last_joined_at: r.last_joined_at || r.joined_at || r.session_timestamp,
         left_at: r.left_at || null,
