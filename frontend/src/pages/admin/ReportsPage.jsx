@@ -120,7 +120,7 @@ export default function ReportsPage() {
       d.user_name || d.external_name || '—',
       d.meeting_title,
       d.batch_name || 'Public',
-      d.joined_at ? new Date(d.joined_at).toLocaleString() : '—',
+      (d.last_joined_at || d.joined_at) ? new Date(d.last_joined_at || d.joined_at).toLocaleString() : '—',
       d.left_at ? new Date(d.left_at).toLocaleString() : '—',
       d.total_minutes != null ? Math.round(d.total_minutes) : '—',
       d.attendance_percentage != null ? Math.round(d.attendance_percentage) : '—',
@@ -284,7 +284,7 @@ export default function ReportsPage() {
                               <span className="badge badge-admin" style={{ textTransform: 'none' }}>{d.batch_name || 'Public'}</span>
                             )}
                           </td>
-                          <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{formatDate(d.joined_at)}</td>
+                          <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{formatDate(d.last_joined_at || d.joined_at)}</td>
                           <td style={{ textAlign: 'center', fontWeight: 700 }}>
                             {d.status === 'ABSENT' || !d.attendance_percentage ? '—' : `${Math.round(d.attendance_percentage)}%`}
                           </td>

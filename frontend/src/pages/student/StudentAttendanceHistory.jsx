@@ -127,8 +127,8 @@ export default function StudentAttendanceHistory() {
                   <tr key={d.meeting_title + d.session_date + i}>
                     <td style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{d.meeting_title}</td>
                     <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                      {d.joined_at
-                        ? new Date(d.joined_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '')
+                      {(d.last_joined_at || d.joined_at)
+                        ? new Date(d.last_joined_at || d.joined_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '')
                         : new Date(d.session_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                     </td>
                     <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>

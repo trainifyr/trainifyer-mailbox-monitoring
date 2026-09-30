@@ -224,7 +224,7 @@ export default function StudentAttendancePage() {
                             )}
                           </td>
                           <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                            {formatDate(d.joined_at)}
+                            {formatDate(d.last_joined_at || d.joined_at)}
                           </td>
                           <td style={{ textAlign: 'center', fontSize: '0.875rem' }}>
                             {d.total_minutes ? `${Math.round(d.total_minutes)} min` : '—'}
