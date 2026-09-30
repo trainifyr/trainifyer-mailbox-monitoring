@@ -118,7 +118,6 @@ The platform includes a **77-point end-to-end validation suite** covering every 
 *   `backend/` - Express API server and database migrations.
 *   `frontend/` - React client application.
 *   `docs/` - Technical reports and validation audits.
-*   `prompts/` - Original requirement specifications and design patterns.
 
 ---
 

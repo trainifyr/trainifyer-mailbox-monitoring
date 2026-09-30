@@ -124,6 +124,9 @@ export default function Layout() {
 
           <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
              <NavLink to="/profile" icon={User}>Profile</NavLink>
+             <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+               Developed by Arpit
+             </div>
           </div>
         </aside>
       )}
