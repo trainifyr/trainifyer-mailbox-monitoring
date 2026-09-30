@@ -122,10 +122,10 @@ export default function Layout() {
             <NavLink to="/mailbox" icon={Mail} hasBadge={hasUnreadMail}>Mailbox</NavLink>
           </nav>
 
-          <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ padding: '0.75rem 1rem 1rem', borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
              <NavLink to="/profile" icon={User}>Profile</NavLink>
-             <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-               <span style={{ color: 'var(--primary)', fontWeight: 800 }}>Developed By</span> <br/> Arpit Tripathi
+             <div style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, lineHeight: 1.6 }}>
+               <span style={{ color: 'var(--primary)', fontWeight: 800 }}>Developed By</span><br/>Arpit Tripathi
              </div>
           </div>
         </aside>
